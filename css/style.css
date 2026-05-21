@@ -1,0 +1,1851 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+html {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Exceção para ícones do Font Awesome */
+.fa, .fas, .far, .fal, .fab,
+i.fa, i.fas, i.far, i.fal, i.fab {
+    font-family: "Font Awesome 6 Free" !important;
+    font-style: normal !important;
+    font-weight: 900 !important;
+}
+
+/* ===== VARIÁVEIS CSS PARA MODO ESCURO ===== */
+:root {
+    /* Cores do tema claro */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #edf1f3;
+    --text-primary: #000000;
+    --text-secondary: #333333;
+    --text-muted: #999999;
+    --border-color: #f0a36b;
+    --input-bg: #ffffff;
+    --card-bg: #ffffff;
+    --shadow: rgba(0, 0, 0, 0.15);
+    --shadow-light: rgba(0, 0, 0, 0.1);
+    
+    /* Cores do sistema (mantidas) */
+    --primary-green: #6fb64f;
+    --primary-orange: #f0a36b;
+    --primary-orange-hover: #d98242;
+    --error-bg: #fee;
+    --error-border: #fcc;
+    --error-text: #c33;
+}
+
+/* Tema escuro - PALETA MELHORADA */
+[data-theme="dark"] {
+    /* Backgrounds mais suaves e legíveis */
+    --bg-primary: #1e293b;      /* Azul escuro suave */
+    --bg-secondary: #334155;    /* Azul médio */
+    --bg-tertiary: #0f172a;     /* Azul muito escuro */
+    
+    /* Textos com melhor contraste */
+    --text-primary: #f8fafc;    /* Branco suave */
+    --text-secondary: #e2e8f0;  /* Cinza claro */
+    --text-muted: #94a3b8;      /* Cinza médio legível */
+    
+    /* Cores de sistema mantidas */
+    --border-color: #f0a36b;
+    --input-bg: #f8fafc;        /* Input branco suave */
+    --card-bg: #334155;         /* Cards em azul médio */
+    
+    /* Sombras mais suaves */
+    --shadow: rgba(0, 0, 0, 0.4);
+    --shadow-light: rgba(0, 0, 0, 0.25);
+    
+    /* Cores de erro melhoradas */
+    --error-bg: #7f1d1d;        /* Vermelho escuro */
+    --error-border: #dc2626;    /* Vermelho médio */
+    --error-text: #fca5a5;      /* Vermelho claro */
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container {
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-container {
+    background: var(--bg-primary);
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: background-color 0.3s ease;
+}
+
+.image-section {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.children-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+/* Removido o detalhe azul lateral para atender ao novo layout limpo */
+.image-section::after { display: none; }
+
+.form-section {
+    flex: 1;
+    padding: 60px 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--bg-primary);
+    transition: background-color 0.3s ease;
+}
+
+.logo-section {
+    margin-bottom: 40px;
+    text-align: center;
+}
+.logo-img {
+    width: 180px;
+    height: auto;
+}
+
+.login-form {
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+}
+
+.login-title {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 40px;
+    letter-spacing: 1px;
+    transition: color 0.3s ease;
+}
+
+.error-messages {
+    margin-bottom: 20px;
+}
+
+.error-message {
+    background-color: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 15px 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 25px;
+    font-size: 16px;
+    font-family: 'Poppins', sans-serif;
+    outline: none;
+    transition: all 0.3s ease;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+}
+
+.input-group input:focus {
+    border-color: var(--border-color);
+    background-color: var(--input-bg);
+    box-shadow: 0 0 0 3px rgba(240, 163, 107, 0.15);
+}
+
+.input-group input::placeholder {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.forgot-password {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.forgot-password a {
+    color: #f0a36b;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 400;
+    transition: color 0.3s ease;
+}
+
+.forgot-password a:hover {
+    color: #d98242;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 15px;
+    background: #6fb64f;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 18px;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    background: #63a646;
+}
+
+.login-btn:active {
+    transform: translateY(0);
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+    .login-container {
+        flex-direction: column;
+    }
+    
+    .image-section {
+        height: 40vh;
+        min-height: 250px;
+    }
+    
+    .form-section {
+        flex: 1;
+        padding: 40px 30px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0;
+    }
+    
+    .login-container {
+        flex-direction: column;
+    }
+    
+    .image-section {
+        height: 35vh;
+        min-height: 200px;
+    }
+    
+    .form-section {
+        padding: 30px 25px;
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .logo-img {
+        width: 150px;
+    }
+    
+    .login-title {
+        font-size: 28px;
+        margin-bottom: 30px;
+    }
+    
+    .login-form {
+        max-width: 320px;
+    }
+}
+
+@media (max-width: 480px) {
+    .image-section {
+        height: 30vh;
+        min-height: 180px;
+    }
+    
+    .form-section {
+        padding: 25px 20px;
+    }
+    
+    .logo-img {
+        width: 120px;
+    }
+    
+    .login-title {
+        font-size: 24px;
+        margin-bottom: 25px;
+    }
+    
+    .input-group input {
+        padding: 12px 18px;
+        font-size: 14px;
+    }
+    
+    .login-btn {
+        padding: 12px;
+        font-size: 16px;
+    }
+    
+    .login-form {
+        max-width: 280px;
+    }
+}
+
+/* ===== CHATBOT STYLES ===== */
+.chatbot-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    font-family: 'Poppins', sans-serif;
+}
+
+.chatbot-toggle {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #6fb64f, #5aa03f);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(111, 182, 79, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.chatbot-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(111, 182, 79, 0.6);
+}
+
+.chatbot-toggle.active {
+    background: linear-gradient(135deg, #f0a36b, #d98242);
+}
+
+.chatbot-window {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 350px;
+    height: 500px;
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px var(--shadow);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chatbot-window.active {
+    display: flex;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chatbot-header {
+    background: linear-gradient(135deg, #6fb64f, #5aa03f);
+    color: white;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+}
+
+.chatbot-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.chatbot-header p {
+    margin: 5px 0 0 0;
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.chatbot-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+}
+
+.chatbot-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.chatbot-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.chatbot-message {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
+    animation: fadeInMessage 0.3s ease;
+}
+
+@keyframes fadeInMessage {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chatbot-message.bot {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    align-self: flex-start;
+    border-bottom-left-radius: 6px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.chatbot-message.user {
+    background: linear-gradient(135deg, #6fb64f, #5aa03f);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 6px;
+}
+
+.chatbot-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.chatbot-option {
+    background: var(--card-bg);
+    border: 2px solid #6fb64f;
+    color: #6fb64f;
+    padding: 10px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.chatbot-option:hover {
+    background: #6fb64f;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.chatbot-back {
+    background: #f0a36b;
+    border: 2px solid #f0a36b;
+    color: white;
+    margin-top: 10px;
+}
+
+.chatbot-back:hover {
+    background: #d98242;
+    border-color: #d98242;
+}
+
+.chatbot-typing {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border-radius: 18px;
+    border-bottom-left-radius: 6px;
+    max-width: 80%;
+    align-self: flex-start;
+    transition: background-color 0.3s ease;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 3px;
+}
+
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    background: #6fb64f;
+    border-radius: 50%;
+    animation: typingDot 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typingDot {
+    0%, 60%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    30% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+/* Responsividade do Chatbot */
+@media (max-width: 768px) {
+    .chatbot-container {
+        bottom: 15px;
+        right: 15px;
+    }
+    
+    .chatbot-toggle {
+        width: 55px;
+        height: 55px;
+        font-size: 22px;
+    }
+    
+    .chatbot-window {
+        width: 320px;
+        height: 450px;
+        bottom: 75px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chatbot-container {
+        bottom: 10px;
+        right: 10px;
+    }
+    
+    .chatbot-toggle {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .chatbot-window {
+        width: 300px;
+        height: 400px;
+        bottom: 65px;
+        right: -10px;
+    }
+    
+    .chatbot-content {
+        padding: 15px;
+    }
+    
+    .chatbot-header {
+        padding: 15px;
+    }
+}
+
+/* ===== TOGGLE MODO ESCURO ===== */
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 50px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 60px;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px var(--shadow);
+}
+
+.theme-toggle-icon {
+    font-size: 20px;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover .theme-toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Estilos específicos para páginas internas (dashboard, fichas) */
+.dashboard-theme-toggle {
+    position: relative;
+    background: var(--card-bg);
+    border: 2px solid var(--primary-orange);
+    border-radius: 50px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-right: 15px;
+    white-space: nowrap;
+}
+
+/* Quando está na área de ações (páginas de fichas) - posicionar ao lado do botão Voltar */
+.actions .dashboard-theme-toggle {
+    margin-right: 10px;
+    margin-left: 0;
+    order: -1; /* Força o botão de tema a aparecer antes dos outros botões */
+}
+
+/* Garantir que a área de ações use flexbox */
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Quando está na área do usuário (dashboard) */
+.user .dashboard-theme-toggle {
+    margin-right: 15px;
+    margin-left: 0;
+}
+
+.dashboard-theme-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--shadow);
+    background: var(--primary-orange);
+    color: white;
+}
+
+.dashboard-theme-toggle .theme-icon {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+}
+
+.dashboard-theme-toggle:hover .theme-icon {
+    transform: rotate(180deg);
+}
+
+/* Estilos para páginas internas (dashboard, prontuários, etc.) */
+.app {
+    transition: background-color 0.3s ease;
+}
+
+.sidebar {
+    background: var(--bg-secondary) !important;
+    transition: background-color 0.3s ease;
+}
+
+.content {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.nav-icon {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.nav-icon.active {
+    background: #ff7a00 !important;
+    color: white !important;
+}
+
+.folder {
+    box-shadow: 0 8px 20px var(--shadow-light);
+    transition: box-shadow 0.3s ease;
+}
+
+.user .avatar {
+    background: var(--bg-secondary);
+    transition: background-color 0.3s ease;
+}
+
+/* Estilos para tabelas no modo escuro */
+[data-theme="dark"] table {
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] thead {
+    background: #e6782e !important;
+}
+
+[data-theme="dark"] th,
+[data-theme="dark"] td {
+    border-bottom: 1px solid #444;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Estilos para formulários no modo escuro */
+[data-theme="dark"] .box {
+    background: var(--card-bg);
+    border: 1px solid #444;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .section-title {
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--primary-orange);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #f0a36b !important;
+    border-radius: 8px !important;
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+    border-color: #f0a36b !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(240, 163, 107, 0.2) !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: #666666 !important;
+    opacity: 1 !important;
+}
+
+[data-theme="dark"] .btn {
+    background: var(--primary-green);
+    color: white;
+}
+
+[data-theme="dark"] .btn:hover {
+    background: #63a646;
+}
+
+[data-theme="dark"] .btn.back {
+    background: var(--primary-green);
+    color: white;
+}
+
+[data-theme="dark"] .label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .value {
+    color: var(--text-primary);
+}
+
+/* CORREÇÃO CRÍTICA: Labels dos formulários no modo escuro */
+[data-theme="dark"] label {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* Garantir que labels inline também sejam legíveis */
+[data-theme="dark"] label[style*="color"] {
+    color: var(--text-primary) !important;
+}
+
+/* Estilos específicos para elementos com estilos inline */
+[data-theme="dark"] div[style*="color:#354047"],
+[data-theme="dark"] span[style*="color:#354047"],
+[data-theme="dark"] label[style*="color:#354047"] {
+    color: var(--text-primary) !important;
+}
+
+/* ===== MELHORIAS ESPECÍFICAS PARA FORMULÁRIOS NO MODO ESCURO ===== */
+
+/* Seções dos formulários */
+[data-theme="dark"] .form-section,
+[data-theme="dark"] .section {
+    background: var(--card-bg) !important;
+    border: 1px solid #444 !important;
+    border-radius: 12px !important;
+}
+
+/* Títulos das seções */
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] .section-title {
+    color: var(--text-primary) !important;
+    border-bottom-color: var(--primary-orange) !important;
+}
+
+/* Asteriscos obrigatórios */
+[data-theme="dark"] .required-asterisk {
+    color: #ff6b6b !important;
+}
+
+/* Botões de navegação entre seções */
+[data-theme="dark"] .nav-btn,
+[data-theme="dark"] .step-btn {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 2px solid #555 !important;
+}
+
+[data-theme="dark"] .nav-btn.active,
+[data-theme="dark"] .step-btn.active {
+    background: var(--primary-orange) !important;
+    color: white !important;
+    border-color: var(--primary-orange) !important;
+}
+
+/* Campos de upload de arquivo */
+[data-theme="dark"] .file-upload-area {
+    background: var(--input-bg) !important;
+    border: 2px dashed #555 !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .file-upload-area:hover {
+    border-color: var(--primary-orange) !important;
+    background: var(--bg-secondary) !important;
+}
+
+/* Mensagens de erro e validação */
+[data-theme="dark"] .error-message {
+    background: var(--error-bg) !important;
+    color: var(--error-text) !important;
+    border: 1px solid var(--error-border) !important;
+}
+
+/* Campos inválidos */
+[data-theme="dark"] input:invalid,
+[data-theme="dark"] select:invalid,
+[data-theme="dark"] textarea:invalid {
+    border-color: #ff6b6b !important;
+}
+
+/* Campos válidos */
+[data-theme="dark"] input:valid,
+[data-theme="dark"] select:valid,
+[data-theme="dark"] textarea:valid {
+    border-color: #4caf50 !important;
+}
+
+/* ===== BOTÕES DE NAVEGAÇÃO DAS ABAS (FORMULÁRIO) ===== */
+[data-theme="dark"] .form-tabs,
+[data-theme="dark"] .tab-navigation {
+    background: transparent !important;
+}
+
+[data-theme="dark"] .tab-btn,
+[data-theme="dark"] .form-tab {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 2px solid #555 !important;
+    border-radius: 25px !important;
+    transition: all 0.3s ease !important;
+}
+
+[data-theme="dark"] .tab-btn:hover,
+[data-theme="dark"] .form-tab:hover {
+    background: var(--bg-secondary) !important;
+    border-color: var(--primary-orange) !important;
+}
+
+[data-theme="dark"] .tab-btn.active,
+[data-theme="dark"] .form-tab.active {
+    background: var(--primary-orange) !important;
+    color: white !important;
+    border-color: var(--primary-orange) !important;
+}
+
+/* Conteúdo das seções do formulário */
+[data-theme="dark"] .form-content,
+[data-theme="dark"] .tab-content {
+    background: var(--card-bg) !important;
+    border: 1px solid #444 !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+}
+
+/* ===== TABELAS NO MODO ESCURO ===== */
+[data-theme="dark"] table {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] th {
+    background: #f0a36b !important;
+    color: #000000 !important;
+    border: 1px solid #d98242 !important;
+}
+
+[data-theme="dark"] td {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid #444 !important;
+}
+
+[data-theme="dark"] tr:nth-child(even) td {
+    background: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] tr:hover td {
+    background: #3a3a3a !important;
+}
+
+/* Campos de busca */
+[data-theme="dark"] .search-input,
+[data-theme="dark"] input[type="search"] {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #f0a36b !important;
+}
+
+/* Mensagens de estado vazio */
+[data-theme="dark"] .empty-state,
+[data-theme="dark"] .no-data {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid #444 !important;
+}
+
+/* ===== SISTEMA DE MODO ESCURO SIMPLIFICADO E OTIMIZADO ===== */
+
+/* Elementos de formulário com melhor contraste */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--input-bg) !important;
+    color: #1e293b !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 8px !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: #64748b !important;
+    opacity: 1 !important;
+}
+
+/* Labels e texto com excelente legibilidade */
+[data-theme="dark"] label,
+[data-theme="dark"] .label,
+[data-theme="dark"] .form-label {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* Asteriscos obrigatórios */
+[data-theme="dark"] .required-asterisk {
+    color: var(--error-text) !important;
+}
+
+/* Títulos e texto geral */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] div {
+    color: var(--text-secondary) !important;
+}
+
+/* Tabelas otimizadas */
+[data-theme="dark"] table {
+    background: var(--card-bg) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+}
+
+[data-theme="dark"] th {
+    background: var(--primary-orange) !important;
+    color: #1e293b !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="dark"] td {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] tr:nth-child(even) td {
+    background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] tr:hover td {
+    background: var(--bg-secondary) !important;
+}
+
+/* Botões mantêm identidade visual */
+[data-theme="dark"] .btn {
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+}
+
+[data-theme="dark"] .btn-primary {
+    background: var(--primary-orange) !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .btn-success {
+    background: var(--primary-green) !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .btn-danger {
+    background: var(--error-border) !important;
+    color: white !important;
+}
+
+/* Links com boa visibilidade */
+[data-theme="dark"] a {
+    color: #60a5fa !important;
+}
+
+[data-theme="dark"] a:hover {
+    color: #93c5fd !important;
+}
+
+/* Containers e seções */
+[data-theme="dark"] .container,
+[data-theme="dark"] .form-container,
+[data-theme="dark"] .content,
+[data-theme="dark"] .main-content {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .section,
+[data-theme="dark"] .form-section {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--bg-tertiary) !important;
+    border-radius: 12px !important;
+}
+
+/* Correção para elementos com estilos inline problemáticos */
+[data-theme="dark"] *[style*="color:#354047"],
+[data-theme="dark"] *[style*="color: #354047"] {
+    color: var(--text-primary) !important;
+}
+
+/* ===== CORREÇÃO CRÍTICA: ELEMENTOS BRANCOS NO MODO ESCURO ===== */
+
+/* Força TODOS os elementos com fundo branco a usar o tema escuro */
+[data-theme="dark"] *[style*="background-color: white"],
+[data-theme="dark"] *[style*="background-color:white"],
+[data-theme="dark"] *[style*="background-color: #fff"],
+[data-theme="dark"] *[style*="background-color:#fff"],
+[data-theme="dark"] *[style*="background-color: #ffffff"],
+[data-theme="dark"] *[style*="background-color:#ffffff"],
+[data-theme="dark"] *[style*="background: white"],
+[data-theme="dark"] *[style*="background:white"],
+[data-theme="dark"] *[style*="background: #fff"],
+[data-theme="dark"] *[style*="background:#fff"],
+[data-theme="dark"] *[style*="background: #ffffff"],
+[data-theme="dark"] *[style*="background:#ffffff"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Cards e containers principais */
+[data-theme="dark"] .search-container,
+[data-theme="dark"] .search-section,
+[data-theme="dark"] .main-cards,
+[data-theme="dark"] .dashboard-cards,
+[data-theme="dark"] .stats-container,
+[data-theme="dark"] .content-wrapper,
+[data-theme="dark"] .page-content {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Área de busca específica */
+[data-theme="dark"] .search-bar,
+[data-theme="dark"] .search-wrapper,
+[data-theme="dark"] .filter-section {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--bg-tertiary) !important;
+    border-radius: 12px !important;
+}
+
+/* Cards de estatísticas e principais */
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .info-card,
+[data-theme="dark"] .dashboard-card,
+[data-theme="dark"] .summary-card {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--bg-tertiary) !important;
+    border-radius: 12px !important;
+}
+
+/* Seções de conteúdo */
+[data-theme="dark"] .content-section,
+[data-theme="dark"] .main-section,
+[data-theme="dark"] .page-section {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Força elementos genéricos com classes comuns */
+[data-theme="dark"] .white-bg,
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .background-white {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Containers de grid e layout */
+[data-theme="dark"] .grid-container,
+[data-theme="dark"] .layout-container,
+[data-theme="dark"] .wrapper {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Força todos os divs sem classe específica que podem estar brancos */
+[data-theme="dark"] div:not([class]):not([id]) {
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+}
+
+/* Elementos de interface específicos */
+[data-theme="dark"] .topbar,
+[data-theme="dark"] .header,
+[data-theme="dark"] .navbar {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--bg-tertiary) !important;
+}
+
+/* ===== CORREÇÃO AGRESSIVA PARA TODOS OS ELEMENTOS BRANCOS ===== */
+
+/* Força QUALQUER elemento que possa estar branco */
+[data-theme="dark"] * {
+    /* Remove fundos brancos de qualquer elemento */
+    background-color: transparent !important;
+}
+
+/* Reaplica fundos corretos para elementos específicos */
+[data-theme="dark"] body {
+    background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .box,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .widget {
+    background: var(--card-bg) !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--input-bg) !important;
+}
+
+[data-theme="dark"] .sidebar {
+    background: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .content {
+    background: var(--bg-tertiary) !important;
+}
+
+/* Força elementos com IDs específicos que podem estar brancos */
+[data-theme="dark"] #main,
+[data-theme="dark"] #content,
+[data-theme="dark"] #wrapper,
+[data-theme="dark"] #container,
+[data-theme="dark"] #page,
+[data-theme="dark"] #app {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Força elementos de layout comuns */
+[data-theme="dark"] .row,
+[data-theme="dark"] .col,
+[data-theme="dark"] .column,
+[data-theme="dark"] .grid,
+[data-theme="dark"] .flex {
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+}
+
+/* Elementos de busca e filtros */
+[data-theme="dark"] .search,
+[data-theme="dark"] .filter,
+[data-theme="dark"] .toolbar {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Modais e overlays */
+[data-theme="dark"] .modal,
+[data-theme="dark"] .overlay,
+[data-theme="dark"] .popup {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ===== CORREÇÃO ESPECÍFICA PARA DASHBOARD COM ESTILOS INLINE ===== */
+
+/* Força elementos do dashboard com background:#fff inline */
+[data-theme="dark"] .card[style*="background:#fff"],
+[data-theme="dark"] .card[style*="background: #fff"],
+[data-theme="dark"] div[style*="background:#fff"],
+[data-theme="dark"] div[style*="background: #fff"],
+[data-theme="dark"] .stat[style*="background:#fff"],
+[data-theme="dark"] .stat[style*="background: #fff"],
+[data-theme="dark"] .note[style*="background:#fff"],
+[data-theme="dark"] .note[style*="background: #fff"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Modal com background inline */
+[data-theme="dark"] .modal-content[style*="background:white"],
+[data-theme="dark"] .modal-content[style*="background: white"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Elementos específicos do calendário */
+[data-theme="dark"] .calendar-day[style*="background:#f8f9fa"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Grid e seções principais */
+[data-theme="dark"] .grid,
+[data-theme="dark"] .notes-grid {
+    background: transparent !important;
+}
+
+/* Força TODOS os elementos com estilos inline de fundo branco */
+[data-theme="dark"] *[style*="background:#fff"],
+[data-theme="dark"] *[style*="background: #fff"],
+[data-theme="dark"] *[style*="background:#ffffff"],
+[data-theme="dark"] *[style*="background: #ffffff"],
+[data-theme="dark"] *[style*="background:white"],
+[data-theme="dark"] *[style*="background: white"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Exceções para inputs que devem permanecer brancos */
+[data-theme="dark"] input[style*="background"],
+[data-theme="dark"] select[style*="background"],
+[data-theme="dark"] textarea[style*="background"] {
+    background: var(--input-bg) !important;
+    color: #1e293b !important;
+}
+
+/* Badges e elementos coloridos mantêm suas cores */
+[data-theme="dark"] .badge[style*="background:#ff7a00"],
+[data-theme="dark"] .badge[style*="background: #ff7a00"],
+[data-theme="dark"] .badge[style*="background:#6fb64f"],
+[data-theme="dark"] .badge[style*="background: #6fb64f"] {
+    /* Mantém as cores originais dos badges */
+    color: white !important;
+}
+
+/* ===== ESTILOS ESPECÍFICOS PARA DASHBOARD NO MODO ESCURO ===== */
+[data-theme="dark"] body {
+    background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .app {
+    background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .sidebar {
+    background: var(--bg-secondary) !important;
+    border-right: 1px solid var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .content {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .nav-icon {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .nav-icon.active {
+    background: #ff7a00 !important;
+}
+
+/* Cards e componentes do dashboard */
+[data-theme="dark"] .card {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,.3) !important;
+}
+
+[data-theme="dark"] .stat {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .note {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Calendário no modo escuro */
+[data-theme="dark"] .calendar-day {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--bg-tertiary) !important;
+    transition: all 0.2s ease !important;
+}
+
+[data-theme="dark"] .calendar-day:hover {
+    background: var(--bg-primary) !important;
+    border-color: var(--primary-orange) !important;
+    transform: translateY(-1px) !important;
+}
+
+[data-theme="dark"] .calendar-day.has-notes {
+    background: var(--primary-orange) !important;
+    color: white !important;
+    border-color: var(--primary-orange-hover) !important;
+}
+
+[data-theme="dark"] .calendar-day.today {
+    background: var(--primary-green) !important;
+    color: white !important;
+    border-color: #5aa03f !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="dark"] .calendar-header {
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+}
+
+/* Pills/Alertas no modo escuro */
+[data-theme="dark"] .pill.red {
+    background: var(--error-bg) !important;
+    border-left: 6px solid var(--error-border) !important;
+    color: var(--error-text) !important;
+    border-radius: 8px !important;
+}
+
+[data-theme="dark"] .pill.green {
+    background: #064e3b !important;
+    border-left: 6px solid var(--primary-green) !important;
+    color: #86efac !important;
+    border-radius: 8px !important;
+}
+
+/* Modal no modo escuro */
+[data-theme="dark"] .modal-content {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .note-textarea {
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border: 2px solid #f0a36b !important;
+}
+
+/* Avatar do usuário */
+[data-theme="dark"] .user .avatar {
+    background: var(--bg-secondary) !important;
+    border: 2px solid var(--bg-tertiary) !important;
+}
+
+/* Texto geral do dashboard */
+[data-theme="dark"] .grid h3,
+[data-theme="dark"] .card h3,
+[data-theme="dark"] .card h4,
+[data-theme="dark"] .card p,
+[data-theme="dark"] .stat span,
+[data-theme="dark"] .note span,
+[data-theme="dark"] .note div {
+    color: var(--text-primary) !important;
+}
+
+/* Texto dos pills */
+[data-theme="dark"] .pill span,
+[data-theme="dark"] .pill div {
+    color: inherit !important;
+}
+
+/* Estilos para elementos com estilos inline no dashboard */
+[data-theme="dark"] .topbar div {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .user div {
+    color: var(--text-primary) !important;
+}
+
+/* Botões do calendário */
+[data-theme="dark"] button {
+    background: var(--primary-orange) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 6px !important;
+}
+
+/* Títulos das seções */
+[data-theme="dark"] div[style*="font-weight:700"] {
+    color: var(--text-primary) !important;
+}
+
+/* Estatísticas */
+[data-theme="dark"] .stat span[style*="font-weight:500"] {
+    color: var(--text-secondary) !important;
+}
+
+/* Lista de anotações */
+[data-theme="dark"] #notesList {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] #notesList div {
+    color: var(--text-primary) !important;
+}
+
+/* Avisos específicos */
+[data-theme="dark"] #alertsList {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] #alertsList div {
+    color: var(--text-primary) !important;
+}
+
+/* Texto "Nenhuma anotação" */
+[data-theme="dark"] div[style*="color:#6b7b84"] {
+    color: var(--text-muted) !important;
+}
+
+/* Responsividade do toggle */
+@media (max-width: 768px) {
+    .theme-toggle {
+        top: 15px;
+        right: 15px;
+        padding: 6px;
+        min-width: 50px;
+    }
+    
+    .theme-toggle-icon {
+        font-size: 18px;
+    }
+    
+    .dashboard-theme-toggle {
+        padding: 6px 10px;
+        font-size: 12px;
+        margin-right: 8px;
+    }
+    
+    .dashboard-theme-toggle .theme-icon {
+        font-size: 12px;
+    }
+    
+    /* Em mobile, pode esconder o texto e mostrar só o ícone */
+    .dashboard-theme-toggle .theme-text {
+        display: none;
+    }
+    
+    .actions .dashboard-theme-toggle {
+        margin-right: 8px;
+    }
+    
+    .user .dashboard-theme-toggle {
+        margin-right: 10px;
+    }
+}
+
+/* ===== ESTILOS PARA FICHA DE ACOLHIMENTO ===== */
+
+/* Upload de foto */
+input[type="file"] {
+    border: 2px dashed #f0a36b !important;
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+input[type="file"]:hover {
+    border-color: #d98242 !important;
+    background: var(--bg-secondary) !important;
+}
+
+input[type="file"]:focus {
+    outline: none !important;
+    border-color: #d98242 !important;
+    box-shadow: 0 0 0 3px rgba(240, 163, 107, 0.2) !important;
+}
+
+/* Estilos para campos obrigatórios */
+input[required], textarea[required], select[required] {
+    position: relative;
+}
+
+input[required]:invalid, textarea[required]:invalid, select[required]:invalid {
+    border-color: #e74c3c;
+}
+
+input[required]:valid, textarea[required]:valid, select[required]:valid {
+    border-color: #27ae60;
+}
+
+/* Container de contatos dinâmicos */
+.contacts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.contact-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.contact-field label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.btn-add-contact {
+    background: #6fb64f;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 10px;
+    transition: background 0.3s ease;
+    align-self: flex-start;
+}
+
+.btn-add-contact:hover {
+    background: #5aa03f;
+}
+
+.btn-remove-contact {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s ease;
+}
+
+.btn-remove-contact:hover {
+    background: #c0392b;
+}
+
+/* Mensagens de validação */
+.validation-error {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #e74c3c;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    max-width: 400px;
+    z-index: 1000;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    animation: slideInRight 0.3s ease;
+}
+
+.validation-error h4 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+}
+
+.validation-error ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.validation-error li {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Estilos para modo escuro na ficha */
+[data-theme="dark"] input[type="file"] {
+    border-color: #f0a36b !important;
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .btn-add-contact {
+    background: #6fb64f;
+    color: white;
+}
+
+[data-theme="dark"] .btn-remove-contact {
+    background: #e74c3c;
+    color: white;
+}
+
+[data-theme="dark"] .contact-field label {
+    color: var(--text-primary) !important;
+}
+
+/* Asteriscos de campos obrigatórios */
+.required-asterisk {
+    color: #e74c3c !important;
+    font-weight: bold !important;
+    margin-left: 2px !important;
+}
+
+[data-theme="dark"] .required-asterisk {
+    color: #ff6b6b !important;
+}
+
+/* ===== ESTILOS PARA TABELAS E AÇÕES ===== */
+
+/* Botões de ação nas tabelas */
+td .btn {
+    margin-right: 8px;
+    margin-bottom: 4px;
+    display: inline-block;
+    min-width: 60px;
+    text-align: center;
+    font-size: 12px;
+    padding: 6px 10px;
+}
+
+/* Última ação sem margem direita */
+td .btn:last-child {
+    margin-right: 0;
+}
+
+/* Botão de excluir */
+.btn.delete {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn.delete:hover {
+    background: #c0392b;
+}
+
+/* Container de ações da tabela */
+td {
+    white-space: nowrap;
+}
+
+/* Coluna de ações com largura fixa */
+th[style*="width:160px"],
+td:last-child {
+    width: 160px;
+    text-align: center;
+}
+
+/* Responsividade para botões de ação */
+@media (max-width: 768px) {
+    td .btn {
+        font-size: 11px;
+        padding: 4px 8px;
+        margin-right: 4px;
+        min-width: 50px;
+    }
+    
+    th[style*="width:160px"],
+    td:last-child {
+        width: 140px;
+    }
+}
+
+/* ===== ESTILOS PARA PÁGINA DE VISUALIZAÇÃO ===== */
+
+/* Campos de visualização */
+.field {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 10px 12px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.field .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.field .value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Campo de foto */
+.photo-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.photo-placeholder {
+    width: 120px;
+    height: 160px;
+    background: var(--bg-secondary);
+    border: 2px dashed var(--text-muted);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.photo-image {
+    width: 120px;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    transition: border-color 0.3s ease;
+}
+
+/* Estilos específicos para modo escuro na visualização */
+[data-theme="dark"] .field {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .field .label {
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .field .value {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .photo-placeholder {
+    background: var(--bg-secondary) !important;
+    border-color: var(--text-muted) !important;
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .photo-image {
+    border-color: var(--border-color) !important;
+}

@@ -1,0 +1,462 @@
+ESTRUTURA DO SISTEMA DE LOGS - CRIANÇA FELIZ
+═════════════════════════════════════════════════════════════════════════════
+
+📁 ARQUIVOS CRIADOS
+═════════════════════════════════════════════════════════════════════════════
+
+1. MODEL (Gerencia dados)
+   └─ app/Models/LogDB.php
+      ├─ getAllLogs($page, $perPage)
+      ├─ getLogsByTable($table, $page, $perPage)
+      ├─ getLogsByAction($action, $page, $perPage)
+      ├─ getLogsByUser($userId, $page, $perPage)
+      ├─ getLogsByRegistroId($registroId, $page, $perPage)
+      ├─ getLogsByDateRange($startDate, $endDate, $page, $perPage)
+      ├─ searchAdvanced($filters, $page, $perPage)
+      ├─ getStatistics()
+      ├─ getHistoricoAtendido($idAtendido)
+      ├─ exportToCSV($filters)
+      ├─ deleteOldLogs($days)
+      ├─ logAction(...) [registrar manualmente]
+      └─ paginate($page, $perPage, $where, $params, $orderBy)
+
+2. CONTROLLER (Lógica de negócio)
+   └─ app/Controllers/LogController.php
+      ├─ index() → Dashboard principal
+      ├─ byTable() → Filtrar por tabela
+      ├─ byAction() → Filtrar por ação
+      ├─ byUser() → Filtrar por usuário
+      ├─ historicoRegistro() → Histórico de um registro
+      ├─ search() → Busca avançada
+      ├─ show() → Detalhes de um log
+      ├─ export() → Exportar CSV
+      ├─ deleteOld() → Limpar logs antigos
+      ├─ apiGetLogs() → API JSON
+      ├─ apiSearch() → API de busca
+      └─ apiStats() → API de estatísticas
+
+3. VIEWS (Apresentação)
+   ├─ app/Views/logs/index.php
+   │  ├─ Estatísticas (cards)
+   │  ├─ Tabela de logs
+   │  ├─ Paginação
+   │  ├─ Filtros avançados
+   │  └─ Botões (filtro, exportação)
+   │
+   └─ app/Views/logs/show.php
+      ├─ Informações gerais
+      ├─ Registro alterado
+      ├─ Comparação de valores
+      └─ Dados em JSON
+
+4. WRAPPER (Roteamento)
+   └─ logs.php
+      ├─ Verificação de autenticação
+      ├─ Verificação de permissão (admin)
+      ├─ Roteamento de ações
+      └─ Instanciação do controller
+
+5. BANCO DE DADOS (Triggers)
+   └─ database/migration_logs_completo.sql
+      ├─ Triggers para atendido (3)
+      ├─ Triggers para ficha_acolhimento (3)
+      ├─ Triggers para ficha_socioeconomico (3)
+      ├─ Triggers para anotacao_psicologica (3)
+      ├─ Triggers para frequencia_dia (2)
+      ├─ Triggers para desligamento (1)
+      ├─ Atualização de colunas da tabela log
+      └─ Criação de índices
+
+6. DOCUMENTAÇÃO
+   ├─ COMECE_AQUI.md (Guia rápido)
+   ├─ INSTALACAO_SISTEMA_LOGS.md (Passo a passo)
+   ├─ SISTEMA_LOGS_README.md (Documentação completa)
+   ├─ RESUMO_IMPLEMENTACAO.md (Resumo técnico)
+   ├─ ANALISE_COMPLETA_SISTEMA.md (Análise do projeto)
+   ├─ ESTRUTURA_SISTEMA_LOGS.txt (Este arquivo)
+   └─ SUMARIO_FINAL.txt (Sumário visual)
+
+═════════════════════════════════════════════════════════════════════════════
+
+🔄 FLUXO DE DADOS
+═════════════════════════════════════════════════════════════════════════════
+
+1. USUÁRIO ACESSA logs.php
+   │
+   ├─→ logs.php (wrapper)
+   │   ├─ Verifica se está logado
+   │   ├─ Verifica se é admin
+   │   └─ Roteia para LogController
+   │
+   ├─→ LogController (controller)
+   │   ├─ Recebe ação (index, search, show, etc)
+   │   ├─ Instancia LogDB
+   │   ├─ Chama método apropriado
+   │   └─ Passa dados para view
+   │
+   ├─→ LogDB (model)
+   │   ├─ Executa query no banco
+   │   ├─ Formata dados
+   │   └─ Retorna para controller
+   │
+   └─→ View (HTML)
+       ├─ Recebe dados
+       ├─ Renderiza HTML
+       └─ Exibe ao usuário
+
+2. BANCO DE DADOS REGISTRA ALTERAÇÃO
+   │
+   ├─→ Usuário faz alteração (INSERT/UPDATE/DELETE)
+   │
+   ├─→ Trigger MySQL acionado automaticamente
+   │   ├─ Captura dados da alteração
+   │   ├─ Formata descrição
+   │   └─ Insere em tabela log
+   │
+   └─→ Log armazenado no banco
+       ├─ id_log (auto-increment)
+       ├─ data_alteracao (NOW())
+       ├─ acao (INSERT/UPDATE/DELETE)
+       ├─ tabela_afetada
+       ├─ registro_alt
+       ├─ valor_anterior
+       ├─ valor_atual
+       ├─ id_usuario
+       ├─ id_registro
+       ├─ campo_alterado
+       └─ ip_usuario
+
+═════════════════════════════════════════════════════════════════════════════
+
+📊 TABELAS DO BANCO DE DADOS
+═════════════════════════════════════════════════════════════════════════════
+
+Tabela: log
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Coluna              │ Tipo          │ Descrição                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│ id_log              │ INT (PK)      │ ID único do log                   │
+│ data_alteracao      │ DATETIME      │ Data e hora da alteração          │
+│ registro_alt        │ VARCHAR(255)  │ Descrição da alteração            │
+│ valor_anterior      │ LONGTEXT      │ Valor antes da alteração          │
+│ valor_atual         │ LONGTEXT      │ Valor depois da alteração         │
+│ acao                │ VARCHAR(50)   │ INSERT, UPDATE, DELETE            │
+│ tabela_afetada      │ VARCHAR(100)  │ Nome da tabela alterada           │
+│ id_usuario          │ INT (FK)      │ ID do usuário que fez             │
+│ id_registro         │ INT           │ ID do registro alterado           │
+│ campo_alterado      │ VARCHAR(100)  │ Campo específico alterado         │
+│ ip_usuario          │ VARCHAR(45)   │ IP de quem fez a alteração        │
+│ navegador           │ VARCHAR(255)  │ Navegador do usuário              │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Índices:
+├─ PRIMARY KEY (id_log)
+├─ FOREIGN KEY (id_usuario) → usuario.idusuario
+├─ INDEX idx_data_acao (data_alteracao, acao)
+├─ INDEX idx_tabela_acao (tabela_afetada, acao)
+└─ INDEX idx_usuario_data (id_usuario, data_alteracao)
+
+═════════════════════════════════════════════════════════════════════════════
+
+🔍 FILTROS DISPONÍVEIS
+═════════════════════════════════════════════════════════════════════════════
+
+1. FILTRO POR TABELA
+   Opções:
+   ├─ atendido
+   ├─ ficha_acolhimento
+   ├─ ficha_socioeconomico
+   ├─ anotacao_psicologica
+   ├─ frequencia_dia
+   ├─ desligamento
+   └─ usuario
+
+2. FILTRO POR AÇÃO
+   Opções:
+   ├─ INSERT (Criar)
+   ├─ UPDATE (Editar)
+   └─ DELETE (Deletar)
+
+3. FILTRO POR USUÁRIO
+   Opções:
+   ├─ admin@criancafeliz.org
+   ├─ carolpsico@gmail.com
+   ├─ robertofuncionario@gmail.com
+   └─ psicoalessandra@gmail.com
+
+4. FILTRO POR PERÍODO
+   ├─ Data Início (DATE)
+   └─ Data Fim (DATE)
+
+5. FILTRO POR TEXTO
+   ├─ Busca em registro_alt
+   ├─ Busca em valor_anterior
+   └─ Busca em valor_atual
+
+═════════════════════════════════════════════════════════════════════════════
+
+📈 ESTATÍSTICAS DISPONÍVEIS
+═════════════════════════════════════════════════════════════════════════════
+
+getStatistics() retorna:
+├─ total_logs (COUNT)
+├─ por_acao (GROUP BY acao)
+│  ├─ INSERT: X
+│  ├─ UPDATE: X
+│  └─ DELETE: X
+├─ por_tabela (GROUP BY tabela_afetada)
+│  ├─ atendido: X
+│  ├─ ficha_acolhimento: X
+│  └─ ...
+├─ usuarios_ativos (TOP 10)
+│  ├─ id_usuario
+│  ├─ nome
+│  └─ total
+└─ ultimos_7_dias (GROUP BY DATE)
+   ├─ data
+   └─ total
+
+═════════════════════════════════════════════════════════════════════════════
+
+🎯 CASOS DE USO
+═════════════════════════════════════════════════════════════════════════════
+
+CASO 1: Rastrear Alterações de um Atendido
+├─ Filtro: Busca = "Ana Silva"
+├─ Resultado: Todos os logs relacionados a Ana Silva
+└─ Uso: Auditoria de um atendido específico
+
+CASO 2: Ver Atividade de um Usuário
+├─ Filtro: Usuário = "admin@criancafeliz.org"
+├─ Resultado: Tudo que o admin fez
+└─ Uso: Monitoramento de atividade
+
+CASO 3: Auditar Deleções
+├─ Filtro: Ação = "DELETE"
+├─ Resultado: Todos os registros deletados
+└─ Uso: Segurança e conformidade
+
+CASO 4: Análise Histórica
+├─ Filtro: Data Início = 01/12/2025, Data Fim = 31/12/2025
+├─ Resultado: Todos os logs de dezembro
+└─ Uso: Relatório mensal
+
+CASO 5: Exportar Relatório
+├─ Filtro: Tabela = "ficha_socioeconomico"
+├─ Ação: Exportar CSV
+└─ Uso: Análise em Excel
+
+═════════════════════════════════════════════════════════════════════════════
+
+🔐 SEGURANÇA
+═════════════════════════════════════════════════════════════════════════════
+
+1. AUTENTICAÇÃO
+   ├─ Verificação de sessão (isLoggedIn())
+   └─ Redirecionamento para login se não autenticado
+
+2. AUTORIZAÇÃO
+   ├─ Verificação de nível (nivel = 'admin')
+   ├─ Método requireAdmin() em BaseController
+   └─ Verificação em logs.php
+
+3. PROTEÇÃO DE DADOS
+   ├─ Prepared statements (PDO)
+   ├─ htmlspecialchars() para XSS
+   ├─ Validação de entrada
+   └─ Sanitização de dados
+
+4. AUDITORIA
+   ├─ Triggers registram tudo
+   ├─ IP do usuário capturado
+   ├─ Logs não são deletados automaticamente
+   └─ Histórico completo preservado
+
+═════════════════════════════════════════════════════════════════════════════
+
+⚡ PERFORMANCE
+═════════════════════════════════════════════════════════════════════════════
+
+1. ÍNDICES
+   ├─ idx_data_acao (data_alteracao, acao)
+   ├─ idx_tabela_acao (tabela_afetada, acao)
+   └─ idx_usuario_data (id_usuario, data_alteracao)
+
+2. PAGINAÇÃO
+   ├─ 50 logs por página
+   ├─ Offset calculado: (page - 1) * 50
+   └─ Carregamento rápido
+
+3. QUERIES OTIMIZADAS
+   ├─ Prepared statements
+   ├─ Índices utilizados
+   ├─ LIMIT e OFFSET
+   └─ GROUP BY eficiente
+
+4. LIMPEZA
+   ├─ deleteOldLogs(90) remove logs >90 dias
+   ├─ Reduz tamanho do banco
+   └─ Melhora performance
+
+═════════════════════════════════════════════════════════════════════════════
+
+📚 MÉTODOS DO MODEL LOGDB
+═════════════════════════════════════════════════════════════════════════════
+
+getAllLogs($page = 1, $perPage = 50)
+├─ Retorna: ['data' => [...], 'pagination' => [...]]
+└─ Uso: Dashboard principal
+
+getLogsByTable($table, $page = 1, $perPage = 50)
+├─ Parâmetro: $table = 'atendido', 'ficha_acolhimento', etc
+└─ Uso: Filtrar por tabela
+
+getLogsByAction($action, $page = 1, $perPage = 50)
+├─ Parâmetro: $action = 'INSERT', 'UPDATE', 'DELETE'
+└─ Uso: Filtrar por ação
+
+getLogsByUser($userId, $page = 1, $perPage = 50)
+├─ Parâmetro: $userId = ID do usuário
+└─ Uso: Ver atividade de um usuário
+
+getLogsByRegistroId($registroId, $page = 1, $perPage = 50)
+├─ Parâmetro: $registroId = ID do registro alterado
+└─ Uso: Histórico de um atendido/ficha
+
+getLogsByDateRange($startDate, $endDate, $page = 1, $perPage = 50)
+├─ Parâmetros: $startDate = '2025-12-01', $endDate = '2025-12-31'
+└─ Uso: Análise por período
+
+searchAdvanced($filters = [], $page = 1, $perPage = 50)
+├─ Filtros: ['tabela' => '...', 'acao' => '...', 'usuario_id' => '...', ...]
+└─ Uso: Busca com múltiplos filtros
+
+getStatistics()
+├─ Retorna: ['total_logs' => X, 'por_acao' => [...], 'por_tabela' => [...], ...]
+└─ Uso: Dashboard com estatísticas
+
+exportToCSV($filters = [])
+├─ Retorna: String CSV
+└─ Uso: Exportar para Excel
+
+deleteOldLogs($days = 90)
+├─ Deleta logs com mais de X dias
+└─ Uso: Limpeza de logs antigos
+
+logAction($acao, $tabela, $registro_alt, ...)
+├─ Registra log manualmente
+└─ Uso: Ações não capturadas por triggers
+
+═════════════════════════════════════════════════════════════════════════════
+
+🎯 AÇÕES DO CONTROLLER
+═════════════════════════════════════════════════════════════════════════════
+
+index()
+├─ URL: logs.php (ou logs.php?action=index)
+├─ Exibe: Dashboard principal
+└─ Dados: Últimos 50 logs + estatísticas
+
+byTable()
+├─ URL: logs.php?action=by_table&table=atendido
+├─ Exibe: Logs de uma tabela específica
+└─ Dados: Logs filtrados + paginação
+
+byAction()
+├─ URL: logs.php?action=by_action&action=INSERT
+├─ Exibe: Logs de uma ação específica
+└─ Dados: Logs filtrados + paginação
+
+byUser()
+├─ URL: logs.php?action=by_user&user_id=1
+├─ Exibe: Atividade de um usuário
+└─ Dados: Logs do usuário + paginação
+
+historicoRegistro()
+├─ URL: logs.php?action=historico&id=123
+├─ Exibe: Histórico de um registro
+└─ Dados: Todos os logs do registro
+
+search()
+├─ URL: logs.php?action=search&tabela=...&acao=...&usuario_id=...
+├─ Exibe: Resultados da busca avançada
+└─ Dados: Logs filtrados + paginação
+
+show()
+├─ URL: logs.php?action=show&id=15
+├─ Exibe: Detalhes de um log
+└─ Dados: Log completo + comparação
+
+export()
+├─ URL: logs.php?action=export&tabela=...
+├─ Exibe: Download CSV
+└─ Dados: CSV com filtros aplicados
+
+deleteOld()
+├─ URL: POST logs.php?action=delete_old
+├─ Ação: Remove logs antigos
+└─ Resultado: Redirecionamento com mensagem
+
+apiGetLogs()
+├─ URL: logs.php?action=api_logs&page=1&per_page=50
+├─ Retorna: JSON com logs
+└─ Uso: Integração com JavaScript
+
+apiSearch()
+├─ URL: logs.php?action=api_search&tabela=...&acao=...
+├─ Retorna: JSON com resultados
+└─ Uso: Busca dinâmica
+
+apiStats()
+├─ URL: logs.php?action=api_stats
+├─ Retorna: JSON com estatísticas
+└─ Uso: Gráficos e dashboards
+
+═════════════════════════════════════════════════════════════════════════════
+
+✅ CHECKLIST DE FUNCIONALIDADES
+═════════════════════════════════════════════════════════════════════════════
+
+DASHBOARD
+├─ [✓] Estatísticas gerais
+├─ [✓] Tabela de logs
+├─ [✓] Paginação
+├─ [✓] Botão de filtros
+└─ [✓] Botão de exportação
+
+FILTROS
+├─ [✓] Por tabela
+├─ [✓] Por ação
+├─ [✓] Por usuário
+├─ [✓] Por período
+├─ [✓] Por texto
+└─ [✓] Combinação de filtros
+
+VISUALIZAÇÃO
+├─ [✓] Detalhes de log
+├─ [✓] Comparação antes/depois
+├─ [✓] Dados em JSON
+└─ [✓] Link para histórico
+
+EXPORTAÇÃO
+├─ [✓] CSV com filtros
+├─ [✓] Compatível com Excel
+├─ [✓] UTF-8 com BOM
+└─ [✓] Todas as colunas
+
+SEGURANÇA
+├─ [✓] Apenas admin
+├─ [✓] SQL Injection prevenido
+├─ [✓] XSS prevenido
+└─ [✓] Logs preservados
+
+PERFORMANCE
+├─ [✓] Índices criados
+├─ [✓] Paginação eficiente
+├─ [✓] Queries otimizadas
+└─ [✓] Limpeza automática
+
+═════════════════════════════════════════════════════════════════════════════
+
+Fim da Documentação de Estrutura
+Versão: 1.0 | Data: Dezembro 2025 | Status: ✅ Pronto
