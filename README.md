@@ -77,7 +77,7 @@
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/CriancaFeliz.git
+git clone https://github.com/CriancaFeliz/CRUD_CriancaFeliz.git
 
 # 2. Mova para o webroot do seu servidor local
 #    Exemplo XAMPP: C:\xampp\htdocs\CriancaFeliz
