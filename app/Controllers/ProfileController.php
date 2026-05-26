@@ -23,7 +23,7 @@ class ProfileController extends BaseController {
             }
             
             // Carregar dados do usuário do MySQL
-            $userModel = App::getUserModel();
+            $userModel = new User();
             $userData = $userModel->findById($userId);
             
             if (!$userData) {
@@ -151,7 +151,7 @@ class ProfileController extends BaseController {
             }
             
             // Carregar usuário do MySQL
-            $userModel = App::getUserModel();
+            $userModel = new User();
             $user = $userModel->findById($userId);
             
             if (!$user) {

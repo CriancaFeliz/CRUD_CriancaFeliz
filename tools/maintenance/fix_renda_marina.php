@@ -3,7 +3,7 @@
  * Debug: Verifica e corrige a renda de Marina Carla
  */
 
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 try {
     $db = new Database();

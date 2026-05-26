@@ -3,7 +3,7 @@
 /**
  * Model para Frequência por Oficina - MySQL
  */
-class FrequenciaOficinaDB extends BaseModelDB {
+class FrequenciaOficina extends BaseModel {
     
     public function __construct() {
         parent::__construct('Frequencia_Oficina', 'id_frequencia');

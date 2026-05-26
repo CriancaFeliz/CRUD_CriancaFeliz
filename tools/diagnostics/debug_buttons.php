@@ -3,7 +3,7 @@
  * TESTE SIMPLES - VERIFICAR SE OS BOTÃ•ES FUNCIONAM
  */
 
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 try {
     $authService = new AuthService();

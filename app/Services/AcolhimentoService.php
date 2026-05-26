@@ -7,7 +7,7 @@ class AcolhimentoService {
     private $acolhimentoModel;
     
     public function __construct() {
-        $this->acolhimentoModel = App::getAcolhimentoModel();
+        $this->acolhimentoModel = new Acolhimento();
     }
     
     /**

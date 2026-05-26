@@ -223,7 +223,7 @@ if ($_SESSION['user_role'] !== 'admin') {
                             // Verificar se o atendido ainda está desligado
                             $isStillDisconnected = true;
                             try {
-                                $desligamentoDB = new DesligamentoDB();
+                                $desligamentoDB = new Desligamento();
                                 $isStillDisconnected = $desligamentoDB->isDesligado($desl['id_atendido']);
                             } catch (Exception $e) {
                                 // Em caso de erro, assumir que está desligado

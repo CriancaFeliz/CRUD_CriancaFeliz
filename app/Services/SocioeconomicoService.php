@@ -7,7 +7,7 @@ class SocioeconomicoService {
     private $socioeconomicoModel;
     
     public function __construct() {
-        $this->socioeconomicoModel = App::getSocioeconomicoModel();
+        $this->socioeconomicoModel = new Socioeconomico();
     }
     
     /**

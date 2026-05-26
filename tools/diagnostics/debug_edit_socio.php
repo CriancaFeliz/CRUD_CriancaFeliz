@@ -3,7 +3,7 @@
  * Debug: Verificar se o formulÃ¡rio de ediÃ§Ã£o estÃ¡ carregando com ID
  */
 
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 $id = $_GET['id'] ?? null;
 

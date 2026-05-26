@@ -11,7 +11,7 @@ class LogController extends BaseController {
     
     public function __construct() {
         parent::__construct();
-        $this->logModel = new LogDB();
+        $this->logModel = new Log();
         $this->userModel = new User();
         
         // Verificar se está autenticado

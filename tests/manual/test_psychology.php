@@ -1,6 +1,6 @@
 <?php
 // Teste de sintaxe do PsychologyService
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 try {
     echo "Testando carregamento do PsychologyService...<br>";

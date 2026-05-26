@@ -107,8 +107,7 @@ Em producao, recomenda-se definir `APP_DEBUG=false`.
 | `socioeconomico_list.php` | `/socioeconomico_list.php` | `SocioeconomicoController::index/delete` | `socioeconomico/index` | Lista fichas socioeconomicas | Logado; excluir exige POST/CSRF |
 | `socioeconomico_form.php` | `/socioeconomico_form.php` | `SocioeconomicoController::create/store` | `socioeconomico/create_multistep` | Cria/edita ficha socioeconomica | `create_records` |
 | `socioeconomico_view.php` | `/socioeconomico_view.php?id=...` | `SocioeconomicoController::show` | `socioeconomico/show` | Visualiza ficha socioeconomica | Logado |
-| `attendance.php` | `/attendance.php` | `AttendanceController` | `attendance/*` | Controle legado de presenca/falta | Permissoes de frequencia |
-| `faltas.php` | `/faltas.php` | `FaltasController` | `faltas/*` | Controle novo de faltas por dia/oficina | Logado; configuracoes exigem admin |
+| `faltas.php` | `/faltas.php` | `FaltasController` | `faltas/*` | Controle de faltas por dia/oficina | Logado; configuracoes exigem admin |
 | `desligamento.php` | `/desligamento.php` | `DesligamentoController` | `desligamento/*` | Desligamento manual/automatico e reativacao | Admin |
 | `psychology.php` | `/psychology.php` | `PsychologyController` | `psychology/*` | Area psicologica e anotacoes | Psicologo |
 | `edit_annotation.php` | `/edit_annotation.php` | Script procedural | HTML proprio | Edicao direta de anotacao psicologica | Psicologo |
@@ -191,25 +190,9 @@ Gerencia fichas socioeconomicas:
 
 Usa `SocioeconomicoService`.
 
-### `AttendanceController`
-
-Controla o modulo legado de frequencia:
-
-- listagem de atendidos com faltas;
-- historico individual;
-- registro de presenca/falta;
-- justificativa;
-- remocao de registro;
-- desligamento por frequencia;
-- alertas;
-- relatorios;
-- lancamento em lote.
-
-Algumas telas novas usam `faltas.php`, entao este controller deve ser tratado como legado/compatibilidade ate unificar os fluxos.
-
 ### `FaltasController`
 
-Modulo moderno de frequencia:
+Modulo principal de frequencia:
 
 - `index`: presenca/falta por dia;
 - `oficina`: presenca/falta por oficina;
@@ -219,7 +202,7 @@ Modulo moderno de frequencia:
 - `alertas`: lista atendidos com faltas relevantes;
 - `gerenciarOficinas`, `salvarOficinaConfig`, `toggleOficina`: administracao de oficinas.
 
-Usa `FrequenciaDiaDB`, `FrequenciaOficinaDB`, `OficinaDB`, `DesligamentoDB`.
+Usa `FrequenciaDia`, `FrequenciaOficina`, `Oficina`, `Desligamento`.
 
 ### `DesligamentoController`
 
@@ -293,12 +276,6 @@ Valida CPF, datas, CEP, telefone; cria/edita/exclui fichas; busca; exporta CSV; 
 
 Valida dados socioeconomicos; cria/edita/exclui fichas; busca; calcula renda/situacao; gera relatorios e CSV; registra logs JSON.
 
-### `AttendanceService`
-
-Registra presenca/falta, calcula estatisticas, alerta excesso de faltas, processa desligamento por faltas/idade e gera relatorios.
-
-Ponto de atencao: mistura models DB e JSON em alguns caminhos. A recomendacao e consolidar este modulo com `FaltasController` e `DesligamentoDB`.
-
 ### `PsychologyService`
 
 Busca pacientes, carrega anotacoes psicologicas, salva/edita/exclui anotacoes, calcula estatisticas da area psicologica.
@@ -309,8 +286,7 @@ Correcao aplicada: substituido `str_contains` por `strpos` para manter compatibi
 
 ### Bases
 
-- `BaseModel`: CRUD em arquivos JSON.
-- `BaseModelDB`: CRUD generico em MySQL via PDO.
+- `BaseModel`: CRUD generico em MySQL via PDO (antigo `BaseModelDB`).
 
 ### Usuarios
 
@@ -318,37 +294,24 @@ Correcao aplicada: substituido `str_contains` por `strpos` para manter compatibi
 
 ### Acolhimento
 
-- `AcolhimentoDB`: model MySQL principal para fichas de acolhimento, tabela `Atendido` e `Responsavel`.
-- `Acolhimento`: model legado com comportamento inconsistente, pois estende `BaseModelDB` mas contem trechos de modelo JSON. Deve ser refatorado ou removido em uma limpeza futura.
-
-Correcoes aplicadas em `AcolhimentoDB`:
-
-- `data_acolhimento` agora usa a coluna correta antes de cair para `data_cadastro`;
-- estatisticas agora retornam `ativas` e `inativas`, chaves esperadas pelo dashboard.
+- `Acolhimento`: model MySQL principal para fichas de acolhimento, tabela `Atendido` e `Responsavel` (antigo `AcolhimentoDB`).
+  * `data_acolhimento` agora usa a coluna correta antes de cair para `data_cadastro`;
+  * estatisticas agora retornam `ativas` e `inativas`, chaves esperadas pelo dashboard.
 
 ### Socioeconomico
 
-- `SocioeconomicoDB`: model MySQL principal para `Ficha_Socioeconomico`, `Familia`, `Despesas` e `Atendido`.
-- `Socioeconomico`: model JSON legado.
-
-Correcoes aplicadas:
-
-- `SocioeconomicoDB::getStatistics()` agora retorna `ativas` e `inativas`;
-- `Socioeconomico::searchByName()` deixou de chamar `$this->db` inexistente e usa `searchAdvanced()`.
+- `Socioeconomico`: model MySQL principal para `Ficha_Socioeconomico`, `Familia`, `Despesas` e `Atendido` (antigo `SocioeconomicoDB`).
+  * `getStatistics()` agora retorna `ativas` e `inativas`.
 
 ### Frequencia e oficinas
 
-- `Attendance` e `AttendanceDB`: modulo legado de frequencia.
-- `FrequenciaDiaDB`: frequencia por dia.
-- `FrequenciaOficinaDB`: frequencia por oficina.
-- `OficinaDB`: cadastro e status de oficinas.
-
-Correcao aplicada: consultas de usuario em frequencia usam `Usuario`, nome consistente com o schema.
+- `FrequenciaDia`: frequencia por dia (antigo `FrequenciaDiaDB`).
+- `FrequenciaOficina`: frequencia por oficina (antigo `FrequenciaOficinaDB`).
+- `Oficina`: cadastro e status de oficinas (antigo `OficinaDB`).
 
 ### Desligamento
 
-- `Desligamento`: JSON legado.
-- `DesligamentoDB`: MySQL atual, controla desligamento, reativacao e estatisticas.
+- `Desligamento`: MySQL atual, controla desligamento, reativacao e estatisticas (antigo `DesligamentoDB`).
 
 ### Psicologia
 
@@ -356,7 +319,7 @@ Correcao aplicada: consultas de usuario em frequencia usam `Usuario`, nome consi
 
 ### Logs
 
-- `LogDB`: leitura e manipulacao de auditoria.
+- `Log`: leitura e manipulacao de auditoria (antigo `LogDB`).
 
 ## 9. Views
 
@@ -399,15 +362,6 @@ Correcao aplicada: consultas de usuario em frequencia usam `Usuario`, nome consi
 - `faltas/historico.php`: historico de frequencia.
 - `faltas/alertas.php`: alertas de faltas.
 - `faltas/gerenciar_oficinas.php`: CRUD/status de oficinas.
-
-### Attendance legado
-
-- `attendance/index.php`: controle antigo de faltas.
-- `attendance/show.php`: detalhe individual.
-- `attendance/batch.php`: lote.
-- `attendance/desligamento.php`: desligamento pelo fluxo antigo.
-- `attendance/alertas.php`: alertas.
-- `attendance/relatorios.php`: relatorios.
 
 ### Desligamento
 
@@ -571,19 +525,21 @@ Os scripts auxiliares foram movidos para reduzir risco de confusao na raiz.
 17. Rotas protegidas instanciavam controllers pesados antes de checar sessao.
     - Adicionada verificacao inicial de login nos pontos de entrada principais.
 
+18. Unificação dos módulos `attendance.php` e `faltas.php`, concentrando o controle no banco de dados e removendo as lógicas JSON/legadas obsoletas.
+
+19. Refatoração e limpeza completa dos modelos `Acolhimento`, `Socioeconomico` e `Desligamento`, removendo classes híbridas e arquivos JSON da pasta `data/`.
+
+20. Extração de dezenas de estilos inline (`style="..."`) das views principais para o CSS centralizado, com design glassmorphic premium e suporte a variáveis de tema.
+
 ## 14. Problemas ainda existentes ou melhorias recomendadas
 
 Prioridade alta:
 
-- Unificar os modulos `attendance.php` e `faltas.php`. Hoje existem dois fluxos de frequencia, com models diferentes e responsabilidades sobrepostas.
-- Refatorar `Acolhimento.php`. Ele parece legado/inconsistente: declara model MySQL, mas contem trechos que usam `$this->data` como se fosse JSON.
 - Configurar SMTP real para recuperacao de senha. As rotas e views existem, mas o envio ainda fica registrado em log ate uma integracao de email ser ligada.
 - Remover ou proteger scripts de `tools/maintenance` em producao. Eles devem ficar fora do webroot ou exigir autenticacao forte.
-- Consolidar `Desligamento` JSON e `DesligamentoDB`. O sistema moderno usa DB, mas alguns services legados ainda referenciam JSON.
 
 Prioridade media:
 
-- Extrair estilos inline das views para CSS. Muitas telas misturam HTML, CSS e logica PHP.
 - Padronizar nomes de tabelas e classes (`Atendido`, `Usuario`, `Ficha_Socioeconomico`) para reduzir problemas em servidores Linux.
 - Remover logs de debug verbosos de `SocioeconomicoDB` ou controla-los por `APP_DEBUG`.
 - Criar um roteador unico em vez de muitos roteadores pequenos na raiz.

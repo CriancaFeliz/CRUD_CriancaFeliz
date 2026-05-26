@@ -1,6 +1,6 @@
 <?php
 // Teste simples para verificar se as classes estÃ£o sendo carregadas
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 echo "Bootstrap carregado...<br>";
 

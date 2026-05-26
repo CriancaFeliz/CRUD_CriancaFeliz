@@ -365,7 +365,7 @@ function editNote(noteId) {
     }
     
     // Buscar dados da anotação
-    fetch(`edit_annotation.php?id=${noteId}`)
+    fetch(`psychology.php?action=get_note&id=${noteId}`)
         .then(res => {
             console.log('Status da resposta:', res.status);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);

@@ -3,7 +3,7 @@
 /**
  * Model para gerenciar Oficinas - MySQL
  */
-class OficinaDB extends BaseModelDB {
+class Oficina extends BaseModel {
     
     public function __construct() {
         parent::__construct('Oficina', 'id_oficina');

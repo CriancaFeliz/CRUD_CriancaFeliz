@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Definir constantes do sistema
-define('BASE_PATH', __DIR__);
+define('BASE_PATH', dirname(__DIR__));
 define('APP_PATH', BASE_PATH . '/app');
 define('DATA_PATH', BASE_PATH . '/data');
 define('CSS_PATH', BASE_PATH . '/css');
@@ -77,6 +77,46 @@ function validateEmail($email) {
 // Função para validar senha
 function validatePassword($password) {
     return strlen($password) >= 6;
+}
+
+// Função para converter data dd/mm/yyyy para yyyy-mm-dd (para inserção no banco)
+function formatDateToDb($date) {
+    if (empty($date)) return null;
+    if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date, $matches)) {
+        return "{$matches[3]}-{$matches[2]}-{$matches[1]}";
+    }
+    return $date;
+}
+
+// Função para converter data yyyy-mm-dd para dd/mm/yyyy (para exibição)
+function formatDateToBr($date) {
+    if (empty($date)) return '';
+    $timestamp = strtotime($date);
+    if ($timestamp === false) return $date;
+    return date('d/m/Y', $timestamp);
+}
+
+// Função para calcular idade de forma dinâmica
+function calculateAge($dataNascimento) {
+    if (empty($dataNascimento)) return 0;
+    
+    // Garantir que a data esteja no formato YYYY-MM-DD para DateTime
+    $date = formatDateToDb($dataNascimento);
+    
+    try {
+        $birthDate = new DateTime($date);
+        $today = new DateTime();
+        return $birthDate->diff($today)->y;
+    } catch (Exception $e) {
+        return 0;
+    }
+}
+
+// Função para obter faixa etária com base na idade
+function getFaixaEtaria($idade) {
+    if ($idade <= 11) return 'Criança (0-11)';
+    if ($idade <= 17) return 'Adolescente (12-17)';
+    return 'Adulto (18+)';
 }
 
 // Função para verificar se usuário está logado

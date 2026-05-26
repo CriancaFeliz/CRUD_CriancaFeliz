@@ -10,7 +10,7 @@
  */
 
 session_start();
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 $testResult = null;
 $testError = null;

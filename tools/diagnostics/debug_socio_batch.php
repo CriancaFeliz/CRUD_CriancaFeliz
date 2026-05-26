@@ -4,7 +4,7 @@
  * Uso: http://localhost/CriancaFeliz/tools/diagnostics/debug_socio_batch.php?limit=5
  * Retorna Ãºltimas N fichas (Atendido) e verifica campos chave.
  */
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 5;
 if ($limit < 1) $limit = 5;

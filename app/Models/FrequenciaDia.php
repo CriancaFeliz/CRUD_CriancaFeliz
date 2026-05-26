@@ -3,7 +3,7 @@
 /**
  * Model para Frequência por Dia - MySQL
  */
-class FrequenciaDiaDB extends BaseModelDB {
+class FrequenciaDia extends BaseModel {
     
     public function __construct() {
         parent::__construct('Frequencia_Dia', 'id_frequencia_dia');

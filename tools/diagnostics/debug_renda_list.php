@@ -3,7 +3,7 @@
  * Debug: Verifica a renda_familiar nas fichas listadas
  */
 
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 try {
     $db = new Database();

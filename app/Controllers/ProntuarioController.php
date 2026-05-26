@@ -6,13 +6,11 @@
 class ProntuarioController extends BaseController {
     private $acolhimentoService;
     private $socioeconomicoService;
-    private $attendanceService;
     
     public function __construct() {
         parent::__construct();
         $this->acolhimentoService = new AcolhimentoService();
         $this->socioeconomicoService = new SocioeconomicoService();
-        $this->attendanceService = new AttendanceService();
     }
     
     /**
@@ -74,11 +72,43 @@ class ProntuarioController extends BaseController {
                 throw new Exception('Prontuário não encontrado');
             }
             
-            // Buscar estatísticas de faltas se tiver acolhimento
             $attendanceStats = null;
             if ($acolhimento) {
                 try {
-                    $attendanceStats = $this->attendanceService->getAtendidoStatistics($acolhimento['id']);
+                    $frequenciaModel = new FrequenciaDia();
+                    $desligamentoModel = new Desligamento();
+                    
+                    $dbStats = $frequenciaModel->getEstatisticas($acolhimento['id']);
+                    $desligamento = $desligamentoModel->getByAtendido($acolhimento['id']);
+                    
+                    // Alertas dinâmicos baseados nas faltas não justificadas
+                    $alertas = [];
+                    $faltasNaoJustificadas = $dbStats['faltas'] ?? 0;
+                    if ($faltasNaoJustificadas >= 3) {
+                        $alertas[] = [
+                            'tipo' => 'excesso_faltas',
+                            'mensagem' => "Atendido com {$faltasNaoJustificadas} faltas não justificadas"
+                        ];
+                    }
+                    
+                    // Idade limite alerta
+                    $idade = $acolhimento['idade'] ?? calculateAge($acolhimento['data_nascimento']);
+                    if ($idade >= 18) {
+                        $alertas[] = [
+                            'tipo' => 'idade_limite',
+                            'mensagem' => "Atendido completou {$idade} anos - Desligamento automático pendente"
+                        ];
+                    }
+                    
+                    $attendanceStats = [
+                        'desligado' => !empty($desligamento),
+                        'desligamento' => $desligamento,
+                        'alertas' => $alertas,
+                        'total_presencas' => $dbStats['presencas'] ?? 0,
+                        'faltas_justificadas' => $dbStats['justificadas'] ?? 0,
+                        'faltas_nao_justificadas' => $dbStats['faltas'] ?? 0,
+                        'percentual_presenca' => $dbStats['percentual_presenca'] ?? 100
+                    ];
                 } catch (Exception $e) {
                     error_log("Erro ao buscar estatísticas de faltas: " . $e->getMessage());
                 }

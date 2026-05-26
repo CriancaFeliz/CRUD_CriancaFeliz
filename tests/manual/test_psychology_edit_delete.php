@@ -8,7 +8,7 @@
  * 3. Buscar anotaÃ§Ã£o por ID
  */
 
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 try {
     echo "<h1>ðŸ§ª TESTES - FUNCIONALIDADES DE ANOTAÃ‡ÃƒO PSICOLÃ“GICA</h1>";

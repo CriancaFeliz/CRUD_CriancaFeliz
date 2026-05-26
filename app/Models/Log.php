@@ -4,7 +4,7 @@
  * Model para gerenciar Logs do Sistema
  * Acesso exclusivo para Administradores
  */
-class LogDB extends BaseModelDB {
+class Log extends BaseModel {
     
     public function __construct() {
         parent::__construct('log', 'id_log');

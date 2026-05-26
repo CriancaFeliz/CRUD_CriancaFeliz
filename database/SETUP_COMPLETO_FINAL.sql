@@ -16,48 +16,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 -- =====================================================
--- PARTE 1: BANCO DE DADOS BASE
--- =====================================================
-
-DELIMITER $$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `DesligarPorExcessoFaltas` ()   BEGIN
-    INSERT INTO Desligamento (id_atendido, motivo, tipo_motivo, data_desligamento, automatico)
-    SELECT 
-        a.idatendido,
-        'Desligamento automático por excesso de faltas',
-        'excesso_faltas',
-        CURDATE(),
-        TRUE
-    FROM 
-        Atendido a
-    LEFT JOIN 
-        Frequencia_Dia fd ON a.idatendido = fd.id_atendido
-    WHERE 
-        a.status = 'Ativo'
-        AND NOT EXISTS (SELECT 1 FROM Desligamento d WHERE d.id_atendido = a.idatendido)
-    GROUP BY 
-        a.idatendido
-    HAVING 
-        COUNT(CASE WHEN fd.status = 'F' THEN 1 END) >= 3;
-        
-    UPDATE Atendido a
-    INNER JOIN Desligamento d ON a.idatendido = d.id_atendido
-    SET a.status = 'Desligado'
-    WHERE d.automatico = TRUE;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `RegistrarFaltaAutomatica` (IN `p_id_atendido` INT, IN `p_data` DATE)   BEGIN
-    INSERT INTO Frequencia_Dia (id_atendido, data, status)
-    VALUES (p_id_atendido, p_data, 'F')
-    ON DUPLICATE KEY UPDATE 
-        status = IF(status = 'P', status, 'F');
-END$$
-
-DELIMITER ;
-
--- =====================================================
--- TABELAS
+-- PARTE 1: TABELAS
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS `agenda` (
@@ -75,7 +34,6 @@ CREATE TABLE IF NOT EXISTS `atendido` (
   `data_acolhimento` date DEFAULT NULL,
   `nome` varchar(100) DEFAULT NULL,
   `data_nascimento` date DEFAULT NULL,
-  `faixa_etaria` varchar(20) DEFAULT NULL,
   `cpf` varchar(14) DEFAULT NULL,
   `rg` varchar(20) DEFAULT NULL,
   `endereco` varchar(255) DEFAULT NULL,
@@ -147,7 +105,6 @@ CREATE TABLE IF NOT EXISTS `ficha_socioeconomico` (
   `residencia` varchar(100) DEFAULT NULL,
   `construcao` varchar(100) DEFAULT NULL,
   `numero_comodos` int(11) DEFAULT NULL,
-  `nr_comodos` int(11) DEFAULT NULL,
   `assistente_social` varchar(255) DEFAULT NULL,
   `cadunico` varchar(100) DEFAULT NULL,
   `agua` tinyint(1) DEFAULT 0,
@@ -295,7 +252,7 @@ INSERT INTO `log` (
         'renda_familiar', NEW.renda_familiar,
         'renda_per_capita', NEW.renda_per_capita,
         'qtd_pessoas', NEW.qtd_pessoas,
-        'numero_comodos', COALESCE(NEW.numero_comodos, NEW.nr_comodos),
+        'numero_comodos', NEW.numero_comodos,
         'construcao', NEW.construcao,
         'residencia', NEW.residencia,
         'moradia', NEW.moradia,
@@ -340,7 +297,7 @@ INSERT INTO `log` (
         'Ficha Socioeconômica alterada - ',
         IF(COALESCE(OLD.nome_menor, '') != COALESCE(NEW.nome_menor, ''), CONCAT('Menor: ', OLD.nome_menor, ' → ', NEW.nome_menor, ' | '), ''),
         IF(COALESCE(OLD.entrevistado, '') != COALESCE(NEW.entrevistado, ''), CONCAT('Entrevistado: ', OLD.entrevistado, ' → ', NEW.entrevistado, ' | '), ''),
-        IF(COALESCE(OLD.numero_comodos, OLD.nr_comodos, 0) != COALESCE(NEW.numero_comodos, NEW.nr_comodos, 0), CONCAT('Cômodos: ', COALESCE(OLD.numero_comodos, OLD.nr_comodos), ' → ', COALESCE(NEW.numero_comodos, NEW.nr_comodos), ' | '), ''),
+        IF(COALESCE(OLD.numero_comodos, 0) != COALESCE(NEW.numero_comodos, 0), CONCAT('Cômodos: ', COALESCE(OLD.numero_comodos, 0), ' → ', COALESCE(NEW.numero_comodos, 0), ' | '), ''),
         IF(COALESCE(OLD.renda_familiar, 0) != COALESCE(NEW.renda_familiar, 0), CONCAT('Renda: R$ ', COALESCE(OLD.renda_familiar, 0), ' → R$ ', COALESCE(NEW.renda_familiar, 0), ' | '), ''),
         IF(COALESCE(OLD.qtd_pessoas, 0) != COALESCE(NEW.qtd_pessoas, 0), CONCAT('Pessoas: ', COALESCE(OLD.qtd_pessoas, 0), ' → ', COALESCE(NEW.qtd_pessoas, 0), ' | '), ''),
         IF(COALESCE(OLD.construcao, '') != COALESCE(NEW.construcao, ''), CONCAT('Construção: ', OLD.construcao, ' → ', NEW.construcao, ' | '), ''),
@@ -357,7 +314,7 @@ INSERT INTO `log` (
     JSON_OBJECT(
         'nome_menor', IF(COALESCE(OLD.nome_menor, '') != COALESCE(NEW.nome_menor, ''), OLD.nome_menor, NULL),
         'entrevistado', IF(COALESCE(OLD.entrevistado, '') != COALESCE(NEW.entrevistado, ''), OLD.entrevistado, NULL),
-        'numero_comodos', IF(COALESCE(OLD.numero_comodos, OLD.nr_comodos, 0) != COALESCE(NEW.numero_comodos, NEW.nr_comodos, 0), COALESCE(OLD.numero_comodos, OLD.nr_comodos), NULL),
+        'numero_comodos', IF(COALESCE(OLD.numero_comodos, 0) != COALESCE(NEW.numero_comodos, 0), OLD.numero_comodos, NULL),
         'renda_familiar', IF(COALESCE(OLD.renda_familiar, 0) != COALESCE(NEW.renda_familiar, 0), OLD.renda_familiar, NULL),
         'qtd_pessoas', IF(COALESCE(OLD.qtd_pessoas, 0) != COALESCE(NEW.qtd_pessoas, 0), OLD.qtd_pessoas, NULL),
         'construcao', IF(COALESCE(OLD.construcao, '') != COALESCE(NEW.construcao, ''), OLD.construcao, NULL),
@@ -374,7 +331,7 @@ INSERT INTO `log` (
     JSON_OBJECT(
         'nome_menor', IF(COALESCE(OLD.nome_menor, '') != COALESCE(NEW.nome_menor, ''), NEW.nome_menor, NULL),
         'entrevistado', IF(COALESCE(OLD.entrevistado, '') != COALESCE(NEW.entrevistado, ''), NEW.entrevistado, NULL),
-        'numero_comodos', IF(COALESCE(OLD.numero_comodos, OLD.nr_comodos, 0) != COALESCE(NEW.numero_comodos, NEW.nr_comodos, 0), COALESCE(NEW.numero_comodos, NEW.nr_comodos), NULL),
+        'numero_comodos', IF(COALESCE(OLD.numero_comodos, 0) != COALESCE(NEW.numero_comodos, 0), NEW.numero_comodos, NULL),
         'renda_familiar', IF(COALESCE(OLD.renda_familiar, 0) != COALESCE(NEW.renda_familiar, 0), NEW.renda_familiar, NULL),
         'qtd_pessoas', IF(COALESCE(OLD.qtd_pessoas, 0) != COALESCE(NEW.qtd_pessoas, 0), NEW.qtd_pessoas, NULL),
         'construcao', IF(COALESCE(OLD.construcao, '') != COALESCE(NEW.construcao, ''), NEW.construcao, NULL),
@@ -416,7 +373,7 @@ INSERT INTO `log` (
         'entrevistado', OLD.entrevistado,
         'renda_familiar', OLD.renda_familiar,
         'qtd_pessoas', OLD.qtd_pessoas,
-        'numero_comodos', COALESCE(OLD.numero_comodos, OLD.nr_comodos),
+        'numero_comodos', OLD.numero_comodos,
         'construcao', OLD.construcao,
         'moradia', OLD.moradia,
         'residencia', OLD.residencia,
@@ -437,7 +394,54 @@ INSERT INTO `log` (
 );
 
 -- =====================================================
--- PARTE 3: ÍNDICES
+-- PARTE 3: PROCEDURES
+-- =====================================================
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `RegistrarFaltaAutomatica`$$
+
+CREATE PROCEDURE `RegistrarFaltaAutomatica` (IN `p_id_atendido` INT, IN `p_data` DATE)
+BEGIN
+    INSERT INTO Frequencia_Dia (id_atendido, data, status)
+    VALUES (p_id_atendido, p_data, 'F')
+    ON DUPLICATE KEY UPDATE 
+        status = IF(status = 'P', status, 'F');
+END$$
+
+DROP PROCEDURE IF EXISTS `DesligarPorExcessoFaltas`$$
+
+CREATE PROCEDURE `DesligarPorExcessoFaltas` ()
+BEGIN
+    INSERT INTO Desligamento (id_atendido, motivo, tipo_motivo, data_desligamento, automatico)
+    SELECT 
+        a.idatendido,
+        'Desligamento automático por excesso de faltas',
+        'excesso_faltas',
+        CURDATE(),
+        TRUE
+    FROM 
+        Atendido a
+    LEFT JOIN 
+        Frequencia_Dia fd ON a.idatendido = fd.id_atendido
+    WHERE 
+        a.status = 'Ativo'
+        AND NOT EXISTS (SELECT 1 FROM Desligamento d WHERE d.id_atendido = a.idatendido)
+    GROUP BY 
+        a.idatendido
+    HAVING 
+        COUNT(CASE WHEN fd.status = 'F' THEN 1 END) >= 3;
+
+    UPDATE Atendido a
+    INNER JOIN Desligamento d ON a.idatendido = d.id_atendido
+    SET a.status = 'Desligado'
+    WHERE d.automatico = TRUE;
+END$$
+
+DELIMITER ;
+
+-- =====================================================
+-- PARTE 4: ÍNDICES
 -- =====================================================
 
 ALTER TABLE `agenda` ADD PRIMARY KEY (`id_notificacao`);
@@ -508,10 +512,10 @@ INSERT IGNORE INTO `responsavel` (`idresponsavel`, `nome`, `cpf`, `telefone`, `e
 (1, 'Maria Souza', '123.456.789-00', '(11) 91234-5678', 'maria.souza@example.com', 'Mãe'),
 (2, 'João Pereira', '987.654.321-00', '(11) 99876-5432', 'joao.pereira@example.com', 'Pai');
 
-INSERT IGNORE INTO `atendido` (`idatendido`, `status`, `data_cadastro`, `data_acolhimento`, `nome`, `data_nascimento`, `faixa_etaria`, `cpf`, `id_responsavel`) VALUES
-(1, 'Ativo', '2025-10-18', '2025-10-18', 'Ana Beatriz Silva', '2012-05-14', '12-14', '111.222.333-44', 1),
-(2, 'Ativo', '2025-10-18', '2025-10-18', 'Carlos Eduardo Santos', '2010-09-02', '15-17', NULL, 2),
-(3, 'Ativo', '2025-10-18', '2025-10-18', 'Luiza Ferreira', '2013-03-28', '12-14', NULL, NULL);
+INSERT IGNORE INTO `atendido` (`idatendido`, `status`, `data_cadastro`, `data_acolhimento`, `nome`, `data_nascimento`, `cpf`, `id_responsavel`) VALUES
+(1, 'Ativo', '2025-10-18', '2025-10-18', 'Ana Beatriz Silva', '2012-05-14', '111.222.333-44', 1),
+(2, 'Ativo', '2025-10-18', '2025-10-18', 'Carlos Eduardo Santos', '2010-09-02', NULL, 2),
+(3, 'Ativo', '2025-10-18', '2025-10-18', 'Luiza Ferreira', '2013-03-28', NULL, NULL);
 
 INSERT IGNORE INTO `oficina` (`id_oficina`, `nome`, `descricao`, `dia_semana`, `horario_inicio`, `horario_fim`, `ativo`) VALUES
 (1, 'Reforço Escolar', 'Aulas de reforço para crianças', 'Terça', '14:00:00', '16:00:00', 1),

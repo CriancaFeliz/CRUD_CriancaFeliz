@@ -1,15 +1,24 @@
 -- =====================================================
--- TRIGGERS COMPLETOS - CAPTURA TODAS AS ALTERAÇÕES
+-- MIGRACAO DE SCHEMA - CRIANCA FELIZ
 -- =====================================================
+USE criancafeliz;
 
--- Desabilitar triggers antigos
+-- 1. Remover tabelas obsoletas se existirem
+DROP TABLE IF EXISTS `presenca`;
+DROP TABLE IF EXISTS `sessao`;
+DROP TABLE IF EXISTS `frequencia`;
+
+-- 2. Garantir coluna numero_comodos e remover nr_comodos e faixa_etaria
+ALTER TABLE `Ficha_Socioeconomico` ADD COLUMN IF NOT EXISTS `numero_comodos` INT DEFAULT 0;
+ALTER TABLE `Ficha_Socioeconomico` DROP COLUMN IF EXISTS `nr_comodos`;
+ALTER TABLE `Atendido` DROP COLUMN IF EXISTS `faixa_etaria`;
+
+-- 3. Atualizar triggers de auditoria (remover nr_comodos)
 DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_insert`;
 DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_update`;
 DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_delete`;
 
--- =====================================================
--- TRIGGER INSERT - NOVO REGISTRO
--- =====================================================
+DELIMITER $$
 
 CREATE TRIGGER `log_ficha_socioeconomico_insert` AFTER INSERT ON `Ficha_Socioeconomico` FOR EACH ROW
 INSERT INTO `log` (
@@ -33,7 +42,7 @@ INSERT INTO `log` (
         'renda_familiar', NEW.renda_familiar,
         'renda_per_capita', NEW.renda_per_capita,
         'qtd_pessoas', NEW.qtd_pessoas,
-        'numero_comodos', COALESCE(NEW.numero_comodos, NEW.nr_comodos),
+        'numero_comodos', NEW.numero_comodos,
         'construcao', NEW.construcao,
         'residencia', NEW.residencia,
         'moradia', NEW.moradia,
@@ -59,10 +68,7 @@ INSERT INTO `log` (
     'NOVO_REGISTRO',
     @ip_usuario
 );
-
--- =====================================================
--- TRIGGER UPDATE - CAPTURA TODAS AS MUDANÇAS
--- =====================================================
+$$
 
 CREATE TRIGGER `log_ficha_socioeconomico_update` AFTER UPDATE ON `Ficha_Socioeconomico` FOR EACH ROW
 INSERT INTO `log` (
@@ -82,7 +88,7 @@ INSERT INTO `log` (
         'Ficha Socioeconômica alterada - ',
         IF(COALESCE(OLD.nome_menor, '') != COALESCE(NEW.nome_menor, ''), CONCAT('Menor: ', OLD.nome_menor, ' → ', NEW.nome_menor, ' | '), ''),
         IF(COALESCE(OLD.entrevistado, '') != COALESCE(NEW.entrevistado, ''), CONCAT('Entrevistado: ', OLD.entrevistado, ' → ', NEW.entrevistado, ' | '), ''),
-        IF(COALESCE(OLD.numero_comodos, OLD.nr_comodos, 0) != COALESCE(NEW.numero_comodos, NEW.nr_comodos, 0), CONCAT('Cômodos: ', COALESCE(OLD.numero_comodos, OLD.nr_comodos), ' → ', COALESCE(NEW.numero_comodos, NEW.nr_comodos), ' | '), ''),
+        IF(COALESCE(OLD.numero_comodos, 0) != COALESCE(NEW.numero_comodos, 0), CONCAT('Cômodos: ', COALESCE(OLD.numero_comodos, 0), ' → ', COALESCE(NEW.numero_comodos, 0), ' | '), ''),
         IF(COALESCE(OLD.renda_familiar, 0) != COALESCE(NEW.renda_familiar, 0), CONCAT('Renda: R$ ', COALESCE(OLD.renda_familiar, 0), ' → R$ ', COALESCE(NEW.renda_familiar, 0), ' | '), ''),
         IF(COALESCE(OLD.qtd_pessoas, 0) != COALESCE(NEW.qtd_pessoas, 0), CONCAT('Pessoas: ', COALESCE(OLD.qtd_pessoas, 0), ' → ', COALESCE(NEW.qtd_pessoas, 0), ' | '), ''),
         IF(COALESCE(OLD.construcao, '') != COALESCE(NEW.construcao, ''), CONCAT('Construção: ', OLD.construcao, ' → ', NEW.construcao, ' | '), ''),
@@ -99,7 +105,7 @@ INSERT INTO `log` (
     JSON_OBJECT(
         'nome_menor', IF(COALESCE(OLD.nome_menor, '') != COALESCE(NEW.nome_menor, ''), OLD.nome_menor, NULL),
         'entrevistado', IF(COALESCE(OLD.entrevistado, '') != COALESCE(NEW.entrevistado, ''), OLD.entrevistado, NULL),
-        'numero_comodos', IF(COALESCE(OLD.numero_comodos, OLD.nr_comodos, 0) != COALESCE(NEW.numero_comodos, NEW.nr_comodos, 0), COALESCE(OLD.numero_comodos, OLD.nr_comodos), NULL),
+        'numero_comodos', IF(COALESCE(OLD.numero_comodos, 0) != COALESCE(NEW.numero_comodos, 0), OLD.numero_comodos, NULL),
         'renda_familiar', IF(COALESCE(OLD.renda_familiar, 0) != COALESCE(NEW.renda_familiar, 0), OLD.renda_familiar, NULL),
         'qtd_pessoas', IF(COALESCE(OLD.qtd_pessoas, 0) != COALESCE(NEW.qtd_pessoas, 0), OLD.qtd_pessoas, NULL),
         'construcao', IF(COALESCE(OLD.construcao, '') != COALESCE(NEW.construcao, ''), OLD.construcao, NULL),
@@ -116,7 +122,7 @@ INSERT INTO `log` (
     JSON_OBJECT(
         'nome_menor', IF(COALESCE(OLD.nome_menor, '') != COALESCE(NEW.nome_menor, ''), NEW.nome_menor, NULL),
         'entrevistado', IF(COALESCE(OLD.entrevistado, '') != COALESCE(NEW.entrevistado, ''), NEW.entrevistado, NULL),
-        'numero_comodos', IF(COALESCE(OLD.numero_comodos, OLD.nr_comodos, 0) != COALESCE(NEW.numero_comodos, NEW.nr_comodos, 0), COALESCE(NEW.numero_comodos, NEW.nr_comodos), NULL),
+        'numero_comodos', IF(COALESCE(OLD.numero_comodos, 0) != COALESCE(NEW.numero_comodos, 0), NEW.numero_comodos, NULL),
         'renda_familiar', IF(COALESCE(OLD.renda_familiar, 0) != COALESCE(NEW.renda_familiar, 0), NEW.renda_familiar, NULL),
         'qtd_pessoas', IF(COALESCE(OLD.qtd_pessoas, 0) != COALESCE(NEW.qtd_pessoas, 0), NEW.qtd_pessoas, NULL),
         'construcao', IF(COALESCE(OLD.construcao, '') != COALESCE(NEW.construcao, ''), NEW.construcao, NULL),
@@ -137,10 +143,7 @@ INSERT INTO `log` (
     'MULTIPLOS_CAMPOS',
     @ip_usuario
 );
-
--- =====================================================
--- TRIGGER DELETE - REGISTRO DELETADO
--- =====================================================
+$$
 
 CREATE TRIGGER `log_ficha_socioeconomico_delete` AFTER DELETE ON `Ficha_Socioeconomico` FOR EACH ROW
 INSERT INTO `log` (
@@ -162,7 +165,7 @@ INSERT INTO `log` (
         'entrevistado', OLD.entrevistado,
         'renda_familiar', OLD.renda_familiar,
         'qtd_pessoas', OLD.qtd_pessoas,
-        'numero_comodos', COALESCE(OLD.numero_comodos, OLD.nr_comodos),
+        'numero_comodos', OLD.numero_comodos,
         'construcao', OLD.construcao,
         'moradia', OLD.moradia,
         'residencia', OLD.residencia,
@@ -181,9 +184,6 @@ INSERT INTO `log` (
     'REGISTRO_DELETADO',
     @ip_usuario
 );
+$$
 
--- =====================================================
--- FIM DO SCRIPT
--- =====================================================
--- Triggers completos criados com sucesso!
--- Agora todas as alterações serão capturadas!
+DELIMITER ;

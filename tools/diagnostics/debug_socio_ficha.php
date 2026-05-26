@@ -3,7 +3,7 @@
  * Debug de ficha socioeconÃ´mica
  * Uso: http://localhost/CriancaFeliz/tools/diagnostics/debug_socio_ficha.php?id=123
  */
-require_once __DIR__ . '/../../bootstrap.php';
+require_once __DIR__ . '/../../app/bootstrap.php';
 
 $id = isset($_GET['id']) ? intval($_GET['id']) : null;
 if (!$id) {
