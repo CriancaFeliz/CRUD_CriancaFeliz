@@ -151,7 +151,7 @@ Na primeira inicialização, o MySQL executa os scripts em `docker/mysql/` e imp
 | `/forgot.php` | `AuthController::showForgotPassword` ou `processForgotPassword` | Gera token de recuperação. |
 | `/reset_password.php?token=...` | `AuthController::showResetPassword` ou `processResetPassword` | Redefine senha usando token. |
 
-Observação: o envio SMTP real ainda não está implementado. O método atual registra a URL de recuperação no log do PHP e salva hashes de tokens em `data/reset_tokens.json`.
+Observação: o envio SMTP real ainda não está implementado. O método atual registra a URL de recuperação no log do PHP e salva hashes de tokens em `password_reset_tokens`.
 
 ## 8. Rotas Protegidas
 
@@ -194,6 +194,9 @@ Observação: o envio SMTP real ainda não está implementado. O método atual r
 | `/psychology.php?action=get_note&id=...` | `PsychologyController::getNote` | Busca anotação. |
 | `/psychology.php?action=update_note` | `PsychologyController::updateNote` | Atualiza anotação. |
 | `/psychology.php?action=delete_note&id=...` | `PsychologyController::deleteNote` | Remove anotação. |
+| `/psychology.php?action=save_assessment` | `PsychologyController::saveAssessment` | Salva avaliação psicológica. |
+| `/psychology.php?action=search&q=...` | `PsychologyController::search` | Busca pacientes em JSON. |
+| `/psychology.php?action=report` | `PsychologyController::report` | Relatório psicológico HTML/CSV. |
 | `/users.php` | `UserController::index` | Lista usuários. |
 | `/users.php?action=create` | `UserController::create` ou `store` | Cria usuário. |
 | `/users.php?action=edit&id=...` | `UserController::edit` ou `update` | Edita usuário. |
@@ -243,7 +246,7 @@ Controla desligamento manual, reativação e processamento automático de deslig
 
 ### `PsychologyController`
 
-Controla a área psicológica, incluindo pacientes e anotações. Os métodos `saveAssessment`, `search` e `report` ainda retornam erro de método não implementado.
+Controla a área psicológica, incluindo pacientes, anotações, avaliação, busca e relatório psicológico com CSV compatível com Excel e impressão/PDF pelo navegador.
 
 ### `UserController`
 
@@ -375,6 +378,7 @@ Manutenção em `tools/maintenance/`:
 - `generate_password.php`
 - `install_database.php`
 - `limpar_sessao.php`
+- `migrate_reset_tokens.php`
 
 Legado:
 
@@ -385,6 +389,7 @@ Testes:
 - `tests/run.php`
 - `tests/automated/PasswordHelperTest.php`
 - `tests/automated/BootstrapHelperTest.php`
+- `tests/automated/ReportExportHelperTest.php`
 - `tests/manual/test_psychology.php`
 - `tests/manual/test_psychology_edit_delete.php`
 - `tests/manual/test_socioeconomico_submit.php`
@@ -431,8 +436,7 @@ Concluídos nesta revisão:
 Prioridade média:
 
 - Expandir testes automatizados para integração com banco.
-- Revisar endpoints psicológicos não implementados (`saveAssessment`, `search`, `report`).
-- Migrar tokens de reset de senha para banco ou serviço dedicado se o fluxo for usado em produção.
+- Configurar SMTP real para o fluxo de reset de senha.
 - Criar um roteador mais declarativo para reduzir o tamanho de `index.php`.
 
 Prioridade baixa:

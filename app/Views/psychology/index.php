@@ -41,6 +41,9 @@ $stats['by_note_type'] = $stats['by_note_type'] ?? [
     <a href="psychology.php?action=patients" class="btn" style="background:#17a2b8; color:#fff; border:none; padding:12px 16px; border-radius:8px; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:8px;">
         👥 Ver Pacientes
     </a>
+    <a href="psychology.php?action=report" class="btn" style="background:#28a745; color:#fff; border:none; padding:12px 16px; border-radius:8px; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:8px;">
+        Relatórios
+    </a>
 </div>
 
 <!-- Estatísticas -->

@@ -225,6 +225,12 @@ class AuthController extends BaseController {
      * Envia email de recuperação de senha
      */
     private function sendPasswordResetEmail($email) {
+        $userModel = new User();
+        if (!$userModel->findByEmail($email)) {
+            debugLog('Solicitacao de reset para email inexistente', ['email_hash' => hash('sha256', strtolower($email))]);
+            return;
+        }
+
         // Gerar token
         $token = bin2hex(random_bytes(32));
         $expiry = time() + 3600; // 1 hora
@@ -245,66 +251,33 @@ class AuthController extends BaseController {
      * Salva token de reset
      */
     private function saveResetToken($email, $token, $expiry) {
-        $tokensFile = DATA_PATH . '/reset_tokens.json';
         $tokenHash = hash('sha256', $token);
-        
-        if (!file_exists($tokensFile)) {
-            file_put_contents($tokensFile, json_encode([]));
-        }
-        
-        $tokens = json_decode(file_get_contents($tokensFile), true) ?: [];
-        $tokens = array_filter($tokens, function ($tokenData) {
-            return empty($tokenData['used']) && ($tokenData['expiry'] ?? 0) >= time();
-        });
-        
-        $tokens[$tokenHash] = [
-            'email' => $email,
-            'expiry' => $expiry,
-            'used' => false
-        ];
-        
-        file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $resetTokenModel = new PasswordResetToken();
+        $resetTokenModel->createToken($email, $tokenHash, date('Y-m-d H:i:s', $expiry));
     }
     
     /**
      * Valida token de reset
      */
     private function isValidResetToken($token) {
-        $tokensFile = DATA_PATH . '/reset_tokens.json';
         $tokenHash = hash('sha256', $token);
-        
-        if (!file_exists($tokensFile)) {
-            return false;
-        }
-        
-        $tokens = json_decode(file_get_contents($tokensFile), true) ?: [];
-        
-        if (!isset($tokens[$tokenHash])) {
-            return false;
-        }
-        
-        $tokenData = $tokens[$tokenHash];
-        
-        if ($tokenData['used'] || $tokenData['expiry'] < time()) {
-            return false;
-        }
-        
-        return true;
+        $resetTokenModel = new PasswordResetToken();
+
+        return (bool) $resetTokenModel->findValidByHash($tokenHash);
     }
     
     /**
      * Atualiza senha por token
      */
     private function updatePasswordByToken($token, $password) {
-        $tokensFile = DATA_PATH . '/reset_tokens.json';
         $tokenHash = hash('sha256', $token);
-        $tokens = json_decode(file_get_contents($tokensFile), true) ?: [];
-        
-        if (!isset($tokens[$tokenHash])) {
+        $resetTokenModel = new PasswordResetToken();
+        $tokenData = $resetTokenModel->findValidByHash($tokenHash);
+
+        if (!$tokenData) {
             throw new Exception('Token inválido');
         }
         
-        $tokenData = $tokens[$tokenHash];
         $email = $tokenData['email'];
         
         // Atualizar senha do usuário
@@ -318,9 +291,7 @@ class AuthController extends BaseController {
             }
         }
         
-        // Marcar token como usado
-        $tokens[$tokenHash]['used'] = true;
-        file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $resetTokenModel->markUsed($tokenHash);
     }
     
     /**

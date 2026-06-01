@@ -23,7 +23,8 @@ Principais pontos:
 - `app/Config/App.php` define `STORAGE_MODE = 'mysql'`.
 - Models principais foram consolidados em `app/Models/`.
 - Dados de calendário/notas do dashboard usam a tabela `agenda`.
-- A pasta `data/` permanece para dados runtime locais, como `reset_tokens.json`, e não deve ser tratada como banco principal.
+- A pasta `data/` permanece para dados runtime locais e não deve ser tratada como banco principal.
+- Tokens de redefinição de senha agora usam a tabela `password_reset_tokens`.
 
 Arquivos relevantes:
 
@@ -153,6 +154,9 @@ Documentos principais:
 - `database/README_SETUP.md`: setup do banco.
 - `docs/STYLING_UPGRADE.md`: padrões visuais.
 - `docs/archive/`: histórico antigo preservado.
+- `00 - Painel do Projeto Criança Feliz.md`: navegação Obsidian do projeto.
+- `01 - Backlog Técnico.md`: pendências priorizadas em formato de tarefas.
+- `02 - Guia de Uso com Codex.md`: fluxo recomendado para trabalhar com Codex no projeto.
 
 ## 8. Correção de Lacunas em 2026-06-01
 
@@ -165,23 +169,30 @@ Documentos principais:
 - Logs detalhados de debug passaram a obedecer `APP_DEBUG`.
 - Roadmap de relatórios criado em `docs/REPORTING_ROADMAP.md`.
 - Rastreabilidade dos requisitos criada em `docs/REQUIREMENTS_TRACEABILITY.md`.
-- `00 - Painel do Projeto Criança Feliz.md`: navegação Obsidian do projeto.
-- `01 - Backlog Técnico.md`: pendências priorizadas em formato de tarefas.
-- `02 - Guia de Uso com Codex.md`: fluxo recomendado para trabalhar com Codex no projeto.
 
-## 8. Pendências Recomendadas
+## 9. Prioridades Médias em 2026-06-01
+
+- Tokens de reset de senha migrados para `password_reset_tokens`.
+- Endpoints psicológicos `saveAssessment`, `search` e `report` implementados.
+- Relatório psicológico com filtros, impressão/PDF pelo navegador e CSV compatível com Excel.
+- Relatório socioeconômico com impressão/PDF pelo navegador.
+- Estratégia para tabelas legadas criada em `docs/LEGACY_TABLE_STRATEGY.md`.
+- Teste automatizado de escape CSV adicionado.
+
+## 10. Pendências Recomendadas
 
 Prioridade alta:
 
 - configurar SMTP real;
-- normalizar nomes de tabelas.
+- normalizar nomes de tabelas;
+- executar plano LGPD operacional.
 
 Prioridade média:
 
-- criar testes automatizados;
-- revisar endpoints psicológicos ainda não implementados;
+- criar testes de integração com banco Docker;
 - reduzir o tamanho do roteador em `index.php`;
-- alinhar os scripts SQL principais.
+- alinhar completamente os scripts SQL principais;
+- testar rotina de backup/restauração.
 
 Prioridade baixa:
 

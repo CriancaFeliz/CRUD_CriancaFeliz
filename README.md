@@ -51,7 +51,7 @@
 | Usuários | CRUD de usuários com papéis e ativação/desativação. |
 | Logs | Auditoria com filtros, detalhe de alterações, APIs JSON e exportação CSV. |
 | Perfil | Foto de perfil, dados do usuário e troca de senha. |
-| Recuperação de senha | Geração de token local para redefinição; integração SMTP ainda deve ser configurada. |
+| Recuperação de senha | Tokens de redefinição gravados no banco; integração SMTP ainda deve ser configurada. |
 | Interface | Tema claro/escuro, layout responsivo e chatbot integrado. |
 
 ---
@@ -261,6 +261,7 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 | `/desligamento.php` | Lista e gestão de desligamentos. |
 | `/psychology.php` | Dashboard da área psicológica. |
 | `/psychology.php?action=patients` | Lista de pacientes da psicologia. |
+| `/psychology.php?action=report` | Relatório psicológico com impressão/PDF e CSV compatível com Excel. |
 | `/users.php` | Gestão de usuários. |
 | `/logs.php` | Auditoria do sistema. |
 | `/profile.php` | Perfil do usuário. |
@@ -285,6 +286,7 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 - [docs/LGPD_AND_DATA_GOVERNANCE.md](docs/LGPD_AND_DATA_GOVERNANCE.md): plano técnico-operacional de LGPD e governança de dados.
 - [docs/TEST_PLAN.md](docs/TEST_PLAN.md): suíte automatizada, CI e próximos testes.
 - [docs/DATABASE_NORMALIZATION_PLAN.md](docs/DATABASE_NORMALIZATION_PLAN.md): plano para nomes de tabelas e ambientes Linux.
+- [docs/LEGACY_TABLE_STRATEGY.md](docs/LEGACY_TABLE_STRATEGY.md): estratégia para tabelas legadas.
 - [docs/REPORTING_ROADMAP.md](docs/REPORTING_ROADMAP.md): evolução dos relatórios.
 - [docs/REQUIREMENTS_TRACEABILITY.md](docs/REQUIREMENTS_TRACEABILITY.md): rastreabilidade dos requisitos da monografia.
 - [docs/MAINTENANCE_AND_TESTING.md](docs/MAINTENANCE_AND_TESTING.md): scripts auxiliares, comandos de validação e checklist operacional.
@@ -299,7 +301,7 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 ## Observações importantes
 
 - Os scripts em `tools/maintenance/` podem alterar dados. Use apenas com backup e preferencialmente fora de produção.
-- O fluxo de recuperação de senha guarda hashes de tokens em `data/reset_tokens.json` e registra a URL no log do PHP enquanto não há SMTP real. Para produção, implemente envio SMTP real.
+- O fluxo de recuperação de senha guarda hashes de tokens em `password_reset_tokens` e registra a URL no log do PHP enquanto não há SMTP real. Para produção, implemente envio SMTP real.
 - A pasta `data/` guarda dados locais/runtime e não deve ser usada como fonte principal de persistência.
 - O módulo atual de frequência é `faltas.php`; acessos legados a `attendance.php` são redirecionados para as rotas atuais.
 - A área psicológica usa a tabela `anotacao_psicologica`, criada pelo setup atual. Em bancos antigos, execute `database/update_schema.sql`.

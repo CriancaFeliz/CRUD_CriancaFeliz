@@ -36,9 +36,12 @@ Esta nota consolida as lacunas analisadas em Testes, LGPD, Banco, Documentos, Pe
 
 ## Prioridade Média
 
-- Migrar reset tokens de `data/reset_tokens.json` para tabela própria com expiração e auditoria.
+- [x] Migrar reset tokens de `data/reset_tokens.json` para tabela própria com expiração.
+- [x] Implementar endpoints psicológicos pendentes: `saveAssessment`, `search` e `report`.
+- [x] Criar primeira camada de relatórios: impressão/PDF pelo navegador e exportação CSV compatível com Excel.
+- [x] Documentar estratégia de tabelas legadas.
+- [x] Ampliar testes automatizados com exportação CSV.
 - Configurar SMTP real.
-- Implementar endpoints psicológicos pendentes: `saveAssessment`, `search` e `report`.
 - Criar testes de integração com banco Docker.
 - Criar rotina de backup/restauração documentada e testada.
 

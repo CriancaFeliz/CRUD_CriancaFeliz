@@ -6,6 +6,12 @@ Atualizado em 2026-06-01.
 
 O projeto já possui exportações CSV em módulos como acolhimento, socioeconômico e logs. O requisito de relatórios automáticos ainda precisa evoluir para relatórios oficiais em PDF/Excel com filtros e layout padronizado.
 
+Nesta rodada de prioridade média, foi entregue a primeira camada prática:
+
+- relatório socioeconômico com impressão/PDF pelo navegador;
+- relatório psicológico com filtros, impressão/PDF pelo navegador e CSV compatível com Excel;
+- exportação CSV usando helper testado para escapar aspas e quebras de linha.
+
 ## Relatórios Prioritários
 
 | Prioridade | Relatório | Campos principais |
@@ -21,7 +27,7 @@ O projeto já possui exportações CSV em módulos como acolhimento, socioeconô
 ## Decisões Necessárias
 
 - Formato: PDF, XLSX ou ambos.
-- Biblioteca: Composer com `dompdf`/`mpdf` para PDF e `phpoffice/phpspreadsheet` para XLSX, ou CSV inicialmente.
+- Biblioteca para fase seguinte: Composer com `dompdf`/`mpdf` para PDF real e `phpoffice/phpspreadsheet` para XLSX real. Até lá, usar impressão/PDF do navegador e CSV compatível com Excel.
 - Layout oficial: cabeçalho, logo, assinatura, filtros aplicados e data de geração.
 - Controle de acesso: quais perfis podem gerar cada relatório.
 - Retenção: por quanto tempo relatórios gerados ficam disponíveis.

@@ -38,12 +38,22 @@ Fonte inicial: pendências descritas em [[docs/PROJECT_DOCUMENTATION]], [[docs/R
 
 ## Prioridade Média
 
-- [ ] Expandir testes automatizados além da suíte mínima atual.
-- [ ] Revisar endpoints psicológicos ainda não implementados.
-- [ ] Implementar relatórios PDF/Excel conforme roadmap.
+- [x] Expandir testes automatizados além da suíte mínima atual.
+- [x] Revisar endpoints psicológicos ainda não implementados.
+- [x] Implementar primeira camada de relatórios PDF/Excel conforme roadmap: impressão/PDF pelo navegador e CSV compatível com Excel.
 - [ ] Reduzir o tamanho do roteador em `index.php`.
 - [ ] Alinhar `SETUP_COMPLETO_FINAL.sql`, `migration.sql` e `update_schema.sql`.
-- [ ] Decidir estratégia para tabelas legadas preservadas no schema.
+- [x] Decidir estratégia para tabelas legadas preservadas no schema.
+- [x] Migrar reset tokens de `data/reset_tokens.json` para tabela própria com expiração.
+
+## Concluído em Prioridade Média em 2026-06-01
+
+- Reset tokens migrados para `password_reset_tokens`.
+- Endpoints psicológicos `saveAssessment`, `search` e `report` implementados.
+- Relatório psicológico com filtros, exportação CSV compatível com Excel e impressão/PDF pelo navegador.
+- Relatório socioeconômico ganhou botão de impressão/PDF pelo navegador e CSV compatível com Excel.
+- Estratégia de tabelas legadas documentada em [[docs/LEGACY_TABLE_STRATEGY]].
+- Teste automatizado de exportação CSV adicionado.
 
 ## Prioridade Baixa
 

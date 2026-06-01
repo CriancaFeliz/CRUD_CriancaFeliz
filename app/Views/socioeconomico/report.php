@@ -1,6 +1,7 @@
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
     <a href="socioeconomico_list.php" class="btn secondary">Voltar</a>
-    <a href="socioeconomico_list.php?action=export" class="btn">Exportar CSV</a>
+    <button type="button" onclick="window.print()" class="btn" style="background:#3498db;">Imprimir / PDF</button>
+    <a href="socioeconomico_list.php?action=export" class="btn">Exportar Excel CSV</a>
 </div>
 
 <div style="background:#fff; border-radius:12px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,.08);">
@@ -51,3 +52,18 @@
         </section>
     </div>
 </div>
+
+<style>
+@media print {
+    .actions,
+    .sidebar,
+    .topbar {
+        display: none !important;
+    }
+
+    .content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+</style>

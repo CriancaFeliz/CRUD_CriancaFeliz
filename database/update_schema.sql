@@ -7,6 +7,19 @@ USE criancafeliz;
 ALTER TABLE `usuario` MODIFY COLUMN `Senha` varchar(255) DEFAULT NULL;
 ALTER TABLE `usuario` ADD COLUMN IF NOT EXISTS `foto_perfil` varchar(255) DEFAULT NULL;
 
+CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(100) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `used_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token_hash` (`token_hash`),
+  KEY `email` (`email`),
+  KEY `expires_at` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- 2. Oficializar tabela usada pela área psicológica
 CREATE TABLE IF NOT EXISTS `anotacao_psicologica` (
   `id_anotacao` int(11) NOT NULL AUTO_INCREMENT,

@@ -29,6 +29,7 @@ docker compose up --build
 | --- | --- |
 | `tests/automated/PasswordHelperTest.php` | Política, hash, verificação e exceção de senha fraca |
 | `tests/automated/BootstrapHelperTest.php` | Sanitização, email e formatação de datas |
+| `tests/automated/ReportExportHelperTest.php` | Escape CSV para exportações compatíveis com planilhas |
 
 ## CI
 

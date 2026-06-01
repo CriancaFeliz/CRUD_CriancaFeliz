@@ -46,6 +46,7 @@ Use com backup do banco e preferencialmente fora de produção.
 | `generate_password.php` | Gera hash de senha. |
 | `install_database.php` | Instalador visual do banco. |
 | `limpar_sessao.php` | Limpa sessão local. |
+| `migrate_reset_tokens.php` | Migra tokens válidos de `data/reset_tokens.json` para `password_reset_tokens`. |
 
 Senha padrão usada pelos scripts de correção de usuários: `AlterarEstaSenha!2026`, ou o valor da variável `INITIAL_ADMIN_PASSWORD`.
 
@@ -74,7 +75,7 @@ Execute:
 php tests/run.php
 ```
 
-O runner atual cobre helpers de senha, sanitização, email e datas. A CI em `.github/workflows/ci.yml` executa lint PHP, testes automatizados e validação do Docker Compose.
+O runner atual cobre helpers de senha, sanitização, email, datas e escape CSV de relatórios. A CI em `.github/workflows/ci.yml` executa lint PHP, testes automatizados e validação do Docker Compose.
 
 Veja também `docs/TEST_PLAN.md`.
 

@@ -35,6 +35,7 @@ Esta é a nota central para navegar o projeto no Obsidian. Ela não substitui a 
 - [[docs/LGPD_AND_DATA_GOVERNANCE|LGPD e governança]]: plano técnico-operacional de dados.
 - [[docs/TEST_PLAN|Plano de testes]]: testes automatizados, CI e próximos fluxos.
 - [[docs/DATABASE_NORMALIZATION_PLAN|Plano do banco]]: normalização de nomes de tabelas.
+- [[docs/LEGACY_TABLE_STRATEGY|Tabelas legadas]]: decisão para tabelas antigas e compatibilidade.
 - [[docs/REPORTING_ROADMAP|Roadmap de relatórios]]: relatórios PDF/Excel e decisões pendentes.
 - [[docs/REQUIREMENTS_TRACEABILITY|Rastreabilidade]]: requisitos da monografia versus estado atual.
 - [[docs/MAINTENANCE_AND_TESTING|Manutenção e testes]]: scripts auxiliares, validação local e checklist operacional.

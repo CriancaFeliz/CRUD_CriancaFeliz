@@ -93,6 +93,26 @@ class PsychologyService
         ];
     }
 
+    public function searchPatients($query)
+    {
+        $query = trim((string)$query);
+        if (strlen($query) < 2) {
+            return [];
+        }
+
+        $normalized = preg_replace('/\D+/', '', $query);
+        $patients = $this->getAllPatients();
+
+        return array_values(array_filter($patients, function ($patient) use ($query, $normalized) {
+            $name = strtolower((string)($patient['nome_completo'] ?? ''));
+            $cpf = preg_replace('/\D+/', '', (string)($patient['cpf'] ?? ''));
+            $needle = strtolower($query);
+
+            return strpos($name, $needle) !== false
+                || ($normalized !== '' && strpos($cpf, $normalized) !== false);
+        }));
+    }
+
     /* ================= ANOTAÇÕES ================= */
 
     public function getPatientNotes($cpf)
@@ -167,6 +187,17 @@ class PsychologyService
             error_log("saveNote error: ".$e->getMessage());
             return ['success'=>false,'message'=>$e->getMessage()];
         }
+    }
+
+    public function saveAssessment($data)
+    {
+        $data['note_type'] = 'avaliacao';
+
+        if (empty($data['title'])) {
+            $data['title'] = 'Avaliação psicológica - ' . date('d/m/Y');
+        }
+
+        return $this->saveNote($data);
     }
 
     /* ================= UTIL ================= */
@@ -278,6 +309,74 @@ class PsychologyService
         }
 
         return $rows;
+    }
+
+    public function getReportRows($filters = [])
+    {
+        $db = Database::getConnection();
+        $conditions = [];
+        $params = [];
+
+        if (!empty($filters['cpf'])) {
+            $conditions[] = "REPLACE(REPLACE(at.cpf, '.', ''), '-', '') LIKE ?";
+            $params[] = '%' . preg_replace('/\D+/', '', $filters['cpf']) . '%';
+        }
+
+        if (!empty($filters['tipo'])) {
+            $conditions[] = "a.tipo = ?";
+            $params[] = $this->mapTipoToDb($filters['tipo']);
+        }
+
+        if (!empty($filters['data_inicio'])) {
+            $conditions[] = "DATE(a.data_anotacao) >= ?";
+            $params[] = $filters['data_inicio'];
+        }
+
+        if (!empty($filters['data_fim'])) {
+            $conditions[] = "DATE(a.data_anotacao) <= ?";
+            $params[] = $filters['data_fim'];
+        }
+
+        $sql = "
+            SELECT
+                a.id_anotacao,
+                a.data_anotacao,
+                a.tipo,
+                a.titulo,
+                a.humor,
+                at.nome AS paciente_nome,
+                at.cpf,
+                u.nome AS psicologo_nome
+            FROM anotacao_psicologica a
+            LEFT JOIN atendido at ON at.idatendido = a.id_atendido
+            LEFT JOIN usuario u ON u.idusuario = a.id_psicologo
+        ";
+
+        if (!empty($conditions)) {
+            $sql .= ' WHERE ' . implode(' AND ', $conditions);
+        }
+
+        $sql .= ' ORDER BY a.data_anotacao DESC LIMIT 1000';
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function exportReportToCSV($filters = [])
+    {
+        $rows = $this->getReportRows($filters);
+
+        return ReportExportHelper::csv([
+            'data_anotacao' => 'Data',
+            'paciente_nome' => 'Paciente',
+            'cpf' => 'CPF',
+            'tipo' => 'Tipo',
+            'titulo' => 'Titulo',
+            'humor' => 'Humor',
+            'psicologo_nome' => 'Psicologo'
+        ], $rows);
     }
 
     public function updateNote($id, $data)
