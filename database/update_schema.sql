@@ -5,6 +5,7 @@ USE criancafeliz;
 
 -- 1. Garantir suporte a hashes modernos de senha
 ALTER TABLE `usuario` MODIFY COLUMN `Senha` varchar(255) DEFAULT NULL;
+ALTER TABLE `usuario` ADD COLUMN IF NOT EXISTS `foto_perfil` varchar(255) DEFAULT NULL;
 
 -- 2. Oficializar tabela usada pela área psicológica
 CREATE TABLE IF NOT EXISTS `anotacao_psicologica` (

@@ -96,7 +96,36 @@ try {
         case 'prontuarios':
         case 'prontuarios.php':
             $prontuarioController = new ProntuarioController();
-            $prontuarioController->index();
+            $action = $_GET['action'] ?? 'index';
+            switch ($action) {
+                case 'show':
+                    $cpf = $_GET['cpf'] ?? null;
+                    if (!$cpf) {
+                        throw new Exception('CPF do prontuário é obrigatório');
+                    }
+                    $prontuarioController->show($cpf);
+                    break;
+                case 'buscar':
+                    $prontuarioController->buscar();
+                    break;
+                case 'upload_document':
+                    $prontuarioController->uploadDocument();
+                    break;
+                case 'document':
+                    $id = $_GET['id'] ?? null;
+                    if (!$id) {
+                        throw new Exception('ID do documento é obrigatório');
+                    }
+                    $prontuarioController->viewDocument($id);
+                    break;
+                default:
+                    if (!empty($_GET['cpf'])) {
+                        $prontuarioController->show($_GET['cpf']);
+                    } else {
+                        $prontuarioController->index();
+                    }
+                    break;
+            }
             break;
 
         case 'attendance':

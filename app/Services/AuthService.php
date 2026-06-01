@@ -74,6 +74,7 @@ class AuthService {
     $_SESSION['user_id'] = $user['idusuario'];
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_name'] = $user['nome'];
+    $_SESSION['user_photo'] = $user['foto_perfil'] ?? '';
 
     // Usa 'nivel' do banco como role
     $_SESSION['user_role'] = $user['nivel'] ?? 'funcionario';
@@ -123,7 +124,8 @@ class AuthService {
             'id' => $_SESSION['user_id'],
             'email' => $_SESSION['user_email'],
             'name' => $_SESSION['user_name'],
-            'role' => $_SESSION['user_role']
+            'role' => $_SESSION['user_role'],
+            'photo' => $_SESSION['user_photo'] ?? ''
         ];
     }
     

@@ -29,6 +29,17 @@
     </div>
     
     <!-- Scripts -->
+    <script>
+        window.APP_DEBUG = <?php echo appDebugEnabled() ? 'true' : 'false'; ?>;
+        window.debugLog = function() {
+            if (window.APP_DEBUG && window.console && typeof window.console.log === 'function') {
+                window.console.log.apply(window.console, arguments);
+            }
+        };
+        if (!window.APP_DEBUG && window.console && typeof window.console.log === 'function') {
+            window.console.log = function() {};
+        }
+    </script>
     <script src="js/script.js"></script>
     <script src="js/chatbot.js"></script>
     <script src="js/theme-toggle.js"></script>

@@ -153,6 +153,18 @@ Documentos principais:
 - `database/README_SETUP.md`: setup do banco.
 - `docs/STYLING_UPGRADE.md`: padrões visuais.
 - `docs/archive/`: histórico antigo preservado.
+
+## 8. Correção de Lacunas em 2026-06-01
+
+- Testes automatizados mínimos adicionados em `tests/automated/` com runner `tests/run.php`.
+- CI adicionada em `.github/workflows/ci.yml`.
+- Plano LGPD e governança criado em `docs/LGPD_AND_DATA_GOVERNANCE.md`.
+- Plano de normalização do banco criado em `docs/DATABASE_NORMALIZATION_PLAN.md`.
+- Foto de perfil passou a persistir em `usuario.foto_perfil`.
+- Prontuário passou a listar e receber documentos anexados por admin.
+- Logs detalhados de debug passaram a obedecer `APP_DEBUG`.
+- Roadmap de relatórios criado em `docs/REPORTING_ROADMAP.md`.
+- Rastreabilidade dos requisitos criada em `docs/REQUIREMENTS_TRACEABILITY.md`.
 - `00 - Painel do Projeto Criança Feliz.md`: navegação Obsidian do projeto.
 - `01 - Backlog Técnico.md`: pendências priorizadas em formato de tarefas.
 - `02 - Guia de Uso com Codex.md`: fluxo recomendado para trabalhar com Codex no projeto.

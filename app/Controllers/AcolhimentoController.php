@@ -102,9 +102,9 @@ class AcolhimentoController extends BaseController {
             $this->requirePermission(!empty($id) ? 'edit_records' : 'create_records');
             $this->validateCSRF();
             
-            error_log('=== ACOLHIMENTO STORE ===');
-            error_log('ID recebido: ' . ($id ?? 'NENHUM'));
-            error_log('Dados POST: ' . json_encode($data));
+            debugLog('=== ACOLHIMENTO STORE ===');
+            debugLog('ID recebido: ' . ($id ?? 'NENHUM'));
+            debugLog('Dados POST', ['fields' => array_keys($data)]);
             
             // Upload de foto se fornecida
             if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
@@ -113,13 +113,13 @@ class AcolhimentoController extends BaseController {
             
             if (!empty($id)) {
                 // EDIÇÃO
-                error_log('EDITANDO ficha ID: ' . $id);
+                debugLog('EDITANDO ficha ID: ' . $id);
                 $ficha = $this->acolhimentoService->updateFicha($id, $data);
                 $this->redirectWithSuccess('acolhimento_list.php', 'Ficha de acolhimento atualizada com sucesso!');
                 return; // IMPORTANTE: Para execução aqui
             } else {
                 // CRIAÇÃO
-                error_log('CRIANDO nova ficha');
+                debugLog('CRIANDO nova ficha');
                 $ficha = $this->acolhimentoService->createFicha($data);
                 $this->redirectWithSuccess('acolhimento_list.php', 'Ficha de acolhimento cadastrada com sucesso!');
                 return;

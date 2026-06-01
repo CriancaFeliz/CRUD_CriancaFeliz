@@ -21,6 +21,7 @@ Use apenas em ambiente local ou homologação.
 | Script | Função |
 | --- | --- |
 | `check_ficha_columns.php` | Verifica colunas esperadas da ficha socioeconômica. |
+| `check_table_case.php` | Verifica divergências de caixa em nomes de tabelas usadas pelo código. |
 | `debug_buttons.php` | Diagnostica botões/ações da área psicológica. |
 | `debug_edit_socio.php` | Diagnostica edição socioeconômica. |
 | `debug_renda_calculation.php` | Diagnostica cálculo de renda. |
@@ -63,7 +64,21 @@ Pasta: `database/`
 
 Ponto de atenção: o código ainda usa nomes de tabelas com variação de caixa (`Atendido`, `atendido`, `Usuario`, `usuario`, etc.). Em servidores Linux com `lower_case_table_names=0`, valide o schema antes de produção.
 
-## 5. Testes Manuais
+## 5. Testes Automatizados
+
+Pasta: `tests/automated/`
+
+Execute:
+
+```bash
+php tests/run.php
+```
+
+O runner atual cobre helpers de senha, sanitização, email e datas. A CI em `.github/workflows/ci.yml` executa lint PHP, testes automatizados e validação do Docker Compose.
+
+Veja também `docs/TEST_PLAN.md`.
+
+## 6. Testes Manuais
 
 Pasta: `tests/manual/`
 
@@ -76,7 +91,7 @@ Pasta: `tests/manual/`
 
 Esses arquivos ainda não são testes automatizados. Eles dependem de banco local, sessão e dados de exemplo.
 
-## 6. Checklist Antes de Rodar Scripts
+## 7. Checklist Antes de Rodar Scripts
 
 1. Confirmar backup do banco.
 2. Confirmar que o ambiente é local ou homologação.
@@ -85,7 +100,7 @@ Esses arquivos ainda não são testes automatizados. Eles dependem de banco loca
 5. Executar o script uma vez e registrar resultado.
 6. Remover, bloquear ou tirar `tools/` do webroot após o uso.
 
-## 7. Validação Local Recomendada
+## 8. Validação Local Recomendada
 
 Verificar PHP:
 
@@ -98,6 +113,12 @@ Confirmar lint dos arquivos PHP:
 
 ```bash
 php -l index.php
+```
+
+Rodar testes automatizados:
+
+```bash
+php tests/run.php
 ```
 
 Para validar todos os PHPs no PowerShell:
@@ -149,7 +170,7 @@ Login inicial após importar `SETUP_COMPLETO_FINAL.sql`:
 - email: `admin@criancafeliz.org`
 - senha: `AlterarEstaSenha!2026`
 
-## 8. Fluxo Mínimo Pós-Setup
+## 9. Fluxo Mínimo Pós-Setup
 
 1. Login com usuário admin.
 2. Abrir dashboard.
@@ -162,8 +183,9 @@ Login inicial após importar `SETUP_COMPLETO_FINAL.sql`:
 9. Abrir logs.
 10. Validar perfil e troca de senha.
 
-## 9. Pendências Conhecidas
+## 10. Pendências Conhecidas
 
-- Automatizar testes hoje manuais.
+- Expandir testes automatizados para fluxos com banco e upload.
 - Normalizar nomes de tabelas para ambientes sensíveis a maiúsculas/minúsculas.
 - Configurar SMTP real para recuperação de senha com provedor e credenciais de produção.
+- Executar plano LGPD e política de retenção de documentos.

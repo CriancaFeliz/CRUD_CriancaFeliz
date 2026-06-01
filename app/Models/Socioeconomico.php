@@ -160,7 +160,7 @@ class Socioeconomico extends BaseModel {
                 }
                 // Agora converter para float
                 $rendaFamiliar = floatval($renda);
-                error_log("DEBUG: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
+                debugLog("DEBUG: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
             }
             
             // Garantir que colunas de benefícios existam na tabela (compatibilidade)
@@ -184,7 +184,7 @@ class Socioeconomico extends BaseModel {
                 if (!in_array($col, $colsArr)) {
                     try {
                         $this->query("ALTER TABLE Ficha_Socioeconomico ADD COLUMN {$col} {$ddl}");
-                        error_log("Coluna adicionada: {$col}");
+                        debugLog("Coluna adicionada: {$col}");
                     } catch (Exception $e) {
                         error_log("Falha ao adicionar coluna {$col}: " . $e->getMessage());
                     }
@@ -254,59 +254,57 @@ class Socioeconomico extends BaseModel {
             $sql = "INSERT INTO Ficha_Socioeconomico ({$colsList}) VALUES ({$placeholders})";
 
             try {
-                // Log detalhado para debug (arquivo em DATA_PATH)
-                $debugFile = defined('DATA_PATH') ? DATA_PATH . '/debug_sql.log' : __DIR__ . '/../../data/debug_sql.log';
                 $logEntry = [
                     'time' => date('c'),
                     'action' => 'insert_ficha_socioeconomico',
                     'sql' => $sql,
                     'params' => $insertVals
                 ];
-                @file_put_contents($debugFile, json_encode($logEntry, JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND);
+                debugFileLog('debug_sql.log', $logEntry);
 
                 $this->query($sql, $insertVals);
                 $fichaId = (int)Database::lastInsertId();
-                error_log('Ficha criada com idficha: ' . $fichaId);
-                @file_put_contents($debugFile, json_encode(['time'=>date('c'),'result'=>'ok','idficha'=>$fichaId]) . PHP_EOL, FILE_APPEND);
+                debugLog('Ficha criada com idficha: ' . $fichaId);
+                debugFileLog('debug_sql.log', ['time'=>date('c'),'result'=>'ok','idficha'=>$fichaId]);
             } catch (Exception $e) {
                 error_log('ERRO ao inserir Ficha_Socioeconomico: ' . $e->getMessage());
-                @file_put_contents($debugFile, json_encode(['time'=>date('c'),'error'=>$e->getMessage()]) . PHP_EOL, FILE_APPEND);
+                debugFileLog('debug_sql.log', ['time'=>date('c'),'error'=>$e->getMessage()]);
                 throw $e;
             }
             
             // 3. Salvar Família (se houver)
             // Aceitar tanto familia_json quanto familia array
-            error_log('=== INICIANDO SALVAMENTO DE FAMÍLIA ===');
-            error_log('familia_json presente: ' . (isset($data['familia_json']) ? 'SIM' : 'NÃO'));
-            error_log('familia array presente: ' . (isset($data['familia']) && is_array($data['familia']) ? 'SIM (' . count($data['familia']) . ' itens)' : 'NÃO'));
+            debugLog('=== INICIANDO SALVAMENTO DE FAMÍLIA ===');
+            debugLog('familia_json presente: ' . (isset($data['familia_json']) ? 'SIM' : 'NÃO'));
+            debugLog('familia array presente: ' . (isset($data['familia']) && is_array($data['familia']) ? 'SIM (' . count($data['familia']) . ' itens)' : 'NÃO'));
             
             $familia = [];
             if (!empty($data['familia_json'])) {
-                error_log('Decodificando familia_json...');
+                debugLog('Decodificando familia_json...');
                 $familia = json_decode($data['familia_json'], true);
                 if (json_last_error() !== JSON_ERROR_NONE || !is_array($familia)) {
-                    error_log('ERRO ao decodificar familia_json: ' . json_last_error_msg());
-                    error_log('Conteúdo familia_json: ' . substr($data['familia_json'], 0, 200));
+                    debugLog('ERRO ao decodificar familia_json: ' . json_last_error_msg());
+                    debugLog('familia_json recebido', ['length' => strlen($data['familia_json'])]);
                     $familia = [];
                 } else {
-                    error_log('familia_json decodificado com sucesso: ' . count($familia) . ' membros');
+                    debugLog('familia_json decodificado com sucesso: ' . count($familia) . ' membros');
                 }
             } elseif (!empty($data['familia']) && is_array($data['familia'])) {
-                error_log('Usando array familia diretamente: ' . count($data['familia']) . ' membros');
+                debugLog('Usando array familia diretamente: ' . count($data['familia']) . ' membros');
                 $familia = $data['familia'];
             } else {
-                error_log('NENHUM dado de família encontrado (nem familia_json nem familia array)');
+                debugLog('NENHUM dado de família encontrado (nem familia_json nem familia array)');
             }
             
             if (!empty($familia) && is_array($familia)) {
-                error_log('Inserindo ' . count($familia) . ' membros da família na tabela Familia com id_ficha = ' . $fichaId);
+                debugLog('Inserindo ' . count($familia) . ' membros da família na tabela Familia com id_ficha = ' . $fichaId);
                 $familiaInseridos = 0;
                 foreach ($familia as $idx => $membro) {
-                    error_log("Processando membro {$idx}: " . print_r($membro, true));
+                    debugLog("Processando membro {$idx}", ['fields' => array_keys($membro)]);
                     
                     // Validar membro antes de inserir
                     if (empty($membro['nome']) || empty($membro['parentesco'])) {
-                        error_log("Membro da família #{$idx} ignorado - falta nome ou parentesco");
+                        debugLog("Membro da família #{$idx} ignorado - falta nome ou parentesco");
                         continue;
                     }
                     
@@ -329,46 +327,46 @@ class Socioeconomico extends BaseModel {
                             ]
                         );
                         $familiaInseridos++;
-                        error_log("Membro #{$idx} inserido com sucesso");
+                        debugLog("Membro #{$idx} inserido com sucesso");
                     } catch (Exception $e) {
                         error_log("ERRO ao inserir membro #{$idx}: " . $e->getMessage());
                         throw $e;
                     }
                 }
-                error_log("✅ Família: {$familiaInseridos} membros inseridos com sucesso");
+                debugLog("Família: {$familiaInseridos} membros inseridos com sucesso");
             } else {
-                error_log('⚠️ Nenhum membro da família para inserir (array vazio ou inválido)');
+                debugLog('Nenhum membro da família para inserir (array vazio ou inválido)');
             }
             
             // 4. Salvar Despesas (se houver)
             // Aceitar tanto despesas_json quanto despesas array
-            error_log('=== INICIANDO SALVAMENTO DE DESPESAS ===');
-            error_log('despesas_json presente: ' . (isset($data['despesas_json']) ? 'SIM' : 'NÃO'));
-            error_log('despesas array presente: ' . (isset($data['despesas']) && is_array($data['despesas']) ? 'SIM (' . count($data['despesas']) . ' itens)' : 'NÃO'));
+            debugLog('=== INICIANDO SALVAMENTO DE DESPESAS ===');
+            debugLog('despesas_json presente: ' . (isset($data['despesas_json']) ? 'SIM' : 'NÃO'));
+            debugLog('despesas array presente: ' . (isset($data['despesas']) && is_array($data['despesas']) ? 'SIM (' . count($data['despesas']) . ' itens)' : 'NÃO'));
             
             $despesas = [];
             if (!empty($data['despesas_json'])) {
-                error_log('Decodificando despesas_json...');
+                debugLog('Decodificando despesas_json...');
                 $despesas = json_decode($data['despesas_json'], true);
                 if (json_last_error() !== JSON_ERROR_NONE || !is_array($despesas)) {
-                    error_log('ERRO ao decodificar despesas_json: ' . json_last_error_msg());
-                    error_log('Conteúdo despesas_json: ' . substr($data['despesas_json'], 0, 200));
+                    debugLog('ERRO ao decodificar despesas_json: ' . json_last_error_msg());
+                    debugLog('despesas_json recebido', ['length' => strlen($data['despesas_json'])]);
                     $despesas = [];
                 } else {
-                    error_log('despesas_json decodificado com sucesso: ' . count($despesas) . ' itens');
+                    debugLog('despesas_json decodificado com sucesso: ' . count($despesas) . ' itens');
                 }
             } elseif (!empty($data['despesas']) && is_array($data['despesas'])) {
-                error_log('Usando array despesas diretamente: ' . count($data['despesas']) . ' itens');
+                debugLog('Usando array despesas diretamente: ' . count($data['despesas']) . ' itens');
                 $despesas = $data['despesas'];
             } else {
-                error_log('NENHUM dado de despesas encontrado (nem despesas_json nem despesas array)');
+                debugLog('NENHUM dado de despesas encontrado (nem despesas_json nem despesas array)');
             }
             
             if (!empty($despesas) && is_array($despesas)) {
-                error_log('Inserindo ' . count($despesas) . ' despesas na tabela Despesas com id_ficha = ' . $fichaId);
+                debugLog('Inserindo ' . count($despesas) . ' despesas na tabela Despesas com id_ficha = ' . $fichaId);
                 $despesasInseridas = 0;
                 foreach ($despesas as $idx => $despesa) {
-                    error_log("Processando despesa {$idx}: " . print_r($despesa, true));
+                    debugLog("Processando despesa {$idx}", ['fields' => array_keys($despesa)]);
                     
                     // Normalizar valor
                     $valor = 0;
@@ -401,18 +399,18 @@ class Socioeconomico extends BaseModel {
                                 [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
                             );
                             $despesasInseridas++;
-                            error_log("Despesa #{$idx} inserida com sucesso: {$tipo} = R$ {$valor}");
+                            debugLog("Despesa #{$idx} inserida com sucesso");
                         } catch (Exception $e) {
                             error_log("ERRO ao inserir despesa #{$idx}: " . $e->getMessage());
                             throw $e;
                         }
                     } else {
-                        error_log("Despesa #{$idx} ignorada (sem valor e sem tipo)");
+                        debugLog("Despesa #{$idx} ignorada (sem valor e sem tipo)");
                     }
                 }
-                error_log("✅ Despesas: {$despesasInseridas} itens inseridos com sucesso");
+                debugLog("Despesas: {$despesasInseridas} itens inseridos com sucesso");
             } else {
-                error_log('⚠️ Nenhuma despesa para inserir (array vazio ou inválido)');
+                debugLog('Nenhuma despesa para inserir (array vazio ou inválido)');
             }
             
             Database::commit();
@@ -652,7 +650,7 @@ class Socioeconomico extends BaseModel {
                 }
                 // Agora converter para float
                 $rendaFamiliar = floatval($renda);
-                error_log("DEBUG UPDATE: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
+                debugLog("DEBUG UPDATE: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
             }
             
             // Garantir colunas de benefícios (caso não existam ainda)
@@ -676,7 +674,7 @@ class Socioeconomico extends BaseModel {
                 if (!in_array($col, $colsArr)) {
                     try {
                         $this->query("ALTER TABLE Ficha_Socioeconomico ADD COLUMN {$col} {$ddl}");
-                        error_log("Coluna adicionada (update): {$col}");
+                        debugLog("Coluna adicionada (update): {$col}");
                     } catch (Exception $e) {
                         error_log("Falha ao adicionar coluna {$col} no update: " . $e->getMessage());
                     }
@@ -741,21 +739,19 @@ class Socioeconomico extends BaseModel {
                 $sql = "UPDATE Ficha_Socioeconomico SET " . implode(', ', $setParts) . " WHERE id_atendido = ?";
                 $values[] = $id;
                 try {
-                    // Log detalhado de UPDATE
-                    $debugFile = defined('DATA_PATH') ? DATA_PATH . '/debug_sql.log' : __DIR__ . '/../../data/debug_sql.log';
                     $logEntry = [
                         'time' => date('c'),
                         'action' => 'update_ficha_socioeconomico',
                         'sql' => $sql,
                         'params' => $values
                     ];
-                    @file_put_contents($debugFile, json_encode($logEntry, JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND);
+                    debugFileLog('debug_sql.log', $logEntry);
 
                     $this->query($sql, $values);
-                    @file_put_contents($debugFile, json_encode(['time'=>date('c'),'result'=>'ok','id_atendido'=>$id]) . PHP_EOL, FILE_APPEND);
+                    debugFileLog('debug_sql.log', ['time'=>date('c'),'result'=>'ok','id_atendido'=>$id]);
                 } catch (Exception $e) {
                     error_log('ERRO ao atualizar Ficha_Socioeconomico: ' . $e->getMessage());
-                    @file_put_contents($debugFile, json_encode(['time'=>date('c'),'error'=>$e->getMessage()]) . PHP_EOL, FILE_APPEND);
+                    debugFileLog('debug_sql.log', ['time'=>date('c'),'error'=>$e->getMessage()]);
                     throw $e;
                 }
             } else {
@@ -769,42 +765,42 @@ class Socioeconomico extends BaseModel {
             $fichaId = $fichaExistente['idficha'] ?? null;
             
             if ($fichaId) {
-                error_log('Atualizando família e despesas para ficha idficha: ' . $fichaId);
+                debugLog('Atualizando família e despesas para ficha idficha: ' . $fichaId);
                 
                 // Deletar família e despesas existentes
                 $this->query("DELETE FROM Familia WHERE id_ficha = ?", [$fichaId]);
                 $this->query("DELETE FROM Despesas WHERE id_ficha = ?", [$fichaId]);
                 
                 // Salvar nova família (se houver)
-                error_log('=== UPDATE: INICIANDO SALVAMENTO DE FAMÍLIA ===');
-                error_log('familia_json presente: ' . (isset($data['familia_json']) ? 'SIM' : 'NÃO'));
-                error_log('familia array presente: ' . (isset($data['familia']) && is_array($data['familia']) ? 'SIM (' . count($data['familia']) . ' itens)' : 'NÃO'));
+                debugLog('=== UPDATE: INICIANDO SALVAMENTO DE FAMÍLIA ===');
+                debugLog('familia_json presente: ' . (isset($data['familia_json']) ? 'SIM' : 'NÃO'));
+                debugLog('familia array presente: ' . (isset($data['familia']) && is_array($data['familia']) ? 'SIM (' . count($data['familia']) . ' itens)' : 'NÃO'));
                 
                 $familia = [];
                 if (!empty($data['familia_json'])) {
-                    error_log('Decodificando familia_json no update...');
+                    debugLog('Decodificando familia_json no update...');
                     $familia = json_decode($data['familia_json'], true);
                     if (json_last_error() !== JSON_ERROR_NONE || !is_array($familia)) {
-                        error_log('ERRO ao decodificar familia_json no update: ' . json_last_error_msg());
-                        error_log('Conteúdo familia_json: ' . substr($data['familia_json'], 0, 200));
+                        debugLog('ERRO ao decodificar familia_json no update: ' . json_last_error_msg());
+                        debugLog('familia_json recebido no update', ['length' => strlen($data['familia_json'])]);
                         $familia = [];
                     } else {
-                        error_log('familia_json decodificado com sucesso no update: ' . count($familia) . ' membros');
+                        debugLog('familia_json decodificado com sucesso no update: ' . count($familia) . ' membros');
                     }
                 } elseif (!empty($data['familia']) && is_array($data['familia'])) {
-                    error_log('Usando array familia diretamente no update: ' . count($data['familia']) . ' membros');
+                    debugLog('Usando array familia diretamente no update: ' . count($data['familia']) . ' membros');
                     $familia = $data['familia'];
                 } else {
-                    error_log('NENHUM dado de família encontrado no update');
+                    debugLog('NENHUM dado de família encontrado no update');
                 }
                 
                 if (!empty($familia) && is_array($familia)) {
-                    error_log('Inserindo ' . count($familia) . ' membros da família no update com id_ficha = ' . $fichaId);
+                    debugLog('Inserindo ' . count($familia) . ' membros da família no update com id_ficha = ' . $fichaId);
                     $familiaInseridos = 0;
                     foreach ($familia as $idx => $membro) {
                         // Validar membro antes de inserir
                         if (empty($membro['nome']) || empty($membro['parentesco'])) {
-                            error_log("Update - Membro da família #{$idx} ignorado - falta nome ou parentesco");
+                            debugLog("Update - Membro da família #{$idx} ignorado - falta nome ou parentesco");
                             continue;
                         }
                         
@@ -831,36 +827,36 @@ class Socioeconomico extends BaseModel {
                             throw $e;
                         }
                     }
-                    error_log("✅ Update - Família: {$familiaInseridos} membros inseridos com sucesso");
+                    debugLog("Update - Família: {$familiaInseridos} membros inseridos com sucesso");
                 } else {
-                    error_log('⚠️ Update - Nenhum membro da família para inserir');
+                    debugLog('Update - Nenhum membro da família para inserir');
                 }
                 
                 // Salvar novas despesas (se houver)
-                error_log('=== UPDATE: INICIANDO SALVAMENTO DE DESPESAS ===');
-                error_log('despesas_json presente: ' . (isset($data['despesas_json']) ? 'SIM' : 'NÃO'));
-                error_log('despesas array presente: ' . (isset($data['despesas']) && is_array($data['despesas']) ? 'SIM (' . count($data['despesas']) . ' itens)' : 'NÃO'));
+                debugLog('=== UPDATE: INICIANDO SALVAMENTO DE DESPESAS ===');
+                debugLog('despesas_json presente: ' . (isset($data['despesas_json']) ? 'SIM' : 'NÃO'));
+                debugLog('despesas array presente: ' . (isset($data['despesas']) && is_array($data['despesas']) ? 'SIM (' . count($data['despesas']) . ' itens)' : 'NÃO'));
                 
                 $despesas = [];
                 if (!empty($data['despesas_json'])) {
-                    error_log('Decodificando despesas_json no update...');
+                    debugLog('Decodificando despesas_json no update...');
                     $despesas = json_decode($data['despesas_json'], true);
                     if (json_last_error() !== JSON_ERROR_NONE || !is_array($despesas)) {
-                        error_log('ERRO ao decodificar despesas_json no update: ' . json_last_error_msg());
-                        error_log('Conteúdo despesas_json: ' . substr($data['despesas_json'], 0, 200));
+                        debugLog('ERRO ao decodificar despesas_json no update: ' . json_last_error_msg());
+                        debugLog('despesas_json recebido no update', ['length' => strlen($data['despesas_json'])]);
                         $despesas = [];
                     } else {
-                        error_log('despesas_json decodificado com sucesso no update: ' . count($despesas) . ' itens');
+                        debugLog('despesas_json decodificado com sucesso no update: ' . count($despesas) . ' itens');
                     }
                 } elseif (!empty($data['despesas']) && is_array($data['despesas'])) {
-                    error_log('Usando array despesas diretamente no update: ' . count($data['despesas']) . ' itens');
+                    debugLog('Usando array despesas diretamente no update: ' . count($data['despesas']) . ' itens');
                     $despesas = $data['despesas'];
                 } else {
-                    error_log('NENHUM dado de despesas encontrado no update');
+                    debugLog('NENHUM dado de despesas encontrado no update');
                 }
                 
                 if (!empty($despesas) && is_array($despesas)) {
-                    error_log('Inserindo ' . count($despesas) . ' despesas no update com id_ficha = ' . $fichaId);
+                    debugLog('Inserindo ' . count($despesas) . ' despesas no update com id_ficha = ' . $fichaId);
                     $despesasInseridas = 0;
                     foreach ($despesas as $idx => $despesa) {
                         // Normalizar valor
@@ -900,9 +896,9 @@ class Socioeconomico extends BaseModel {
                             }
                         }
                     }
-                    error_log("✅ Update - Despesas: {$despesasInseridas} itens inseridos com sucesso");
+                    debugLog("Update - Despesas: {$despesasInseridas} itens inseridos com sucesso");
                 } else {
-                    error_log('⚠️ Update - Nenhuma despesa para inserir');
+                    debugLog('Update - Nenhuma despesa para inserir');
                 }
             } else {
                 error_log('ATENÇÃO: Ficha não encontrada para id_atendido: ' . $id);

@@ -34,6 +34,7 @@ class ProfileController extends BaseController {
             $userData['id'] = $userData['id'] ?? $userData['idusuario'];
             $userData['name'] = $userData['name'] ?? $userData['nome'];
             $userData['role'] = $userData['role'] ?? $userData['nivel'];
+            $userData['photo'] = $userData['foto_perfil'] ?? ($_SESSION['user_photo'] ?? '');
             
             $data = [
                 'title' => 'Meu Perfil - Associação Criança Feliz',
@@ -63,6 +64,8 @@ class ProfileController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
+
             $userId = $_SESSION['user_id'] ?? null;
             
             if (!$userId) {
@@ -77,8 +80,20 @@ class ProfileController extends BaseController {
             $file = $_FILES['photo'];
             
             // Validar tipo de arquivo
-            $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!in_array($file['type'], $allowedTypes)) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo ? finfo_file($finfo, $file['tmp_name']) : null;
+            if ($finfo) {
+                finfo_close($finfo);
+            }
+
+            $allowedTypes = [
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp'
+            ];
+
+            if (!$mimeType || !isset($allowedTypes[$mimeType])) {
                 throw new Exception('Tipo de arquivo não permitido. Use JPG, PNG, GIF ou WEBP');
             }
             
@@ -88,14 +103,19 @@ class ProfileController extends BaseController {
             }
             
             // Criar diretório de uploads se não existir
-            $uploadDir = ROOT_PATH . '/uploads/profiles';
+            $uploadDir = BASE_PATH . '/uploads/profiles';
             if (!file_exists($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $htaccess = $uploadDir . '/.htaccess';
+            if (!file_exists($htaccess)) {
+                @file_put_contents($htaccess, "Options -Indexes\n<FilesMatch \"\\.(php|phtml|phar)$\">\nRequire all denied\n</FilesMatch>\n");
             }
             
             // Gerar nome único para o arquivo
-            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-            $fileName = $userId . '_' . time() . '.' . $extension;
+            $extension = $allowedTypes[$mimeType];
+            $fileName = $userId . '_' . bin2hex(random_bytes(16)) . '.' . $extension;
             $filePath = $uploadDir . '/' . $fileName;
             
             // Mover arquivo
@@ -103,10 +123,16 @@ class ProfileController extends BaseController {
                 throw new Exception('Erro ao salvar arquivo');
             }
             
-            // Atualizar apenas a sessão (não precisa salvar no JSON)
-            $_SESSION['user_photo'] = '/uploads/profiles/' . $fileName;
+            $publicPath = 'uploads/profiles/' . $fileName;
+
+            $userModel = new User();
+            $userModel->update($userId, [
+                'foto_perfil' => $publicPath
+            ]);
+
+            $_SESSION['user_photo'] = $publicPath;
             
-            $this->json(['success' => 'Foto atualizada com sucesso', 'photo' => '/uploads/profiles/' . $fileName]);
+            $this->json(['success' => true, 'message' => 'Foto atualizada com sucesso', 'photo' => $publicPath]);
             
         } catch (Exception $e) {
             $this->json(['error' => $e->getMessage()], 400);

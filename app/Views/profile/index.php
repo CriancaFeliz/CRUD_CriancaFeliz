@@ -26,6 +26,7 @@
             </div>
             
             <form id="photoForm" enctype="multipart/form-data" style="width: 100%; max-width: 300px;">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token ?? ''; ?>">
                 <input type="file" id="photoInput" name="photo" accept="image/*" style="display: none;">
                 <button type="button" onclick="document.getElementById('photoInput').click()" style="width: 100%; background: var(--primary-orange); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
                     📷 Alterar Foto
@@ -66,23 +67,6 @@
 </div>
 
 <script>
-    // Obter email do usuário atual
-    const currentUserEmail = '<?php echo $userData['email'] ?? ''; ?>';
-    
-    // Carregar foto do sessionStorage ao carregar a página
-    window.addEventListener('DOMContentLoaded', function() {
-        const savedPhoto = sessionStorage.getItem(`profile_photo_${currentUserEmail}`);
-        if (savedPhoto) {
-            const photoElement = document.getElementById('profilePhoto');
-            if (photoElement.tagName === 'IMG') {
-                photoElement.src = savedPhoto;
-            } else {
-                photoElement.outerHTML = `<img id="profilePhoto" src="${savedPhoto}" alt="Foto do perfil" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid var(--border-color);">`;
-            }
-        }
-    });
-    
-    // Upload de foto (salva em Base64 no sessionStorage)
     document.getElementById('photoInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -99,44 +83,43 @@
             return;
         }
         
-        // Ler arquivo e salvar em Base64
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const base64Image = e.target.result;
-            
-            // Salvar no sessionStorage com email do usuário
-            try {
-                sessionStorage.setItem(`profile_photo_${currentUserEmail}`, base64Image);
-                console.log('✓ Foto salva no sessionStorage para:', currentUserEmail);
-                
-                // Atualizar preview
+        const form = document.getElementById('photoForm');
+        const formData = new FormData(form);
+
+        fetch('profile.php?action=updatePhoto', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => response.json().then(data => ({ ok: response.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok || !data.success) {
+                    throw new Error(data.error || 'Erro ao salvar foto');
+                }
+
+                const photoUrl = `${data.photo}?v=${Date.now()}`;
                 const photoElement = document.getElementById('profilePhoto');
                 if (photoElement.tagName === 'IMG') {
-                    photoElement.src = base64Image;
+                    photoElement.src = photoUrl;
                 } else {
-                    photoElement.outerHTML = `<img id="profilePhoto" src="${base64Image}" alt="Foto do perfil" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid var(--border-color);">`;
+                    photoElement.outerHTML = `<img id="profilePhoto" src="${photoUrl}" alt="Foto do perfil" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid var(--border-color);">`;
                 }
-                
-                // Mostrar notificação de sucesso
+
                 if (window.notificationSystem) {
-                    window.notificationSystem.success('Foto atualizada com sucesso!');
+                    window.notificationSystem.success(data.message || 'Foto atualizada com sucesso!');
                 } else {
-                    alert('Foto atualizada com sucesso! Recarregue a página para ver em todas as telas.');
+                    alert(data.message || 'Foto atualizada com sucesso!');
                 }
-                
-                // Recarregar página para atualizar avatar no topbar
-                setTimeout(() => location.reload(), 1000);
-            } catch (error) {
+
+                setTimeout(() => location.reload(), 800);
+            })
+            .catch(error => {
                 console.error('Erro ao salvar foto:', error);
-                alert('Erro ao salvar foto. A imagem pode ser muito grande.');
-            }
-        };
-        
-        reader.onerror = function() {
-            alert('Erro ao ler o arquivo de imagem');
-        };
-        
-        reader.readAsDataURL(file);
+                alert(error.message || 'Erro ao salvar foto.');
+            });
     });
 </script>
 

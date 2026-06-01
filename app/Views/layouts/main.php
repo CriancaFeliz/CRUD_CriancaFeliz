@@ -76,34 +76,21 @@
     </div>
     
     <!-- Scripts -->
+    <script>
+        window.APP_DEBUG = <?php echo appDebugEnabled() ? 'true' : 'false'; ?>;
+        window.debugLog = function() {
+            if (window.APP_DEBUG && window.console && typeof window.console.log === 'function') {
+                window.console.log.apply(window.console, arguments);
+            }
+        };
+        if (!window.APP_DEBUG && window.console && typeof window.console.log === 'function') {
+            window.console.log = function() {};
+        }
+    </script>
     <script src="js/script.js"></script>
     <script src="js/chatbot.js"></script>
     <script src="js/theme-toggle.js"></script>
     <script src="js/notifications.js"></script>
-    
-    <!-- Script para carregar foto do perfil do sessionStorage -->
-    <script>
-        (function() {
-            const currentUserEmail = '<?php echo $currentUser['email'] ?? ''; ?>';
-            const savedPhoto = sessionStorage.getItem(`profile_photo_${currentUserEmail}`);
-            
-            if (savedPhoto) {
-                // Atualizar APENAS o avatar do usuário logado no topbar
-                const topbarAvatar = document.querySelector('.topbar .user .avatar');
-                if (topbarAvatar) {
-                    if (topbarAvatar.tagName === 'IMG') {
-                        topbarAvatar.src = savedPhoto;
-                    } else if (topbarAvatar.tagName === 'DIV') {
-                        // Substituir div por img
-                        const img = document.createElement('img');
-                        img.src = savedPhoto;
-                        img.className = 'avatar';
-                        topbarAvatar.parentNode.replaceChild(img, topbarAvatar);
-                    }
-                }
-            }
-        })();
-    </script>
     
     <?php if (isset($additionalScripts)): ?>
         <?php foreach ($additionalScripts as $script): ?>

@@ -104,46 +104,46 @@ class SocioeconomicoController extends BaseController {
             $this->validateCSRF();
             
             // Debug: Log dos dados recebidos
-            error_log('=== SOCIOECONOMICO STORE ===');
-            error_log('ID recebido: ' . ($data['id'] ?? 'NENHUM'));
+            debugLog('=== SOCIOECONOMICO STORE ===');
+            debugLog('ID recebido: ' . ($data['id'] ?? 'NENHUM'));
             
             // Log detalhado dos dados recebidos
-            error_log('=== DADOS RECEBIDOS NO CONTROLLER ===');
-            error_log('Keys presentes: ' . implode(', ', array_keys($data)));
-            error_log('despesas_json presente: ' . (isset($data['despesas_json']) && !empty($data['despesas_json']) ? 'SIM (' . strlen($data['despesas_json']) . ' chars)' : 'NÃO'));
-            error_log('familia_json presente: ' . (isset($data['familia_json']) && !empty($data['familia_json']) ? 'SIM (' . strlen($data['familia_json']) . ' chars)' : 'NÃO'));
+            debugLog('=== DADOS RECEBIDOS NO CONTROLLER ===');
+            debugLog('Keys presentes: ' . implode(', ', array_keys($data)));
+            debugLog('despesas_json presente: ' . (isset($data['despesas_json']) && !empty($data['despesas_json']) ? 'SIM (' . strlen($data['despesas_json']) . ' chars)' : 'NÃO'));
+            debugLog('familia_json presente: ' . (isset($data['familia_json']) && !empty($data['familia_json']) ? 'SIM (' . strlen($data['familia_json']) . ' chars)' : 'NÃO'));
             
             // Decodificar JSON de despesas e família ANTES de enviar ao service
             if (!empty($data['despesas_json'])) {
-                error_log('Decodificando despesas_json no controller...');
-                error_log('Conteúdo raw: ' . substr($data['despesas_json'], 0, 300));
+                debugLog('Decodificando despesas_json no controller...');
+                debugLog('despesas_json recebido', ['length' => strlen($data['despesas_json'])]);
                 $despesasDecoded = json_decode($data['despesas_json'], true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($despesasDecoded)) {
                     $data['despesas'] = $despesasDecoded;
-                    error_log('✅ Despesas decodificadas no controller: ' . count($despesasDecoded) . ' itens');
+                    debugLog('Despesas decodificadas no controller: ' . count($despesasDecoded) . ' itens');
                 } else {
-                    error_log('❌ ERRO ao decodificar despesas_json no controller: ' . json_last_error_msg());
-                    error_log('   JSON Error Code: ' . json_last_error());
+                    debugLog('ERRO ao decodificar despesas_json no controller: ' . json_last_error_msg());
+                    debugLog('JSON Error Code: ' . json_last_error());
                     $data['despesas'] = [];
                 }
             } else {
-                error_log('⚠️ despesas_json está vazio ou não existe');
+                debugLog('despesas_json está vazio ou não existe');
             }
             
             if (!empty($data['familia_json'])) {
-                error_log('Decodificando familia_json no controller...');
-                error_log('Conteúdo raw: ' . substr($data['familia_json'], 0, 300));
+                debugLog('Decodificando familia_json no controller...');
+                debugLog('familia_json recebido', ['length' => strlen($data['familia_json'])]);
                 $familiaDecoded = json_decode($data['familia_json'], true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($familiaDecoded)) {
                     $data['familia'] = $familiaDecoded;
-                    error_log('✅ Família decodificada no controller: ' . count($familiaDecoded) . ' membros');
+                    debugLog('Família decodificada no controller: ' . count($familiaDecoded) . ' membros');
                 } else {
-                    error_log('❌ ERRO ao decodificar familia_json no controller: ' . json_last_error_msg());
-                    error_log('   JSON Error Code: ' . json_last_error());
+                    debugLog('ERRO ao decodificar familia_json no controller: ' . json_last_error_msg());
+                    debugLog('JSON Error Code: ' . json_last_error());
                     $data['familia'] = [];
                 }
             } else {
-                error_log('⚠️ familia_json está vazio ou não existe');
+                debugLog('familia_json está vazio ou não existe');
             }
             
             // Garantir que arrays estão presentes mesmo se vazios
@@ -154,23 +154,23 @@ class SocioeconomicoController extends BaseController {
                 $data['familia'] = [];
             }
             
-            error_log('Dados finais preparados - despesas: ' . count($data['despesas']) . ', familia: ' . count($data['familia']));
-            error_log('==========================================');
+            debugLog('Dados finais preparados - despesas: ' . count($data['despesas']) . ', familia: ' . count($data['familia']));
+            debugLog('==========================================');
             
-            error_log('Dados preparados: ' . print_r(array_keys($data), true));
+            debugLog('Dados preparados: ' . implode(', ', array_keys($data)));
             
             // Verificar se é edição ou criação
             if (!empty($data['id'])) {
                 // Edição
                 $id = $data['id'];
                 unset($data['id']); // Remover ID dos dados
-                error_log('EDITANDO ficha ID: ' . $id);
+                debugLog('EDITANDO ficha ID: ' . $id);
                 $ficha = $this->socioeconomicoService->updateFicha($id, $data);
                 $this->redirectWithSuccess('socioeconomico_list.php', 'Ficha socioeconômica atualizada com sucesso!');
                 return; // IMPORTANTE: Parar execução aqui
             } else {
                 // Criação
-                error_log('CRIANDO nova ficha');
+                debugLog('CRIANDO nova ficha');
                 $ficha = $this->socioeconomicoService->createFicha($data);
                 $this->redirectWithSuccess('socioeconomico_list.php', 'Ficha socioeconômica cadastrada com sucesso!');
                 return; // IMPORTANTE: Parar execução aqui

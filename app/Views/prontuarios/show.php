@@ -116,6 +116,73 @@
         </div>
     <?php endif; ?>
 
+    <!-- Documentos -->
+    <div class="documents-section" style="background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
+        <h2 style="margin: 0 0 15px 0; font-size: 18px; font-weight: 600;"><i class="fas fa-folder-open"></i> Documentos</h2>
+
+        <?php if (($currentUser['role'] ?? '') === 'admin' && !empty($atendidoId)): ?>
+            <form method="POST" action="prontuarios.php?action=upload_document" enctype="multipart/form-data" style="display: grid; grid-template-columns: minmax(160px, 220px) 1fr auto; gap: 10px; align-items: end; margin-bottom: 16px;">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                <input type="hidden" name="id_atendido" value="<?php echo htmlspecialchars($atendidoId); ?>">
+                <input type="hidden" name="cpf" value="<?php echo htmlspecialchars($cpf); ?>">
+
+                <label style="display: grid; gap: 6px; font-size: 13px; color: #666;">
+                    Tipo
+                    <select name="tipo" style="padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="identidade">Identidade</option>
+                        <option value="comprovante_residencia">Comprovante de residência</option>
+                        <option value="escola">Escola</option>
+                        <option value="saude">Saúde</option>
+                        <option value="autorizacao">Autorização</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </label>
+
+                <label style="display: grid; gap: 6px; font-size: 13px; color: #666;">
+                    Arquivo
+                    <input type="file" name="documento" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required style="padding: 9px; border: 1px solid #ddd; border-radius: 8px;">
+                </label>
+
+                <button type="submit" class="btn" style="background: #27ae60;">
+                    <i class="fas fa-upload"></i> Anexar
+                </button>
+            </form>
+        <?php endif; ?>
+
+        <?php if (!empty($documents)): ?>
+            <div style="display: grid; gap: 10px;">
+                <?php foreach ($documents as $document): ?>
+                    <?php
+                        $tipoLabels = [
+                            'identidade' => 'Identidade',
+                            'comprovante_residencia' => 'Comprovante de residência',
+                            'escola' => 'Escola',
+                            'saude' => 'Saúde',
+                            'autorizacao' => 'Autorização',
+                            'outros' => 'Outros'
+                        ];
+                        $tipo = $document['tipo'] ?? 'outros';
+                    ?>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <div>
+                            <div style="font-weight: 600;"><?php echo htmlspecialchars($tipoLabels[$tipo] ?? $tipo); ?></div>
+                            <div style="font-size: 12px; color: #666;">
+                                <?php echo htmlspecialchars($document['data_upload'] ?? 'Data não informada'); ?>
+                            </div>
+                        </div>
+                        <a class="btn" href="prontuarios.php?action=document&id=<?php echo urlencode($document['iddocumento']); ?>" target="_blank" rel="noopener" style="background: #3498db; font-size: 12px; padding: 8px 12px;">
+                            <i class="fas fa-eye"></i> Abrir
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div style="padding: 12px; background: #f8f9fa; border-radius: 8px; color: #666;">
+                Nenhum documento anexado.
+            </div>
+        <?php endif; ?>
+    </div>
+
     <!-- Fichas -->
     <div class="fichas-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
         <!-- Ficha de Acolhimento -->
@@ -245,6 +312,10 @@ function reativarAtendido() {
         
         .stats-section > div:last-child {
             grid-template-columns: 1fr 1fr !important;
+        }
+
+        .documents-section form {
+            grid-template-columns: 1fr !important;
         }
     }
 </style>

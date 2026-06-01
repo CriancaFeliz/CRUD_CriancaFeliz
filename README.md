@@ -222,6 +222,7 @@ CRUD_CriancaFeliz/
 ├── docs/                # Documentação técnica e histórico do projeto
 ├── img/                 # Imagens públicas
 ├── js/                  # Scripts de interface
+├── tests/automated/     # Testes automatizados mínimos
 ├── tests/manual/        # Testes manuais
 ├── tools/               # Diagnósticos, manutenção e legado
 ├── var/                 # Roteador de dev e logs locais
@@ -244,6 +245,9 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 | `/reset_password.php?token=...` | Redefinição de senha. |
 | `/dashboard.php` | Dashboard e calendário. |
 | `/prontuarios.php` | Consulta consolidada de prontuários. |
+| `/prontuarios.php?action=show&cpf=...` | Prontuário consolidado com documentos anexados. |
+| `/prontuarios.php?action=upload_document` | Upload de documentos do prontuário por admin. |
+| `/prontuarios.php?action=document&id=...` | Abertura autenticada de documento anexado. |
 | `/acolhimento_list.php` | Lista de fichas de acolhimento. |
 | `/acolhimento_form.php` | Cadastro/edição de acolhimento. |
 | `/acolhimento_view.php?id=...` | Visualização de acolhimento. |
@@ -277,6 +281,12 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 ## Documentação
 
 - [docs/PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md): arquitetura, rotas, controllers, services, models, banco e pendências.
+- [docs/GAP_REMEDIATION_PLAN.md](docs/GAP_REMEDIATION_PLAN.md): plano das lacunas prioritárias.
+- [docs/LGPD_AND_DATA_GOVERNANCE.md](docs/LGPD_AND_DATA_GOVERNANCE.md): plano técnico-operacional de LGPD e governança de dados.
+- [docs/TEST_PLAN.md](docs/TEST_PLAN.md): suíte automatizada, CI e próximos testes.
+- [docs/DATABASE_NORMALIZATION_PLAN.md](docs/DATABASE_NORMALIZATION_PLAN.md): plano para nomes de tabelas e ambientes Linux.
+- [docs/REPORTING_ROADMAP.md](docs/REPORTING_ROADMAP.md): evolução dos relatórios.
+- [docs/REQUIREMENTS_TRACEABILITY.md](docs/REQUIREMENTS_TRACEABILITY.md): rastreabilidade dos requisitos da monografia.
 - [docs/MAINTENANCE_AND_TESTING.md](docs/MAINTENANCE_AND_TESTING.md): scripts auxiliares, comandos de validação e checklist operacional.
 - [database/README_SETUP.md](database/README_SETUP.md): guia específico do setup do banco.
 - [docs/STYLING_UPGRADE.md](docs/STYLING_UPGRADE.md): padrões visuais e guia de CSS.
@@ -293,6 +303,9 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 - A pasta `data/` guarda dados locais/runtime e não deve ser usada como fonte principal de persistência.
 - O módulo atual de frequência é `faltas.php`; acessos legados a `attendance.php` são redirecionados para as rotas atuais.
 - A área psicológica usa a tabela `anotacao_psicologica`, criada pelo setup atual. Em bancos antigos, execute `database/update_schema.sql`.
+- A foto de perfil persiste em `usuario.foto_perfil`; em bancos antigos, execute `database/update_schema.sql`.
+- Documentos de prontuário ficam em `uploads/documents/`, abrem por rota autenticada e devem entrar na política de backup, retenção e descarte LGPD.
+- Testes automatizados mínimos rodam com `php tests/run.php`; a CI também valida lint e configuração do Docker Compose.
 - A imagem de login em `img/84ee2f859c98cde210228f9cf472d03b4932ff8c.jpg` é grande e pode ser comprimida para reduzir o tempo de clone/carregamento.
 
 ---

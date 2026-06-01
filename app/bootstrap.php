@@ -31,6 +31,7 @@ if (!$isAjaxRequest && !headers_sent()) {
 // Configurações de erro
 $appDebug = getenv('APP_DEBUG');
 $isDebug = $appDebug === false ? true : filter_var($appDebug, FILTER_VALIDATE_BOOLEAN);
+define('APP_DEBUG_MODE', $isDebug);
 error_reporting(E_ALL);
 ini_set('display_errors', $isDebug ? '1' : '0');
 ini_set('log_errors', '1');
@@ -81,6 +82,33 @@ function validatePassword($password) {
 
 function passwordValidationMessage() {
     return PasswordHelper::policyDescription();
+}
+
+function appDebugEnabled() {
+    return defined('APP_DEBUG_MODE') && APP_DEBUG_MODE === true;
+}
+
+function debugLog($message, array $context = []) {
+    if (!appDebugEnabled()) {
+        return;
+    }
+
+    if (!empty($context)) {
+        $encoded = json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $message .= ' ' . ($encoded ?: '');
+    }
+
+    error_log($message);
+}
+
+function debugFileLog($fileName, array $entry) {
+    if (!appDebugEnabled()) {
+        return;
+    }
+
+    $safeName = basename($fileName);
+    $path = DATA_PATH . '/' . $safeName;
+    @file_put_contents($path, json_encode($entry, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL, FILE_APPEND);
 }
 
 // Função para converter data dd/mm/yyyy para yyyy-mm-dd (para inserção no banco)

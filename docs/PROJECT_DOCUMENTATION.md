@@ -363,6 +363,7 @@ Diagnósticos em `tools/diagnostics/`:
 - `debug_socio_batch.php`
 - `debug_socio_ficha.php`
 - `diagnostico_login.php`
+- `check_table_case.php`
 
 Manutenção em `tools/maintenance/`:
 
@@ -379,8 +380,11 @@ Legado:
 
 - `tools/legacy/users_simple.php`
 
-Testes manuais:
+Testes:
 
+- `tests/run.php`
+- `tests/automated/PasswordHelperTest.php`
+- `tests/automated/BootstrapHelperTest.php`
 - `tests/manual/test_psychology.php`
 - `tests/manual/test_psychology_edit_delete.php`
 - `tests/manual/test_socioeconomico_submit.php`
@@ -402,12 +406,15 @@ Rotas sensíveis:
 - exclusões de acolhimento e socioeconômico devem ocorrer por POST com CSRF.
 - novas senhas passam por `PasswordHelper`, com mínimo de 12 caracteres, bloqueio de senhas padrão/comuns, Argon2id quando disponível e fallback bcrypt com custo 12.
 - tokens de recuperação são gravados como SHA-256 do token, não como token puro.
+- upload de foto e documentos exige CSRF, validação de extensão/MIME e grava em `uploads/`.
+- logs detalhados de debug devem ficar condicionados a `APP_DEBUG=true`.
 
 ## 17. Pontos de Atenção Atuais
 
 Prioridade alta:
 
 - Configurar envio SMTP real no fluxo de recuperação de senha.
+- Executar plano LGPD e retenção/descarte de documentos.
 - Normalizar nomes de tabelas para evitar problemas em Linux.
 
 Concluídos nesta revisão:
@@ -416,10 +423,14 @@ Concluídos nesta revisão:
 - Promover `anotacao_psicologica` para o setup/migração oficial.
 - Bloquear acesso web direto a `tools/`, `database/`, `data/`, `var/` e `docker/` no Apache.
 - Endurecer política e armazenamento de senhas para Argon2id quando disponível, com fallback bcrypt.
+- Criar testes automatizados mínimos e CI.
+- Persistir foto de perfil no banco.
+- Incluir anexos de documentos no prontuário.
+- Criar documentação das lacunas, LGPD, banco, relatórios e rastreabilidade.
 
 Prioridade média:
 
-- Criar testes automatizados reais além dos testes manuais.
+- Expandir testes automatizados para integração com banco.
 - Revisar endpoints psicológicos não implementados (`saveAssessment`, `search`, `report`).
 - Migrar tokens de reset de senha para banco ou serviço dedicado se o fluxo for usado em produção.
 - Criar um roteador mais declarativo para reduzir o tamanho de `index.php`.

@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   `nome` varchar(100) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `Senha` varchar(255) DEFAULT NULL,
+  `foto_perfil` varchar(255) DEFAULT NULL,
   `nivel` varchar(50) DEFAULT NULL,
   `status` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`idusuario`)
