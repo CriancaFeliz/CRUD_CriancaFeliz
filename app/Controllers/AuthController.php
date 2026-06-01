@@ -158,7 +158,7 @@ class AuthController extends BaseController {
             }
             
             if (empty($password) || !validatePassword($password)) {
-                throw new Exception('Senha deve ter pelo menos 6 caracteres');
+                throw new Exception(passwordValidationMessage());
             }
             
             if ($password !== $confirmPassword) {
@@ -197,7 +197,7 @@ class AuthController extends BaseController {
             }
             
             if (empty($newPassword) || !validatePassword($newPassword)) {
-                throw new Exception('Nova senha deve ter pelo menos 6 caracteres');
+                throw new Exception(passwordValidationMessage());
             }
             
             if ($newPassword !== $confirmPassword) {
@@ -246,20 +246,24 @@ class AuthController extends BaseController {
      */
     private function saveResetToken($email, $token, $expiry) {
         $tokensFile = DATA_PATH . '/reset_tokens.json';
+        $tokenHash = hash('sha256', $token);
         
         if (!file_exists($tokensFile)) {
             file_put_contents($tokensFile, json_encode([]));
         }
         
         $tokens = json_decode(file_get_contents($tokensFile), true) ?: [];
+        $tokens = array_filter($tokens, function ($tokenData) {
+            return empty($tokenData['used']) && ($tokenData['expiry'] ?? 0) >= time();
+        });
         
-        $tokens[$token] = [
+        $tokens[$tokenHash] = [
             'email' => $email,
             'expiry' => $expiry,
             'used' => false
         ];
         
-        file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT));
+        file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
     
     /**
@@ -267,6 +271,7 @@ class AuthController extends BaseController {
      */
     private function isValidResetToken($token) {
         $tokensFile = DATA_PATH . '/reset_tokens.json';
+        $tokenHash = hash('sha256', $token);
         
         if (!file_exists($tokensFile)) {
             return false;
@@ -274,11 +279,11 @@ class AuthController extends BaseController {
         
         $tokens = json_decode(file_get_contents($tokensFile), true) ?: [];
         
-        if (!isset($tokens[$token])) {
+        if (!isset($tokens[$tokenHash])) {
             return false;
         }
         
-        $tokenData = $tokens[$token];
+        $tokenData = $tokens[$tokenHash];
         
         if ($tokenData['used'] || $tokenData['expiry'] < time()) {
             return false;
@@ -292,13 +297,14 @@ class AuthController extends BaseController {
      */
     private function updatePasswordByToken($token, $password) {
         $tokensFile = DATA_PATH . '/reset_tokens.json';
+        $tokenHash = hash('sha256', $token);
         $tokens = json_decode(file_get_contents($tokensFile), true) ?: [];
         
-        if (!isset($tokens[$token])) {
+        if (!isset($tokens[$tokenHash])) {
             throw new Exception('Token inválido');
         }
         
-        $tokenData = $tokens[$token];
+        $tokenData = $tokens[$tokenHash];
         $email = $tokenData['email'];
         
         // Atualizar senha do usuário
@@ -313,8 +319,8 @@ class AuthController extends BaseController {
         }
         
         // Marcar token como usado
-        $tokens[$token]['used'] = true;
-        file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT));
+        $tokens[$tokenHash]['used'] = true;
+        file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
     
     /**

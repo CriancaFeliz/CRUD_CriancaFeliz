@@ -35,10 +35,6 @@ class AuthService {
             throw new Exception('Senha é obrigatória');
         }
         
-        if (!validatePassword($password)) {
-            throw new Exception('A senha deve ter pelo menos 6 caracteres');
-        }
-        
         // Verificar se usuário existe
         $userExists = $this->users()->findByEmail($email);
         
@@ -252,13 +248,13 @@ class AuthService {
         // Verificar senha atual
         $passwordHash = $user['Senha'] ?? $user['password'] ?? null;
 
-        if (!$passwordHash || !password_verify($currentPassword, $passwordHash)) {
+        if (!$passwordHash || !PasswordHelper::verify($currentPassword, $passwordHash)) {
             throw new Exception('Senha atual incorreta');
         }
         
         // Validar nova senha
         if (!validatePassword($newPassword)) {
-            throw new Exception('Nova senha deve ter pelo menos 6 caracteres');
+            throw new Exception(passwordValidationMessage());
         }
         
         // Atualizar senha

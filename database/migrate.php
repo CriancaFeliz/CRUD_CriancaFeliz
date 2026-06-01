@@ -41,7 +41,7 @@ try {
     echo "==========================================\n";
     echo "📦 Banco de dados: criancafeliz\n";
     echo "👤 Usuário padrão: admin@criancafeliz.org\n";
-    echo "🔑 Senha padrão: admin123\n";
+    echo "🔑 Senha padrão: AlterarEstaSenha!2026\n";
     echo "==========================================\n\n";
     
     // Verificar tabelas criadas

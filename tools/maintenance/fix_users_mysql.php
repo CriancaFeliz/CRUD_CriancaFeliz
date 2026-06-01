@@ -17,11 +17,12 @@ try {
     
     echo "<h2>ðŸ”§ Corrigindo Senhas dos UsuÃ¡rios</h2>";
     
-    // Senha padrÃ£o: admin123
-    $senhaHash = password_hash('admin123', PASSWORD_DEFAULT);
+    // Senha padrÃ£o local. Pode ser alterada por INITIAL_ADMIN_PASSWORD.
+    $senhaPadrao = getenv('INITIAL_ADMIN_PASSWORD') ?: 'AlterarEstaSenha!2026';
+    $senhaHash = password_hash($senhaPadrao, PASSWORD_BCRYPT, ['cost' => 12]);
     
     echo "<p><strong>Hash gerado:</strong> <code>$senhaHash</code></p>";
-    echo "<p><strong>Testando hash:</strong> " . (password_verify('admin123', $senhaHash) ? 'âœ… OK' : 'âŒ ERRO') . "</p>";
+    echo "<p><strong>Testando hash:</strong> " . (password_verify($senhaPadrao, $senhaHash) ? 'âœ… OK' : 'âŒ ERRO') . "</p>";
     
     echo "<hr>";
     
@@ -86,7 +87,7 @@ try {
     foreach ($usuarios as $usuario) {
         echo "<tr>";
         echo "<td><strong>{$usuario['email']}</strong></td>";
-        echo "<td><code>admin123</code></td>";
+        echo "<td><code>{$senhaPadrao}</code></td>";
         echo "<td>{$usuario['nivel']}</td>";
         echo "</tr>";
     }
@@ -119,9 +120,9 @@ try {
     echo "<h3>âœ… PRONTO!</h3>";
     echo "<p>Agora vocÃª pode fazer login com:</p>";
     echo "<ul>";
-    echo "<li>ðŸ“§ <strong>admin@criancafeliz.org</strong> | ðŸ”‘ <strong>admin123</strong></li>";
-    echo "<li>ðŸ“§ <strong>psicologa@criancafeliz.org</strong> | ðŸ”‘ <strong>admin123</strong></li>";
-    echo "<li>ðŸ“§ <strong>funcionario@criancafeliz.org</strong> | ðŸ”‘ <strong>admin123</strong></li>";
+    echo "<li>ðŸ“§ <strong>admin@criancafeliz.org</strong> | ðŸ”‘ <strong>{$senhaPadrao}</strong></li>";
+    echo "<li>ðŸ“§ <strong>psicologa@criancafeliz.org</strong> | ðŸ”‘ <strong>{$senhaPadrao}</strong></li>";
+    echo "<li>ðŸ“§ <strong>funcionario@criancafeliz.org</strong> | ðŸ”‘ <strong>{$senhaPadrao}</strong></li>";
     echo "</ul>";
     
     echo "<p><a href='index.php' style='background:#f0a36b; color:white; padding:10px 20px; text-decoration:none; border-radius:6px;'>ðŸ” Ir para Login</a></p>";

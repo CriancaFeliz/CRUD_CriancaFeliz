@@ -87,7 +87,7 @@ class UserController extends BaseController {
             }
             
             if (!validatePassword($data['password'])) {
-                throw new Exception('Senha deve ter pelo menos 6 caracteres');
+                throw new Exception(passwordValidationMessage());
             }
             
             if (empty($data['role'])) {
@@ -176,7 +176,7 @@ class UserController extends BaseController {
             // Se senha foi fornecida, validar
             if (!empty($data['password'])) {
                 if (!validatePassword($data['password'])) {
-                    throw new Exception('Senha deve ter pelo menos 6 caracteres');
+                    throw new Exception(passwordValidationMessage());
                 }
             } else {
                 // Remover senha vazia para não alterar

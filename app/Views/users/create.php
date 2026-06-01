@@ -42,9 +42,9 @@
                 <input type="password" 
                        name="password" 
                        required
-                       minlength="6"
+                       minlength="12"
                        style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;"
-                       placeholder="Mínimo 6 caracteres">
+                       placeholder="Mínimo 12 caracteres">
             </div>
             
             <div>
@@ -140,9 +140,9 @@ document.addEventListener('DOMContentLoaded', function() {
     passwordInput.addEventListener('input', function() {
         const password = this.value;
         
-        if (password.length > 0 && password.length < 6) {
+        if (password.length > 0 && password.length < 12) {
             this.style.borderColor = '#dc3545';
-            showFieldError(this, 'Senha deve ter pelo menos 6 caracteres');
+            showFieldError(this, 'Senha deve ter pelo menos 12 caracteres');
         } else {
             this.style.borderColor = '#f0a36b';
             hideFieldError(this);

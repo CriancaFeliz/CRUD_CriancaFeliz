@@ -27,6 +27,23 @@ CREATE TABLE IF NOT EXISTS `agenda` (
   `data_envio` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE IF NOT EXISTS `anotacao_psicologica` (
+  `id_anotacao` int(11) NOT NULL,
+  `id_atendido` int(11) NOT NULL,
+  `id_psicologo` int(11) NOT NULL,
+  `data_anotacao` datetime DEFAULT current_timestamp(),
+  `tipo` enum('Consulta','Avaliação','Evolução','Observação') DEFAULT 'Consulta',
+  `titulo` varchar(200) DEFAULT NULL,
+  `conteudo` text DEFAULT NULL,
+  `humor` int(11) DEFAULT NULL,
+  `observacoes_comportamentais` text DEFAULT NULL,
+  `recomendacoes` text DEFAULT NULL,
+  `proxima_sessao` date DEFAULT NULL,
+  `anexos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `atendido` (
   `idatendido` int(11) NOT NULL,
   `status` varchar(20) DEFAULT NULL,
@@ -217,7 +234,7 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   `idusuario` int(11) NOT NULL,
   `nome` varchar(100) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
-  `Senha` varchar(100) DEFAULT NULL,
+  `Senha` varchar(255) DEFAULT NULL,
   `nivel` varchar(50) DEFAULT NULL,
   `status` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -445,6 +462,7 @@ DELIMITER ;
 -- =====================================================
 
 ALTER TABLE `agenda` ADD PRIMARY KEY (`id_notificacao`);
+ALTER TABLE `anotacao_psicologica` ADD PRIMARY KEY (`id_anotacao`), ADD KEY `id_atendido` (`id_atendido`), ADD KEY `id_psicologo` (`id_psicologo`);
 ALTER TABLE `atendido` ADD PRIMARY KEY (`idatendido`), ADD KEY `id_responsavel` (`id_responsavel`);
 ALTER TABLE `desligamento` ADD PRIMARY KEY (`id_desligamento`), ADD UNIQUE KEY `unique_desligamento` (`id_atendido`), ADD KEY `desligado_por` (`desligado_por`), ADD KEY `idx_atendido_deslig` (`id_atendido`), ADD KEY `idx_tipo_motivo` (`tipo_motivo`), ADD KEY `idx_data_desligamento` (`data_desligamento`), ADD KEY `idx_automatico` (`automatico`);
 ALTER TABLE `despesas` ADD PRIMARY KEY (`id_despesa`), ADD KEY `id_ficha` (`id_ficha`);
@@ -467,6 +485,7 @@ ALTER TABLE `usuario` ADD PRIMARY KEY (`idusuario`);
 -- =====================================================
 
 ALTER TABLE `agenda` MODIFY `id_notificacao` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `anotacao_psicologica` MODIFY `id_anotacao` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `atendido` MODIFY `idatendido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 ALTER TABLE `desligamento` MODIFY `id_desligamento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 ALTER TABLE `despesas` MODIFY `id_despesa` int(11) NOT NULL AUTO_INCREMENT;
@@ -489,6 +508,7 @@ ALTER TABLE `usuario` MODIFY `idusuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_I
 -- =====================================================
 
 ALTER TABLE `atendido` ADD CONSTRAINT `atendido_ibfk_1` FOREIGN KEY (`id_responsavel`) REFERENCES `responsavel` (`idresponsavel`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `anotacao_psicologica` ADD CONSTRAINT `anotacao_psicologica_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `anotacao_psicologica_ibfk_2` FOREIGN KEY (`id_psicologo`) REFERENCES `usuario` (`idusuario`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `desligamento` ADD CONSTRAINT `desligamento_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `desligamento_ibfk_2` FOREIGN KEY (`desligado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE `despesas` ADD CONSTRAINT `despesas_ibfk_1` FOREIGN KEY (`id_ficha`) REFERENCES `ficha_socioeconomico` (`idficha`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `documento` ADD CONSTRAINT `documento_ibfk_1` FOREIGN KEY (`IDatendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -506,7 +526,7 @@ ALTER TABLE `sessao` ADD CONSTRAINT `fk_sessao_usuario` FOREIGN KEY (`criado_por
 -- =====================================================
 
 INSERT IGNORE INTO `usuario` (`idusuario`, `nome`, `email`, `Senha`, `nivel`, `status`) VALUES
-(1, 'Administrador', 'admin@criancafeliz.org', '$2y$10$qWMLn9zbVgS5WQhPuMrZue8CbVOxQ.bUOFSZH3BG0Wcdp7ciMTwMi', 'admin', 'Ativo');
+(1, 'Administrador', 'admin@criancafeliz.org', '$2y$12$GZIwUJ/.t.yQ7DICaT137OQgjAv.OsOx8BAp6eah81iSXcejwxwz6', 'admin', 'Ativo');
 
 INSERT IGNORE INTO `responsavel` (`idresponsavel`, `nome`, `cpf`, `telefone`, `email`, `parentesco`) VALUES
 (1, 'Maria Souza', '123.456.789-00', '(11) 91234-5678', 'maria.souza@example.com', 'Mãe'),

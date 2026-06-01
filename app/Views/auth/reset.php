@@ -10,11 +10,11 @@
         <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
 
         <div class="input-group">
-            <input type="password" name="password" placeholder="Nova senha" autocomplete="new-password" required>
+            <input type="password" name="password" placeholder="Nova senha" autocomplete="new-password" minlength="12" required>
         </div>
 
         <div class="input-group">
-            <input type="password" name="confirm_password" placeholder="Confirmar senha" autocomplete="new-password" required>
+            <input type="password" name="confirm_password" placeholder="Confirmar senha" autocomplete="new-password" minlength="12" required>
         </div>
 
         <button type="submit" class="login-btn">Redefinir senha</button>

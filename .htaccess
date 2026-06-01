@@ -4,8 +4,15 @@
     # Prevent directory browsing
     Options -Indexes
 
+    # Block direct web access to internal/runtime folders.
+    RewriteRule ^(tools|database|data|var|docker)(/|$) - [F,L]
+
     # Forward all requests for non-existent files or directories to index.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)$ index.php [L,QSA]
 </IfModule>
+
+<FilesMatch "^(\.dockerignore|\.gitattributes|Dockerfile|docker-compose\.yml)$">
+    Require all denied
+</FilesMatch>

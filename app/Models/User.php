@@ -17,9 +17,10 @@ class User extends BaseModel {
         try {
             $count = $this->count();
             if ($count == 0) {
+                $defaultPassword = getenv('INITIAL_ADMIN_PASSWORD') ?: 'AlterarEstaSenha!2026';
                 $this->query(
                     "INSERT INTO Usuario (nome, email, Senha, nivel, status) VALUES (?, ?, ?, ?, ?)",
-                    ['Administrador', 'admin@criancafeliz.org', password_hash('admin123', PASSWORD_DEFAULT), 'admin', 'Ativo']
+                    ['Administrador', 'admin@criancafeliz.org', PasswordHelper::hash($defaultPassword), 'admin', 'Ativo']
                 );
             }
         } catch (Exception $e) {
@@ -34,7 +35,11 @@ class User extends BaseModel {
         $user = $this->findByEmail($email);
         
         // Verificar se usuário existe e senha está correta
-        if ($user && password_verify($password, $user['Senha'])) {
+        if ($user && PasswordHelper::verify($password, $user['Senha'])) {
+            if (PasswordHelper::needsRehash($user['Senha']) && PasswordHelper::isValid($password)) {
+                $this->update($user['idusuario'], ['Senha' => PasswordHelper::hash($password)]);
+            }
+
             // Verificar se usuário está ativo
             $status = strtolower($user['status'] ?? 'inativo');
             if ($status !== 'ativo' && $status !== 'active') {
@@ -90,14 +95,14 @@ class User extends BaseModel {
         }
         
         if (empty($data['password']) || !validatePassword($data['password'])) {
-            throw new Exception('Senha deve ter pelo menos 6 caracteres');
+            throw new Exception(passwordValidationMessage());
         }
         
         // Mapear campos para banco (sem created_at/updated_at)
         $dbData = [
             'nome' => $data['name'],
             'email' => $data['email'],
-            'Senha' => password_hash($data['password'], PASSWORD_DEFAULT),
+            'Senha' => PasswordHelper::hash($data['password']),
             'nivel' => $data['role'] ?? 'funcionario',
             'status' => $data['status'] ?? 'Ativo'
         ];
@@ -148,9 +153,9 @@ class User extends BaseModel {
         
         if (isset($data['password']) && !empty($data['password'])) {
             if (!validatePassword($data['password'])) {
-                throw new Exception('Senha deve ter pelo menos 6 caracteres');
+                throw new Exception(passwordValidationMessage());
             }
-            $dbData['Senha'] = password_hash($data['password'], PASSWORD_DEFAULT);
+            $dbData['Senha'] = PasswordHelper::hash($data['password']);
         }
         
         if (isset($data['role'])) {

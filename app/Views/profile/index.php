@@ -48,13 +48,13 @@
                 
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">Nova Senha *</label>
-                    <input type="password" name="new_password" required minlength="6" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-family: Poppins; background: var(--input-bg); color: var(--text-primary); box-sizing: border-box;">
-                    <small style="color: var(--text-muted); font-size: 12px;">Mínimo de 6 caracteres</small>
+                    <input type="password" name="new_password" required minlength="12" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-family: Poppins; background: var(--input-bg); color: var(--text-primary); box-sizing: border-box;">
+                    <small style="color: var(--text-muted); font-size: 12px;">Mínimo de 12 caracteres</small>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">Confirmar Nova Senha *</label>
-                    <input type="password" name="confirm_password" required minlength="6" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-family: Poppins; background: var(--input-bg); color: var(--text-primary); box-sizing: border-box;">
+                    <input type="password" name="confirm_password" required minlength="12" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-family: Poppins; background: var(--input-bg); color: var(--text-primary); box-sizing: border-box;">
                 </div>
                 
                 <button type="submit" style="width: 100%; background: var(--primary-green); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.2s;">

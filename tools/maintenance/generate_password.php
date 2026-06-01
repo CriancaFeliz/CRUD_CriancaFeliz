@@ -1,7 +1,7 @@
 <?php
 // Script para gerar hash da senha
-$password = 'admin123';
-$hash = password_hash($password, PASSWORD_DEFAULT);
+$password = getenv('INITIAL_ADMIN_PASSWORD') ?: 'AlterarEstaSenha!2026';
+$hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
 
 echo "Senha: " . $password . "<br>";
 echo "Hash: " . $hash . "<br>";

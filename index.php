@@ -101,63 +101,28 @@ try {
 
         case 'attendance':
         case 'attendance.php':
-            $attendanceController = new AttendanceController();
             $action = $_GET['action'] ?? 'index';
             $id = $_GET['id'] ?? null;
             switch ($action) {
-                case 'index':
-                    $attendanceController->index();
-                    break;
-                case 'batch':
-                    $attendanceController->batch();
-                    break;
-                case 'apply_batch':
-                    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                        throw new Exception('Método não permitido');
-                    }
-                    $attendanceController->applyBatch();
-                    break;
                 case 'show':
                     if (!$id) {
                         throw new Exception('ID do atendido é obrigatório');
                     }
-                    $attendanceController->show($id);
-                    break;
-                case 'register_presence':
-                    $attendanceController->registerPresence();
-                    break;
-                case 'register_absence':
-                    $attendanceController->registerAbsence();
-                    break;
-                case 'update_justification':
-                    $attendanceController->updateJustification();
-                    break;
-                case 'remove_record':
-                    $attendanceController->removeRecord();
+                    redirect('faltas.php?action=historico&id=' . urlencode($id));
                     break;
                 case 'desligamento':
                     if (!$id) {
                         throw new Exception('ID do atendido é obrigatório');
                     }
-                    $attendanceController->showDesligamento($id);
-                    break;
-                case 'processar_desligamento':
-                    $attendanceController->processarDesligamento();
-                    break;
-                case 'cancelar_desligamento':
-                    $attendanceController->cancelarDesligamento();
-                    break;
-                case 'processar_desligamentos_automaticos':
-                    $attendanceController->processarDesligamentosAutomaticos();
+                    redirect('desligamento.php?action=novo&id=' . urlencode($id));
                     break;
                 case 'alertas':
-                    $attendanceController->alertas();
+                    redirect('faltas.php?action=alertas');
                     break;
-                case 'relatorios':
-                    $attendanceController->relatorios();
-                    break;
+                case 'index':
+                case 'batch':
                 default:
-                    $attendanceController->index();
+                    redirect('faltas.php');
                     break;
             }
             break;

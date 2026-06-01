@@ -3,17 +3,43 @@
 -- =====================================================
 USE criancafeliz;
 
--- 1. Remover tabelas obsoletas se existirem
+-- 1. Garantir suporte a hashes modernos de senha
+ALTER TABLE `usuario` MODIFY COLUMN `Senha` varchar(255) DEFAULT NULL;
+
+-- 2. Oficializar tabela usada pela área psicológica
+CREATE TABLE IF NOT EXISTS `anotacao_psicologica` (
+  `id_anotacao` int(11) NOT NULL AUTO_INCREMENT,
+  `id_atendido` int(11) NOT NULL,
+  `id_psicologo` int(11) NOT NULL,
+  `data_anotacao` datetime DEFAULT current_timestamp(),
+  `tipo` enum('Consulta','Avaliação','Evolução','Observação') DEFAULT 'Consulta',
+  `titulo` varchar(200) DEFAULT NULL,
+  `conteudo` text DEFAULT NULL,
+  `humor` int(11) DEFAULT NULL,
+  `observacoes_comportamentais` text DEFAULT NULL,
+  `recomendacoes` text DEFAULT NULL,
+  `proxima_sessao` date DEFAULT NULL,
+  `anexos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_anotacao`),
+  KEY `id_atendido` (`id_atendido`),
+  KEY `id_psicologo` (`id_psicologo`),
+  CONSTRAINT `anotacao_psicologica_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `anotacao_psicologica_ibfk_2` FOREIGN KEY (`id_psicologo`) REFERENCES `usuario` (`idusuario`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. Remover tabelas obsoletas se existirem
 DROP TABLE IF EXISTS `presenca`;
 DROP TABLE IF EXISTS `sessao`;
 DROP TABLE IF EXISTS `frequencia`;
 
--- 2. Garantir coluna numero_comodos e remover nr_comodos e faixa_etaria
+-- 4. Garantir coluna numero_comodos e remover nr_comodos e faixa_etaria
 ALTER TABLE `Ficha_Socioeconomico` ADD COLUMN IF NOT EXISTS `numero_comodos` INT DEFAULT 0;
 ALTER TABLE `Ficha_Socioeconomico` DROP COLUMN IF EXISTS `nr_comodos`;
 ALTER TABLE `Atendido` DROP COLUMN IF EXISTS `faixa_etaria`;
 
--- 3. Atualizar triggers de auditoria (remover nr_comodos)
+-- 5. Atualizar triggers de auditoria (remover nr_comodos)
 DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_insert`;
 DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_update`;
 DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_delete`;

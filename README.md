@@ -61,7 +61,7 @@
 - Back-end: PHP 7.4+ em arquitetura MVC simples, sem framework externo.
 - Banco de dados: MySQL/MariaDB via PDO.
 - Front-end: HTML5, CSS3 responsivo e JavaScript vanilla.
-- Segurança: sessões PHP, CSRF tokens, prepared statements, headers básicos de segurança e senhas com `password_hash`.
+- Segurança: sessões PHP, CSRF tokens, prepared statements, headers básicos de segurança e senhas com Argon2id quando disponível.
 - Roteamento: front controller em `index.php`, com `.htaccess` para Apache e `var/dev-router.php` para o servidor embutido do PHP.
 
 ---
@@ -101,7 +101,7 @@ Usuário inicial criado pelo setup:
 | Campo | Valor |
 | --- | --- |
 | Email | `admin@criancafeliz.org` |
-| Senha | `admin123` |
+| Senha | `AlterarEstaSenha!2026` |
 | Perfil | `admin` |
 
 > Em algumas instalações MySQL/Linux, nomes de tabela são sensíveis a maiúsculas e minúsculas. O código atual usa nomes como `Atendido`, `Usuario` e `Ficha_Socioeconomico`, enquanto alguns scripts SQL também preservam nomes em minúsculas. Se o ambiente tiver `lower_case_table_names=0`, valide a importação e os nomes das tabelas antes de usar em produção.
@@ -289,10 +289,10 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 ## Observações importantes
 
 - Os scripts em `tools/maintenance/` podem alterar dados. Use apenas com backup e preferencialmente fora de produção.
-- O fluxo de recuperação de senha gera tokens em `data/reset_tokens.json` e registra a URL no log do PHP. Para produção, implemente envio SMTP real.
+- O fluxo de recuperação de senha guarda hashes de tokens em `data/reset_tokens.json` e registra a URL no log do PHP enquanto não há SMTP real. Para produção, implemente envio SMTP real.
 - A pasta `data/` guarda dados locais/runtime e não deve ser usada como fonte principal de persistência.
-- O módulo atual de frequência é `faltas.php`. Ainda há referências legadas a `attendance.php` em alguns pontos do código; elas devem ser removidas ou redirecionadas em uma próxima correção.
-- A área psicológica usa a tabela `anotacao_psicologica`; em bancos novos, confirme se essa tabela foi criada a partir de uma migração validada ou dos dumps legados.
+- O módulo atual de frequência é `faltas.php`; acessos legados a `attendance.php` são redirecionados para as rotas atuais.
+- A área psicológica usa a tabela `anotacao_psicologica`, criada pelo setup atual. Em bancos antigos, execute `database/update_schema.sql`.
 - A imagem de login em `img/84ee2f859c98cde210228f9cf472d03b4932ff8c.jpg` é grande e pode ser comprimida para reduzir o tempo de clone/carregamento.
 
 ---

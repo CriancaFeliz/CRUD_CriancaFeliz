@@ -14,11 +14,20 @@ Fonte inicial: pendências descritas em [[docs/PROJECT_DOCUMENTATION]], [[docs/R
 
 ## Prioridade Alta
 
-- [ ] Remover ou redirecionar referências legadas a `attendance.php`; o módulo atual é `faltas.php`.
-- [ ] Configurar SMTP real para o fluxo de recuperação de senha.
-- [ ] Proteger `tools/` e `database/` fora do ambiente de desenvolvimento.
+- [x] Remover ou redirecionar referências legadas a `attendance.php`; o módulo atual é `faltas.php`.
+- [ ] Configurar SMTP real para o fluxo de recuperação de senha. Bloqueado até definir provedor, host, porta, remetente e credenciais.
+- [x] Proteger `tools/` e `database/` fora do ambiente de desenvolvimento.
 - [ ] Normalizar nomes de tabelas para ambientes Linux sensíveis a maiúsculas/minúsculas.
-- [ ] Oficializar a tabela `anotacao_psicologica` no setup ou em migração validada.
+- [x] Oficializar a tabela `anotacao_psicologica` no setup ou em migração validada.
+- [x] Endurecer armazenamento e política de senhas com `PasswordHelper`, Argon2id quando disponível, fallback bcrypt e coluna `Senha` com `varchar(255)`.
+
+## Concluído em 2026-06-01
+
+- Rota legada `attendance.php` redirecionada para `faltas.php`/`desligamento.php`.
+- Links do prontuário atualizados para o módulo atual de faltas/desligamento.
+- `.htaccess` bloqueia acesso direto a `tools/`, `database/`, `data/`, `var/` e `docker/`.
+- `anotacao_psicologica` adicionada a `SETUP_COMPLETO_FINAL.sql`, `migration.sql` e `update_schema.sql`.
+- Senhas novas exigem política mínima mais forte e usam Argon2id quando disponível.
 
 ## Prioridade Média
 

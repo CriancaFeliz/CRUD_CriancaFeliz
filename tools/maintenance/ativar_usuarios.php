@@ -53,9 +53,10 @@ try {
     echo "<hr>";
     echo "<h3>ðŸ”‘ Credenciais:</h3>";
     echo "<ul style='font-size:16px;'>";
-    echo "<li>ðŸ“§ <strong>admin@criancafeliz.org</strong> | ðŸ”‘ <strong>admin123</strong></li>";
-    echo "<li>ðŸ“§ <strong>psicologa@criancafeliz.org</strong> | ðŸ”‘ <strong>admin123</strong></li>";
-    echo "<li>ðŸ“§ <strong>funcionario@criancafeliz.org</strong> | ðŸ”‘ <strong>admin123</strong></li>";
+    $senhaPadrao = getenv('INITIAL_ADMIN_PASSWORD') ?: 'AlterarEstaSenha!2026';
+    echo "<li>ðŸ“§ <strong>admin@criancafeliz.org</strong> | ðŸ”‘ <strong>{$senhaPadrao}</strong></li>";
+    echo "<li>ðŸ“§ <strong>psicologa@criancafeliz.org</strong> | ðŸ”‘ <strong>{$senhaPadrao}</strong></li>";
+    echo "<li>ðŸ“§ <strong>funcionario@criancafeliz.org</strong> | ðŸ”‘ <strong>{$senhaPadrao}</strong></li>";
     echo "</ul>";
     
 } catch (PDOException $e) {

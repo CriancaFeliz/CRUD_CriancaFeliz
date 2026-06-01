@@ -18,9 +18,11 @@ Esta é a nota central para navegar o projeto no Obsidian. Ela não substitui a 
 - Status: ativo
 - Stack: PHP, MySQL/MariaDB, JavaScript, CSS, Docker
 - Arquitetura: MVC simples sem framework externo
+- Última frente: hardening de prioridades altas em 2026-06-01
 - Entrada técnica: [[README|README]]
 - Documentação completa: [[docs/PROJECT_DOCUMENTATION|Documentação técnica]]
 - Backlog: [[01 - Backlog Técnico]]
+- Auditoria de segurança: [[03 - Auditoria de Segurança]]
 - Uso com Codex: [[02 - Guia de Uso com Codex]]
 
 ## Mapa de Documentação

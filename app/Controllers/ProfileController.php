@@ -41,6 +41,7 @@ class ProfileController extends BaseController {
                 'userEmail' => $_SESSION['user_email'] ?? '',
                 'userRole' => $_SESSION['user_role'] ?? 'user',
                 'userData' => $userData,
+                'csrf_token' => $this->generateCSRF(),
                 'messages' => $this->getFlashMessages()
             ];
             
@@ -142,8 +143,8 @@ class ProfileController extends BaseController {
                 throw new Exception('Nova senha é obrigatória');
             }
             
-            if (strlen($newPassword) < 6) {
-                throw new Exception('A nova senha deve ter no mínimo 6 caracteres');
+            if (!validatePassword($newPassword)) {
+                throw new Exception(passwordValidationMessage());
             }
             
             if ($newPassword !== $confirmPassword) {
@@ -159,13 +160,13 @@ class ProfileController extends BaseController {
             }
             
             // Verificar senha atual
-            if (!password_verify($currentPassword, $user['Senha'])) {
+            if (!PasswordHelper::verify($currentPassword, $user['Senha'])) {
                 throw new Exception('Senha atual incorreta');
             }
             
             // Atualizar senha no banco
             $userModel->update($userId, [
-                'Senha' => password_hash($newPassword, PASSWORD_DEFAULT)
+                'Senha' => PasswordHelper::hash($newPassword)
             ]);
             
             $this->redirectWithSuccess('profile.php', 'Senha alterada com sucesso!');

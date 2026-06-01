@@ -17,7 +17,7 @@ try {
     
     // Buscar usuÃ¡rio admin
     $email = 'admin@criancafeliz.org';
-    $senhaDigitada = 'admin123';
+    $senhaDigitada = getenv('INITIAL_ADMIN_PASSWORD') ?: 'AlterarEstaSenha!2026';
     
     $stmt = $pdo->prepare("SELECT idusuario, nome, email, Senha, nivel, status FROM Usuario WHERE email = ?");
     $stmt->execute([$email]);
@@ -42,10 +42,10 @@ try {
         
         if ($senhaCorreta) {
             echo "<p style='color:green; font-size:20px;'>âœ… <strong>SENHA CORRETA!</strong></p>";
-            echo "<p>A senha 'admin123' funciona com o hash do banco.</p>";
+            echo "<p>A senha informada funciona com o hash do banco.</p>";
         } else {
             echo "<p style='color:red; font-size:20px;'>âŒ <strong>SENHA INCORRETA!</strong></p>";
-            echo "<p>O hash no banco NÃƒO corresponde Ã  senha 'admin123'.</p>";
+            echo "<p>O hash no banco NÃƒO corresponde Ã  senha informada.</p>";
             
             echo "<hr>";
             echo "<h3>ðŸ”§ SoluÃ§Ã£o</h3>";
@@ -57,9 +57,9 @@ try {
         echo "<h3>ðŸ“Š InformaÃ§Ãµes TÃ©cnicas</h3>";
         
         // Gerar novo hash
-        $novoHash = password_hash($senhaDigitada, PASSWORD_DEFAULT);
+        $novoHash = password_hash($senhaDigitada, PASSWORD_BCRYPT, ['cost' => 12]);
         echo "<p><strong>Hash atual no banco:</strong><br><code style='font-size:10px;'>{$user['Senha']}</code></p>";
-        echo "<p><strong>Hash correto para 'admin123':</strong><br><code style='font-size:10px;'>$novoHash</code></p>";
+        echo "<p><strong>Hash correto para a senha informada:</strong><br><code style='font-size:10px;'>$novoHash</code></p>";
         
         // Testar novo hash
         $testeNovoHash = password_verify($senhaDigitada, $novoHash);

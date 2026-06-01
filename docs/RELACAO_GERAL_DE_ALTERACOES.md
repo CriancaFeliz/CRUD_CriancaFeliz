@@ -73,7 +73,7 @@ Módulos ativos principais:
 
 O módulo atual de frequência é `faltas.php`, usando `FaltasController`, `FrequenciaDia`, `FrequenciaOficina` e `Oficina`.
 
-Ponto de atenção: o antigo fluxo `attendance.php` foi removido fisicamente, mas ainda há referências legadas no roteador `index.php` e em `app/Views/prontuarios/show.php`. Essas referências devem ser removidas ou redirecionadas em uma próxima correção.
+O antigo fluxo `attendance.php` foi removido fisicamente. A rota legada agora redireciona para o módulo atual `faltas.php` ou para `desligamento.php`, conforme a ação.
 
 ## 4. Banco de Dados
 
@@ -105,7 +105,7 @@ Pontos ainda pendentes:
 
 - normalizar nomes de tabela em maiúsculas/minúsculas para evitar falhas em Linux;
 - alinhar completamente `SETUP_COMPLETO_FINAL.sql`, `migration.sql` e `update_schema.sql`;
-- promover `anotacao_psicologica` dos dumps legados para uma migração/setup oficial;
+- manter `anotacao_psicologica` alinhada entre setup completo, migração e ambientes existentes;
 - decidir se tabelas legadas como `sessao` e `presenca` serão preservadas ou removidas do setup final.
 
 ## 5. Segurança
@@ -113,7 +113,7 @@ Pontos ainda pendentes:
 Melhorias aplicadas:
 
 - CSRF em fluxos sensíveis;
-- senhas com `password_hash`/`password_verify`;
+- senhas centralizadas em `PasswordHelper`, com Argon2id quando disponível e fallback bcrypt;
 - prepared statements;
 - headers básicos de segurança;
 - controle de acesso por sessão e perfil;
@@ -125,7 +125,7 @@ Pontos importantes:
 - `admin` tem acesso administrativo amplo, mas não acessa a área psicológica pela regra atual de permissões.
 - `psicologo` acessa a área psicológica.
 - `funcionario` possui acesso básico de consulta.
-- `tools/` e `database/` devem ser bloqueados fora do desenvolvimento.
+- `.htaccess` bloqueia acesso web direto a `tools/`, `database/`, `data/`, `var/` e `docker/` no Apache.
 - recuperação de senha ainda exige SMTP real para produção.
 
 ## 6. Modernização Visual
@@ -161,11 +161,8 @@ Documentos principais:
 
 Prioridade alta:
 
-- remover/redirecionar referências a `attendance.php`;
 - configurar SMTP real;
-- proteger `tools/` e `database/` em produção;
 - normalizar nomes de tabelas.
-- oficializar a tabela `anotacao_psicologica` no setup/migração.
 
 Prioridade média:
 

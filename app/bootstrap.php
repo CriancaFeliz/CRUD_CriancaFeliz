@@ -76,7 +76,11 @@ function validateEmail($email) {
 
 // Função para validar senha
 function validatePassword($password) {
-    return strlen($password) >= 6;
+    return PasswordHelper::isValid($password);
+}
+
+function passwordValidationMessage() {
+    return PasswordHelper::policyDescription();
 }
 
 // Função para converter data dd/mm/yyyy para yyyy-mm-dd (para inserção no banco)

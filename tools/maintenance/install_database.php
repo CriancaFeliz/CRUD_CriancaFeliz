@@ -213,7 +213,7 @@
             echo "<h3>ðŸ”‘ Credenciais de Acesso</h3>";
             echo "<pre>";
             echo "Email: admin@criancafeliz.org\n";
-            echo "Senha: admin123";
+            echo "Senha: AlterarEstaSenha!2026";
             echo "</pre>";
             echo "<p style='margin-top: 10px;'><strong>âš ï¸ IMPORTANTE:</strong> Altere a senha padrÃ£o apÃ³s o primeiro login!</p>";
             echo "</div>";

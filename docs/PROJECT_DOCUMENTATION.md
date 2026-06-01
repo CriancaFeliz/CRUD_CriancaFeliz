@@ -151,7 +151,7 @@ Na primeira inicialização, o MySQL executa os scripts em `docker/mysql/` e imp
 | `/forgot.php` | `AuthController::showForgotPassword` ou `processForgotPassword` | Gera token de recuperação. |
 | `/reset_password.php?token=...` | `AuthController::showResetPassword` ou `processResetPassword` | Redefine senha usando token. |
 
-Observação: o envio SMTP real ainda não está implementado. O método atual registra a URL de recuperação no log do PHP e salva tokens em `data/reset_tokens.json`.
+Observação: o envio SMTP real ainda não está implementado. O método atual registra a URL de recuperação no log do PHP e salva hashes de tokens em `data/reset_tokens.json`.
 
 ## 8. Rotas Protegidas
 
@@ -347,7 +347,7 @@ Tabelas relevantes:
 
 Ponto de atenção: há mistura de caixa alta/baixa entre scripts e código. Em ambientes Linux com `lower_case_table_names=0`, isso pode causar falhas. Antes de produção, normalize os nomes ou valide a configuração do MySQL/MariaDB.
 
-Outro ponto importante: a área psicológica usa `anotacao_psicologica`, mas o `SETUP_COMPLETO_FINAL.sql` atual não cria essa tabela. A estrutura existe nos dumps em `database/legacy_dumps/` e deve virar migração/setup oficial antes de usar a área psicológica em um banco novo.
+O setup atual cria `anotacao_psicologica` com chaves estrangeiras para `atendido` e `usuario`. Em bancos existentes, `database/update_schema.sql` oficializa a tabela.
 
 No ambiente Docker, o serviço MySQL é iniciado com `lower_case_table_names=1` para reduzir problemas locais causados por variação de maiúsculas/minúsculas. Isso não elimina a pendência de normalizar o schema antes de produção Linux.
 
@@ -400,16 +400,22 @@ Rotas sensíveis:
 - logs exigem perfil `admin` diretamente no `LogController`;
 - área psicológica exige permissões psicológicas;
 - exclusões de acolhimento e socioeconômico devem ocorrer por POST com CSRF.
+- novas senhas passam por `PasswordHelper`, com mínimo de 12 caracteres, bloqueio de senhas padrão/comuns, Argon2id quando disponível e fallback bcrypt com custo 12.
+- tokens de recuperação são gravados como SHA-256 do token, não como token puro.
 
 ## 17. Pontos de Atenção Atuais
 
 Prioridade alta:
 
 - Configurar envio SMTP real no fluxo de recuperação de senha.
-- Remover ou redirecionar os resquícios de `attendance.php` no roteador e em `app/Views/prontuarios/show.php`. O módulo físico `AttendanceController` não existe mais; o módulo válido é `faltas.php`.
-- Promover a tabela `anotacao_psicologica` dos dumps legados para uma migração oficial, ou adicioná-la ao setup completo.
-- Proteger `tools/` e `database/` fora do webroot em produção, ou restringir acesso pelo servidor.
 - Normalizar nomes de tabelas para evitar problemas em Linux.
+
+Concluídos nesta revisão:
+
+- Redirecionar o legado `attendance.php` para as rotas atuais de `faltas.php` e `desligamento.php`.
+- Promover `anotacao_psicologica` para o setup/migração oficial.
+- Bloquear acesso web direto a `tools/`, `database/`, `data/`, `var/` e `docker/` no Apache.
+- Endurecer política e armazenamento de senhas para Argon2id quando disponível, com fallback bcrypt.
 
 Prioridade média:
 
@@ -453,7 +459,7 @@ php -S localhost:8000 var/dev-router.php
 6. Login inicial:
 
 - email: `admin@criancafeliz.org`
-- senha: `admin123`
+- senha: `AlterarEstaSenha!2026`
 
 7. Fluxo mínimo recomendado:
 

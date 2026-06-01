@@ -91,7 +91,7 @@ Usuário administrador:
 | Campo | Valor |
 | --- | --- |
 | Email | `admin@criancafeliz.org` |
-| Senha | `admin123` |
+| Senha | `AlterarEstaSenha!2026` |
 | Perfil | `admin` |
 | Status | `Ativo` |
 
@@ -133,9 +133,9 @@ As tabelas centrais usadas pela aplicação atual são:
 | `Desligamento` / `desligamento` | Desligamentos e reativações. |
 | `agenda` | Notas/avisos do dashboard. |
 | `log` | Auditoria. |
-| `anotacao_psicologica` | Anotações da área psicológica, quando presente no schema usado. |
+| `anotacao_psicologica` | Anotações da área psicológica. |
 
-Ponto de atenção: `SETUP_COMPLETO_FINAL.sql` não cria atualmente a tabela `anotacao_psicologica`, embora a área psicológica use essa tabela. A estrutura existe nos dumps em `database/legacy_dumps/` e deve ser promovida para uma migração/setup oficial antes de usar o módulo psicológico em um banco limpo.
+O setup atual cria `anotacao_psicologica` com vínculos para `atendido` e `usuario`, permitindo que a área psicológica funcione em bancos novos.
 
 ## 7. Auditoria
 
@@ -198,7 +198,7 @@ No Docker Compose, a aplicação usa `DB_HOST=db`, `DB_NAME=criancafeliz`, `DB_U
 - Antes de produção, normalize os nomes ou valide a configuração do MySQL/MariaDB.
 - O MySQL do Docker Compose usa `lower_case_table_names=1` para reduzir conflitos locais de caixa, mas isso não substitui a normalização do schema.
 - O schema principal ainda preserva algumas tabelas legadas, como `sessao` e `presenca`, mas o módulo atual de frequência usa `faltas.php`, `Frequencia_Dia` e `Frequencia_Oficina`.
-- A tabela `anotacao_psicologica` precisa ser criada a partir de uma migração validada quando o ambiente depender da área psicológica.
+- A tabela `anotacao_psicologica` já está oficializada no setup; em bancos antigos, execute `database/update_schema.sql` antes de usar a área psicológica.
 
 ## 11. Troubleshooting
 
@@ -228,7 +228,7 @@ Erro com nomes de tabelas em Linux
 
 - [ ] Banco `criancafeliz` criado.
 - [ ] `SETUP_COMPLETO_FINAL.sql` importado sem erros.
-- [ ] Usuário `admin@criancafeliz.org` consegue fazer login com `admin123`.
+- [ ] Usuário `admin@criancafeliz.org` consegue fazer login com `AlterarEstaSenha!2026`.
 - [ ] `pdo_mysql` habilitado no PHP usado pelo servidor web.
 - [ ] `APP_DEBUG=false` configurado em produção.
 - [ ] Rotas protegidas redirecionam para login quando não há sessão.

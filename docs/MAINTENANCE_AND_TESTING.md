@@ -46,7 +46,7 @@ Use com backup do banco e preferencialmente fora de produção.
 | `install_database.php` | Instalador visual do banco. |
 | `limpar_sessao.php` | Limpa sessão local. |
 
-Senha padrão usada pelos scripts de correção de usuários: `admin123`.
+Senha padrão usada pelos scripts de correção de usuários: `AlterarEstaSenha!2026`, ou o valor da variável `INITIAL_ADMIN_PASSWORD`.
 
 ## 4. Banco de Dados
 
@@ -147,7 +147,7 @@ Smoke test manual no navegador:
 Login inicial após importar `SETUP_COMPLETO_FINAL.sql`:
 
 - email: `admin@criancafeliz.org`
-- senha: `admin123`
+- senha: `AlterarEstaSenha!2026`
 
 ## 8. Fluxo Mínimo Pós-Setup
 
@@ -164,9 +164,6 @@ Login inicial após importar `SETUP_COMPLETO_FINAL.sql`:
 
 ## 9. Pendências Conhecidas
 
-- Configurar SMTP real para recuperação de senha.
-- Remover referências legadas a `attendance.php`; o módulo atual é `faltas.php`.
-- Criar migração oficial para `anotacao_psicologica`, hoje presente apenas nos dumps legados.
 - Automatizar testes hoje manuais.
-- Proteger scripts auxiliares fora do ambiente de desenvolvimento.
 - Normalizar nomes de tabelas para ambientes sensíveis a maiúsculas/minúsculas.
+- Configurar SMTP real para recuperação de senha com provedor e credenciais de produção.

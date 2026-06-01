@@ -1,12 +1,14 @@
 <?php
 // Script para corrigir usuÃ¡rios com senhas corretas
 
+$defaultPassword = getenv('INITIAL_ADMIN_PASSWORD') ?: 'AlterarEstaSenha!2026';
+
 $users = [
     [
         "id" => "admin001",
         "name" => "Administrador",
         "email" => "admin@criancafeliz.org",
-        "password" => password_hash('admin123', PASSWORD_DEFAULT),
+        "password" => password_hash($defaultPassword, PASSWORD_BCRYPT, ['cost' => 12]),
         "role" => "admin",
         "status" => "active",
         "created_at" => "2025-10-01 18:03:00",
@@ -16,7 +18,7 @@ $users = [
         "id" => "psi001",
         "name" => "Dr. Maria Silva",
         "email" => "psicologa@criancafeliz.org",
-        "password" => password_hash('admin123', PASSWORD_DEFAULT),
+        "password" => password_hash($defaultPassword, PASSWORD_BCRYPT, ['cost' => 12]),
         "role" => "psicologo",
         "status" => "active",
         "created_at" => "2025-10-01 18:03:00",
@@ -26,7 +28,7 @@ $users = [
         "id" => "func001",
         "name" => "JoÃ£o Santos",
         "email" => "funcionario@criancafeliz.org",
-        "password" => password_hash('admin123', PASSWORD_DEFAULT),
+        "password" => password_hash($defaultPassword, PASSWORD_BCRYPT, ['cost' => 12]),
         "role" => "funcionario",
         "status" => "active",
         "created_at" => "2025-10-01 18:03:00",
@@ -43,10 +45,10 @@ if ($result !== false) {
     
     echo "<strong>Credenciais:</strong><br>";
     foreach ($users as $user) {
-        echo "ðŸ“§ {$user['email']} | ðŸ”‘ admin123 | ðŸ‘¤ {$user['role']}<br>";
+        echo "ðŸ“§ {$user['email']} | ðŸ”‘ {$defaultPassword} | ðŸ‘¤ {$user['role']}<br>";
         
         // Testar se a senha funciona
-        $testResult = password_verify('admin123', $user['password']);
+        $testResult = password_verify($defaultPassword, $user['password']);
         echo "ðŸ” Teste de senha: " . ($testResult ? 'âœ… OK' : 'âŒ ERRO') . "<br><br>";
     }
 } else {

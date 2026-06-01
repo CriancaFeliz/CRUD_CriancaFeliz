@@ -12,7 +12,7 @@
         </div>
         <div style="display: flex; gap: 10px;">
             <?php if ($acolhimento && $attendanceStats && !$attendanceStats['desligado']): ?>
-                <a href="attendance.php?action=show&id=<?php echo $acolhimento['id']; ?>" 
+                <a href="faltas.php?action=historico&id=<?php echo $acolhimento['id']; ?>"
                    class="btn" style="background: #3498db;">
                     <i class="fas fa-calendar-check"></i> Ver Controle de Faltas
                 </a>
@@ -202,7 +202,7 @@ function desligarAtendido() {
         return;
     }
     
-    window.location.href = 'attendance.php?action=desligamento&id=<?php echo $acolhimento['id'] ?? ''; ?>';
+    window.location.href = 'desligamento.php?action=novo&id=<?php echo $acolhimento['id'] ?? ''; ?>';
 }
 
 function reativarAtendido() {
@@ -212,7 +212,7 @@ function reativarAtendido() {
     
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = 'attendance.php?action=cancelar_desligamento';
+    form.action = 'desligamento.php?action=reativar';
     
     const csrfInput = document.createElement('input');
     csrfInput.type = 'hidden';
@@ -221,7 +221,7 @@ function reativarAtendido() {
     
     const atendidoInput = document.createElement('input');
     atendidoInput.type = 'hidden';
-    atendidoInput.name = 'atendido_id';
+    atendidoInput.name = 'id_atendido';
     atendidoInput.value = '<?php echo $acolhimento['id'] ?? ''; ?>';
     
     form.appendChild(csrfInput);
