@@ -1,0 +1,62 @@
+services:
+  app:
+    build:
+      context: .
+    container_name: criancafeliz_app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: criancafeliz
+      DB_USER: criancafeliz
+      DB_PASS: criancafeliz
+      DB_CHARSET: utf8mb4
+      APP_DEBUG: "true"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+
+  db:
+    image: mysql:8.4
+    container_name: criancafeliz_db
+    command:
+      - --lower_case_table_names=1
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: criancafeliz
+      MYSQL_USER: criancafeliz
+      MYSQL_PASSWORD: criancafeliz
+      MYSQL_ROOT_PASSWORD: root
+      TZ: America/Sao_Paulo
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/mysql/01-init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+      - ./docker/mysql/02-missing-views.sql:/docker-entrypoint-initdb.d/02-missing-views.sql:ro
+      - ./database/SETUP_COMPLETO_FINAL.sql:/docker-init/SETUP_COMPLETO_FINAL.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: criancafeliz_phpmyadmin
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "8081:80"
+
+volumes:
+  db_data:

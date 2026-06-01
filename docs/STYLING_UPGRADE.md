@@ -1,6 +1,8 @@
-# Documento de Modernização Estética do Frontend (CSS/Bootstrap)
+# Documento de Modernização Estética do Frontend
 
-Este documento descreve detalhadamente as melhorias implementadas na arquitetura de estilos e no design visual do **Sistema Criança Feliz**, substituindo o uso de propriedades rígidas inline por um **Design System unificado** baseado em variáveis CSS nativas, estética glassmorphic de alta fidelidade e transições dinâmicas de tema.
+Atualizado em 2026-05-27.
+
+Este documento descreve as melhorias implementadas na arquitetura de estilos e no design visual do **Sistema Criança Feliz**, substituindo propriedades inline rígidas por um design system baseado em variáveis CSS, classes reutilizáveis e transições de tema.
 
 ---
 
@@ -20,7 +22,7 @@ Antes deste upgrade, o sistema exibia estilos inline rígidos (atributos `style=
 
 ## 2. Design System & Tokens de Estilo (Variáveis CSS)
 
-Centralizamos todos os tokens visuais na folha de estilos principal ([style.css](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/css/style.css)). 
+Centralizamos todos os tokens visuais na folha de estilos principal: `css/style.css`.
 
 | Token / Variável CSS | Tema Claro (Light) | Tema Escuro (Dark) | Aplicação |
 | :--- | :--- | :--- | :--- |
@@ -44,16 +46,16 @@ Centralizamos todos os tokens visuais na folha de estilos principal ([style.css]
 ## 3. Alterações Realizadas nos Arquivos
 
 ### A. Layout Geral & Transição de Tema
-- **[main.php](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Views/layouts/main.php)**: 
+- **`app/Views/layouts/main.php`**:
   - Removido o bloco `<style>` interno redundante.
   - Substituição de estilos de título inline por `.topbar-title` e do link do perfil por `.user-profile-link`.
   - Substituição do avatar e fallback do avatar por `.avatar` e `.avatar-placeholder` com suporte integrado a `object-fit: cover` diretamente no CSS.
-- **[theme-toggle.js](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/js/theme-toggle.js)**:
+- **`js/theme-toggle.js`**:
   - Deletada a função antiga `applyDashboardStyles` que forçava estilos inline via DOM.
   - O script foi modificado para atuar estritamente na manipulação de `data-theme` na tag raiz `html` e no localStorage.
 
 ### B. Elementos CSS Globais e Vidro Fosco (Glassmorphic)
-- **[style.css](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/css/style.css)**:
+- **`css/style.css`**:
   - Criação da classe `.card-glass` (aplica `backdrop-filter: blur(12px)` e fundos translúcidos).
   - Animações micro-interativas nos cards: ao passar o mouse (`:hover`), o card se eleva levemente com `transform: translateY(-2px)` e ganha uma sombra com brilho alaranjado suave.
   - Criação de classes para Badges (`.badge-crianca`, `.badge-adolescente`, `.badge-adulto`) e Status (`.status-ativo`, `.status-inativo`) com transparências e cores harmoniosas para ambos os temas.
@@ -61,17 +63,17 @@ Centralizamos todos os tokens visuais na folha de estilos principal ([style.css]
   - Criação de tabelas modernas de visualização em vidro fosco (`.table-glass`).
   - Criação de classes de suporte para estado vazio (`.empty-state-container`, `.empty-state-icon`, `.empty-state-title`, `.empty-state-text`).
   - Correção agressiva para elementos com cores brancas residuais ou inputs em modo escuro (correção de bugs de legibilidade em campos focados).
-- **[acolhimento-form.css](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/css/acolhimento-form.css)**:
+- **`css/acolhimento-form.css`**:
   - Refatorado para herdar diretamente as variáveis de cores globais de marca do arquivo `style.css`.
 
 ### C. Refatoração de Views
-- **[dashboard/index.php](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Views/dashboard/index.php)**:
+- **`app/Views/dashboard/index.php`**:
   - Removidos estilos inline dos cards de estatísticas (substituídos por `.stat-card-glass` e `.note-card-glass`).
   - Ajustados os estilos dinâmicos de geração do calendário escolar para injetar classes CSS nativas (como `.calendar-day`, `.today`, `.has-notes`) em vez de propriedades inline de cor.
-- **[prontuarios/index.php](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Views/prontuarios/index.php)**:
+- **`app/Views/prontuarios/index.php`**:
   - Removido inline styling do card de busca rápida e das tabelas de resultados.
   - Os botões de ação na tabela foram convertidos para classes CSS padronizadas (`.btn-icon`, `.view-btn`, `.edit-btn`, `.delete-btn`) e as larguras de coluna e centralização foram atribuídas à classe `.actions-cell`.
-- **[acolhimento/index.php](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Views/acolhimento/index.php)**:
+- **`app/Views/acolhimento/index.php`**:
   - Removidos os blocos de estilos em tempo de execução baseados em PHP.
   - Atualizadas as funções auxiliares JavaScript (`formatStatus()` e `formatCategoria()`) para injetarem classes CSS seguras em vez de tags HTML com propriedades inline de fundo e cor.
   - Refatoração dos botões e mensagens de tabela para utilizarem a classe centralizadora `.actions-cell`.

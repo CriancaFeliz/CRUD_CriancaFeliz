@@ -1,249 +1,236 @@
-# 🚀 SETUP COMPLETO - CRIANÇA FELIZ
+# Setup do Banco de Dados - Criança Feliz
 
-## 📋 Descrição
+Atualizado em 2026-06-01.
 
-Este é o script SQL único e completo para configurar 100% do banco de dados do projeto **Criança Feliz**.
+Este guia descreve como preparar o banco MySQL/MariaDB do Sistema Criança Feliz usando o script principal `database/SETUP_COMPLETO_FINAL.sql`.
 
-**Arquivo:** `SETUP_COMPLETO_FINAL.sql`
+## 1. Arquivo Recomendado
 
----
+Use este arquivo para um ambiente novo:
 
-## ✅ O que está incluído
-
-### 1. Banco de Dados Base
-- ✅ Todas as 16 tabelas necessárias
-- ✅ Estrutura completa com colunas corretas
-- ✅ Tipos de dados apropriados
-
-### 2. Triggers de Log
-- ✅ Trigger INSERT para ficha socioeconômica
-- ✅ Trigger UPDATE para ficha socioeconômica (captura apenas mudanças)
-- ✅ Trigger DELETE para ficha socioeconômica
-- ✅ Logs em JSON com todos os campos
-
-### 3. Índices
-- ✅ Índices primários em todas as tabelas
-- ✅ Índices de chave estrangeira
-- ✅ Índices de performance para buscas frequentes
-
-### 4. Foreign Keys
-- ✅ Integridade referencial completa
-- ✅ Cascata de deleção onde apropriado
-- ✅ Relacionamentos entre tabelas
-
-### 5. Dados Iniciais
-- ✅ Usuário admin (senha: admin)
-- ✅ 2 responsáveis de exemplo
-- ✅ 3 atendidos de exemplo
-- ✅ 6 oficinas de exemplo
-
----
-
-## 🚀 Como Executar
-
-### Passo 1: Abra phpMyAdmin
-```
-http://localhost/phpmyadmin
+```text
+database/SETUP_COMPLETO_FINAL.sql
 ```
 
-### Passo 2: Crie o banco de dados (se não existir)
-```sql
-CREATE DATABASE IF NOT EXISTS criancafeliz;
+Ele cria a estrutura principal do sistema, índices, relacionamentos, triggers/procedures e dados iniciais de teste.
+
+## 2. Pré-Requisitos
+
+- MySQL 5.7+ ou MariaDB 10.3+.
+- Banco com charset `utf8mb4`.
+- Usuário com permissão para criar tabelas, índices, foreign keys, triggers e procedures.
+- PHP com `pdo_mysql` habilitado para a aplicação acessar o banco.
+
+## 3. Instalação via Terminal
+
+Crie o banco:
+
+```bash
+mysql -u root -e "CREATE DATABASE criancafeliz CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
-### Passo 3: Selecione o banco
-- Clique em **criancafeliz** na esquerda
+Importe o setup:
 
-### Passo 4: Vá para SQL
-- Clique na aba **SQL**
-
-### Passo 5: Copie e Cole o Script
-1. Abra o arquivo: `SETUP_COMPLETO_FINAL.sql`
-2. Copie TODO o conteúdo
-3. Cole na caixa de SQL do phpMyAdmin
-
-### Passo 6: Execute
-- Clique em **Executar**
-
----
-
-## ⏱️ Tempo de Execução
-
-- **Tempo esperado:** 5-10 segundos
-- **Sem erros:** ✅ Sucesso!
-
----
-
-## 📊 Tabelas Criadas
-
-| Tabela | Descrição |
-|--------|-----------|
-| `usuario` | Usuários do sistema |
-| `atendido` | Crianças atendidas |
-| `responsavel` | Responsáveis pelas crianças |
-| `ficha_socioeconomico` | Dados socioeconômicos |
-| `familia` | Membros da família |
-| `despesas` | Despesas da família |
-| `frequencia_dia` | Frequência diária |
-| `frequencia_oficina` | Frequência em oficinas |
-| `oficina` | Oficinas disponíveis |
-| `sessao` | Sessões de atendimento |
-| `presenca` | Presença em sessões |
-| `desligamento` | Desligamentos |
-| `encontro` | Encontros registrados |
-| `documento` | Documentos |
-| `dias_atendimento` | Dias de atendimento |
-| `agenda` | Agenda/notificações |
-| `log` | Logs de alterações |
-
----
-
-## 🔐 Dados de Acesso
-
-### Usuário Admin
-- **Email:** admin@criancafeliz.org
-- **Senha:** admin
-- **Nível:** admin
-
----
-
-## 📝 Campos da Ficha Socioeconômica
-
-O script cria a tabela `ficha_socioeconomico` com os seguintes campos:
-
-- `idficha` - ID da ficha
-- `id_atendido` - Referência ao atendido
-- `nome_menor` - Nome do menor
-- `entrevistado` - Nome de quem foi entrevistado
-- `renda_familiar` - Renda familiar total
-- `renda_per_capita` - Renda per capita
-- `qtd_pessoas` - Quantidade de pessoas na casa
-- `numero_comodos` - Número de cômodos
-- `construcao` - Tipo de construção
-- `residencia` - Tipo de residência
-- `moradia` - Tipo de moradia
-- `agua` - Tem água (0/1)
-- `esgoto` - Tem esgoto (0/1)
-- `energia` - Tem energia (0/1)
-- `bolsa_familia` - Recebe Bolsa Família (0/1)
-- `auxilio_brasil` - Recebe Auxílio Brasil (0/1)
-- `bpc` - Recebe BPC (0/1)
-- `auxilio_emergencial` - Recebe Auxílio Emergencial (0/1)
-- `seguro_desemprego` - Recebe Seguro Desemprego (0/1)
-- `aposentadoria` - Recebe Aposentadoria (0/1)
-- `assistente_social` - Nome do assistente social
-- `cadunico` - Informação CADÚnico
-- `cond_residencia` - Condição da residência
-- `nr_veiculos` - Número de veículos
-- `observacoes` - Observações gerais
-
----
-
-## 📊 Triggers de Log
-
-### Trigger INSERT
-- Registra quando uma nova ficha é criada
-- Captura todos os campos em JSON
-
-### Trigger UPDATE
-- Registra quando uma ficha é alterada
-- Captura apenas os campos que mudaram
-- Mostra valor anterior e novo
-- Descrição clara das mudanças
-
-### Trigger DELETE
-- Registra quando uma ficha é deletada
-- Captura todos os dados antes da deleção
-
----
-
-## 🔍 Exemplo de Log
-
-```json
-{
-  "id_log": 1,
-  "data_alteracao": "2025-12-09 02:30:00",
-  "registro_alt": "Ficha Socioeconômica alterada - Cômodos: 3 → 4 | Renda: R$ 1800 → R$ 2300 |",
-  "valor_anterior": {"numero_comodos": 3, "renda_familiar": 1800},
-  "valor_atual": {"numero_comodos": 4, "renda_familiar": 2300},
-  "acao": "UPDATE",
-  "tabela_afetada": "ficha_socioeconomico",
-  "id_usuario": 1,
-  "id_registro": 6,
-  "campo_alterado": "MULTIPLOS_CAMPOS",
-  "ip_usuario": "127.0.0.1"
-}
+```bash
+mysql -u root criancafeliz < database/SETUP_COMPLETO_FINAL.sql
 ```
 
----
+Se seu usuário MySQL tiver senha:
 
-## ✨ Recursos Especiais
+```bash
+mysql -u root -p criancafeliz < database/SETUP_COMPLETO_FINAL.sql
+```
 
-### 1. Índices de Performance
-- Índices em campos frequentemente buscados
-- Índices compostos para queries complexas
-- Melhora significativa na velocidade
+## 4. Instalação via phpMyAdmin
 
-### 2. Integridade Referencial
-- Foreign keys em todas as relações
-- Cascata de deleção para dados relacionados
-- Evita dados órfãos
+1. Abra `http://localhost/phpmyadmin`.
+2. Crie o banco `criancafeliz` com charset/collation `utf8mb4`.
+3. Selecione o banco.
+4. Abra a aba SQL ou Importar.
+5. Execute o arquivo `SETUP_COMPLETO_FINAL.sql`.
 
-### 3. Logs Completos
-- Todos os campos monitorados
-- Histórico completo de alterações
-- Rastreabilidade total
+## 4.1 Instalação via Docker Compose
 
-### 4. Dados Iniciais
-- Usuário admin pré-configurado
-- Dados de exemplo para testes
-- Oficinas padrão
+O repositório também inclui um ambiente Docker com aplicação, MySQL e phpMyAdmin:
 
----
+```bash
+docker compose up --build
+```
 
-## 🐛 Troubleshooting
+Serviços:
 
-### Erro: "Syntax error"
-- Certifique-se de copiar TODO o arquivo
-- Verifique se não há caracteres especiais
+| Serviço | Acesso |
+| --- | --- |
+| Aplicação | `http://localhost:8080/` |
+| phpMyAdmin | `http://localhost:8081/` |
+| MySQL pelo host | `localhost:3307` |
 
-### Erro: "Table already exists"
-- O banco já foi criado
-- Você pode executar novamente (usa `CREATE TABLE IF NOT EXISTS`)
+Credenciais:
 
-### Erro: "Foreign key constraint fails"
-- Certifique-se de executar o script completo
-- Não delete tabelas manualmente
+| Item | Valor |
+| --- | --- |
+| Banco | `criancafeliz` |
+| Usuário da aplicação | `criancafeliz` |
+| Senha da aplicação | `criancafeliz` |
+| Usuário root | `root` |
+| Senha root | `root` |
 
----
+Na primeira criação do volume `db_data`, o MySQL executa `docker/mysql/01-init.sh`, importa `database/SETUP_COMPLETO_FINAL.sql` e aplica `docker/mysql/02-missing-views.sql`.
 
-## 📞 Suporte
+Se o volume já existir, os scripts de inicialização do MySQL não rodam novamente. Para recriar o banco do zero:
 
-Para dúvidas ou problemas:
-1. Verifique o phpMyAdmin para erros
-2. Consulte os logs do MySQL
-3. Verifique a integridade do arquivo SQL
+```bash
+docker compose down -v
+docker compose up --build
+```
 
----
+## 5. Dados Iniciais
 
-## 📦 Versão
+Usuário administrador:
 
-- **Versão:** 1.0
-- **Data:** Dezembro 2025
-- **Status:** ✅ Pronto para Produção
+| Campo | Valor |
+| --- | --- |
+| Email | `admin@criancafeliz.org` |
+| Senha | `admin123` |
+| Perfil | `admin` |
+| Status | `Ativo` |
 
----
+O script também inclui responsáveis, atendidos e oficinas de exemplo.
 
-## ✅ Checklist Pós-Setup
+## 6. Tabelas Principais
 
-- [ ] Script executado sem erros
-- [ ] Banco `criancafeliz` criado
-- [ ] Todas as 17 tabelas presentes
-- [ ] Triggers funcionando
-- [ ] Usuário admin acessível
-- [ ] Dados iniciais carregados
-- [ ] Testes de CRUD funcionando
+O setup cria tabelas para:
 
----
+- agenda/notificações;
+- atendidos;
+- responsáveis;
+- usuários;
+- fichas socioeconômicas;
+- família;
+- despesas;
+- frequência diária;
+- frequência por oficina;
+- oficinas;
+- desligamentos;
+- documentos;
+- encontros;
+- presenças/sessões legadas;
+- logs.
 
-**Parabéns! Seu banco de dados está 100% configurado e pronto para uso!** 🎉
+As tabelas centrais usadas pela aplicação atual são:
+
+| Tabela lógica | Uso |
+| --- | --- |
+| `Usuario` / `usuario` | Usuários, login e perfis. |
+| `Atendido` / `atendido` | Crianças/adolescentes atendidos. |
+| `Responsavel` / `responsavel` | Responsáveis vinculados a atendidos. |
+| `Ficha_Socioeconomico` / `ficha_socioeconomico` | Fichas socioeconômicas. |
+| `Familia` / `familia` | Membros da família da ficha. |
+| `Despesas` / `despesas` | Rendas/despesas da ficha. |
+| `Frequencia_Dia` / `frequencia_dia` | Frequência diária. |
+| `Frequencia_Oficina` / `frequencia_oficina` | Frequência por oficina. |
+| `Oficina` / `oficina` | Oficinas disponíveis. |
+| `Desligamento` / `desligamento` | Desligamentos e reativações. |
+| `agenda` | Notas/avisos do dashboard. |
+| `log` | Auditoria. |
+| `anotacao_psicologica` | Anotações da área psicológica, quando presente no schema usado. |
+
+Ponto de atenção: `SETUP_COMPLETO_FINAL.sql` não cria atualmente a tabela `anotacao_psicologica`, embora a área psicológica use essa tabela. A estrutura existe nos dumps em `database/legacy_dumps/` e deve ser promovida para uma migração/setup oficial antes de usar o módulo psicológico em um banco limpo.
+
+## 7. Auditoria
+
+O script configura triggers de log para a ficha socioeconômica:
+
+- `log_ficha_socioeconomico_insert`
+- `log_ficha_socioeconomico_update`
+- `log_ficha_socioeconomico_delete`
+
+Antes de operações auditadas, a aplicação tenta preencher variáveis de sessão do MySQL:
+
+- `@usuario_id`
+- `@ip_usuario`
+
+Essas variáveis são preparadas em `LogHelper` e também em algumas rotas administrativas.
+
+## 8. Arquivos Relacionados
+
+| Arquivo | Uso |
+| --- | --- |
+| `migration.sql` | Schema alinhado ao setup, útil como base de comparação. |
+| `update_schema.sql` | Migração pontual para remover estruturas obsoletas e recriar triggers. |
+| `migrate.php` | Executor PHP de migrações. |
+| `test_connection.php` | Teste de conexão com o banco. |
+| `legacy_dumps/` | Dumps antigos para consulta histórica. |
+| `../docker/mysql/01-init.sh` | Script de importação usado pelo MySQL no Docker. |
+| `../docker/mysql/02-missing-views.sql` | View complementar aplicada no ambiente Docker. |
+
+## 9. Configuração da Aplicação
+
+As credenciais padrão ficam em `app/Config/Database.php`:
+
+| Parâmetro | Valor padrão |
+| --- | --- |
+| Host | `localhost` |
+| Banco | `criancafeliz` |
+| Usuário | `root` |
+| Senha | vazia |
+| Charset | `utf8mb4` |
+
+Também é possível usar variáveis de ambiente:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=criancafeliz
+DB_USER=root
+DB_PASS=
+DB_CHARSET=utf8mb4
+APP_DEBUG=false
+```
+
+No Docker Compose, a aplicação usa `DB_HOST=db`, `DB_NAME=criancafeliz`, `DB_USER=criancafeliz` e `DB_PASS=criancafeliz`.
+
+## 10. Pontos de Atenção
+
+- Há variação de maiúsculas/minúsculas entre alguns nomes usados pelo código e pelos scripts SQL (`Usuario`/`usuario`, `Atendido`/`atendido`, etc.).
+- Em Windows e em algumas configurações MySQL, isso costuma funcionar por configuração do servidor.
+- Em Linux com `lower_case_table_names=0`, nomes diferentes podem quebrar consultas e triggers.
+- Antes de produção, normalize os nomes ou valide a configuração do MySQL/MariaDB.
+- O MySQL do Docker Compose usa `lower_case_table_names=1` para reduzir conflitos locais de caixa, mas isso não substitui a normalização do schema.
+- O schema principal ainda preserva algumas tabelas legadas, como `sessao` e `presenca`, mas o módulo atual de frequência usa `faltas.php`, `Frequencia_Dia` e `Frequencia_Oficina`.
+- A tabela `anotacao_psicologica` precisa ser criada a partir de uma migração validada quando o ambiente depender da área psicológica.
+
+## 11. Troubleshooting
+
+Erro: `A extensao pdo_mysql nao esta habilitada neste PHP.`
+
+- Habilite `pdo_mysql` no `php.ini`.
+- Reinicie Apache/PHP-FPM/servidor local.
+- Rode `php -m` e confirme que `pdo_mysql` aparece.
+
+Erro: `Table already exists`
+
+- O banco já possui tabelas.
+- Use um banco limpo para setup completo ou revise o schema antes de reimportar.
+
+Erro: `Foreign key constraint fails`
+
+- Importe o arquivo completo.
+- Evite executar trechos isolados fora da ordem.
+- Confirme que o engine é InnoDB.
+
+Erro com nomes de tabelas em Linux
+
+- Verifique `lower_case_table_names`.
+- Padronize nomes do schema de acordo com as consultas do código.
+
+## 12. Checklist Pós-Setup
+
+- [ ] Banco `criancafeliz` criado.
+- [ ] `SETUP_COMPLETO_FINAL.sql` importado sem erros.
+- [ ] Usuário `admin@criancafeliz.org` consegue fazer login com `admin123`.
+- [ ] `pdo_mysql` habilitado no PHP usado pelo servidor web.
+- [ ] `APP_DEBUG=false` configurado em produção.
+- [ ] Rotas protegidas redirecionam para login quando não há sessão.
+- [ ] Dashboard abre após login.
+- [ ] Módulos de acolhimento, socioeconômico, faltas, usuários e logs abrem no ambiente local.

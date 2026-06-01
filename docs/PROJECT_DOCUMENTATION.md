@@ -1,595 +1,494 @@
-# Documentacao tecnica completa - Sistema Crianca Feliz
+# Documentação Técnica - Sistema Criança Feliz
 
-Atualizado em 2026-05-20.
+Atualizado em 2026-06-01.
 
-Este documento descreve a organizacao atual do projeto, o papel de cada pagina publica, cada controller, service, model, view e script auxiliar. Tambem registra os erros encontrados, as correcoes aplicadas nesta organizacao e as melhorias recomendadas para as proximas etapas.
+Este documento descreve a organização atual do projeto `CriancaFeliz/CRUD_CriancaFeliz`, com foco em arquitetura, fluxo de requisição, rotas, módulos, banco de dados, scripts auxiliares e pontos de atenção para manutenção.
 
-## 1. Visao geral
+## 1. Visão Geral
 
-O projeto e um sistema web em PHP para a Associacao Crianca Feliz. Ele usa uma estrutura MVC simples sem framework externo:
+O Sistema Criança Feliz é uma aplicação web em PHP para gestão de atendidos da Associação Criança Feliz. A aplicação usa uma arquitetura MVC simples, sem framework externo, com persistência principal em MySQL/MariaDB via PDO.
 
-- arquivos PHP na raiz funcionam como pontos de entrada/roteadores publicos;
-- `bootstrap.php` inicia sessao, constantes, headers de seguranca, autoload e helpers globais;
-- `app/Controllers` recebe as requisicoes e decide qual view renderizar;
-- `app/Services` concentra regras de negocio;
-- `app/Models` acessa MySQL e, em alguns pontos legados, arquivos JSON;
-- `app/Views` contem telas HTML/PHP;
-- `css`, `js` e `img` guardam assets publicos.
+O projeto hoje opera com:
 
-O modo principal de persistencia e MySQL. Existem classes e arquivos JSON legados, mas a maior parte do sistema atual depende das tabelas MySQL.
+- `index.php` como front controller e roteador central;
+- `.htaccess` para redirecionar rotas inexistentes para `index.php` no Apache;
+- `var/dev-router.php` para roteamento equivalente no servidor embutido do PHP;
+- controllers em `app/Controllers`;
+- services em `app/Services`;
+- models em `app/Models`;
+- views em `app/Views`;
+- assets públicos em `css`, `js` e `img`;
+- SQL, migrações e diagnósticos em `database`;
+- ambiente Docker local com PHP/Apache, MySQL e phpMyAdmin;
+- scripts auxiliares em `tools`;
+- testes manuais em `tests/manual`.
 
-## 2. Estrutura de pastas
+## 2. Estrutura de Pastas
 
 ```text
 .
 |-- app/
-|   |-- Config/          Configuracoes de aplicacao e banco.
-|   |-- Controllers/     Camada de entrada MVC.
+|   |-- Config/          Configurações de aplicação e banco.
+|   |-- Controllers/     Controllers MVC.
 |   |-- Helpers/         Helpers transversais.
-|   |-- Models/          Persistencia MySQL/JSON.
-|   |-- Services/        Regras de negocio.
+|   |-- Models/          Persistência MySQL.
+|   |-- Services/        Regras de negócio.
 |   `-- Views/           Layouts e telas.
 |-- assets/
-|   `-- samples/         Arquivos de amostra usados em testes manuais.
-|-- css/                 Estilos globais e estilos especificos.
-|-- data/                JSONs e logs operacionais legados.
-|-- database/            Scripts SQL, migracoes e documentacao de banco.
-|-- docs/
-|   `-- archive/         Documentos antigos preservados.
-|-- img/                 Imagens usadas pelas telas publicas.
+|   `-- samples/         Arquivos de amostra para testes manuais.
+|-- css/                 Estilos globais e específicos.
+|-- data/                Arquivos runtime locais, como tokens de reset.
+|-- database/            Setup, migrações e diagnóstico de banco.
+|-- docker/              Scripts de inicialização do MySQL em container.
+|-- docs/                Documentação técnica.
+|-- img/                 Imagens públicas.
 |-- js/                  Scripts de interface.
 |-- tests/
-|   `-- manual/          Testes manuais PHP movidos da raiz.
+|   `-- manual/          Testes manuais PHP.
 |-- tools/
-|   |-- diagnostics/     Scripts de diagnostico e debug.
-|   |-- legacy/          Prototipos/arquivos antigos.
-|   `-- maintenance/     Scripts administrativos e correcao pontual.
-`-- var/
-    `-- logs/            Logs locais nao versionaveis.
+|   |-- diagnostics/     Scripts de diagnóstico e debug.
+|   |-- legacy/          Protótipos/arquivos antigos.
+|   `-- maintenance/     Scripts administrativos e correções pontuais.
+|-- var/
+|   |-- logs/            Logs locais não versionáveis.
+|   `-- dev-router.php   Roteador para `php -S`.
+|-- Dockerfile           Imagem PHP/Apache da aplicação.
+|-- docker-compose.yml   Ambiente local com app, MySQL e phpMyAdmin.
+|-- .htaccess            Rewrite para o front controller no Apache.
+|-- index.php            Front controller e roteador central.
+`-- README.md            Guia principal do repositório.
 ```
 
-## 3. Inicializacao e fluxo de requisicao
+## 3. Inicialização
 
-1. O navegador acessa um arquivo da raiz, por exemplo `dashboard.php`.
-2. O arquivo carrega `bootstrap.php`.
-3. O roteador da pagina instancia um controller.
-4. O controller valida autenticacao/permissao pelo `AuthService`.
-5. O controller chama um service quando ha regra de negocio.
-6. O service chama um model para ler/gravar dados.
-7. O controller renderiza uma view diretamente ou dentro de um layout.
+O bootstrap fica em `app/bootstrap.php` e executa:
 
-`bootstrap.php` define:
-
-- `BASE_PATH`, `APP_PATH`, `DATA_PATH`, `CSS_PATH`, `JS_PATH`, `IMG_PATH`;
-- headers basicos de seguranca para requisicoes nao AJAX;
+- abertura de sessão PHP;
+- definição de constantes (`BASE_PATH`, `APP_PATH`, `DATA_PATH`, `CSS_PATH`, `JS_PATH`, `IMG_PATH`);
+- headers básicos de segurança em requisições não AJAX;
+- configuração de erros por `APP_DEBUG`;
 - autoload simples para Config, Controllers, Models, Services e Helpers;
-- helpers globais: `sanitizeInput`, `validateEmail`, `validatePassword`, `isLoggedIn`, `redirect`, `view`, `layout`, `old`;
-- exibicao de erros controlada por `APP_DEBUG`.
+- preparação de variáveis de log para triggers MySQL quando há usuário logado;
+- helpers globais como `sanitizeInput`, `validateEmail`, `validatePassword`, `formatDateToDb`, `formatDateToBr`, `calculateAge`, `getFaixaEtaria`, `isLoggedIn`, `redirect`, `view`, `layout` e `old`;
+- criação da pasta `data/` se ela não existir.
 
-## 4. Configuracao
+## 4. Fluxo de Requisição
 
-O banco fica em `app/Config/Database.php`.
+1. O navegador acessa uma URL como `/dashboard.php`.
+2. No Apache, `.htaccess` envia arquivos inexistentes para `index.php`. No servidor embutido, `var/dev-router.php` faz o mesmo.
+3. `index.php` remove query string, calcula a rota relativa e decide se a rota é pública ou protegida.
+4. Rotas públicas carregam `AuthController` para login, recuperação ou reset de senha.
+5. Rotas protegidas exigem sessão via `isLoggedIn()`.
+6. O roteador instancia o controller correspondente.
+7. O controller valida permissões, chama services/models e renderiza uma view ou JSON.
 
-Padroes atuais:
+## 5. Configuração
 
-- host: `localhost`
-- banco: `criancafeliz`
-- usuario: `root`
-- senha: vazia
-- charset: `utf8mb4`
+O banco é configurado em `app/Config/Database.php`.
 
-Tambem podem ser usados ambientes:
+Padrões locais:
+
+| Parâmetro | Valor |
+| --- | --- |
+| Host | `localhost` |
+| Banco | `criancafeliz` |
+| Usuário | `root` |
+| Senha | vazia |
+| Charset | `utf8mb4` |
+
+Variáveis de ambiente suportadas:
 
 - `DB_HOST`
+- `DB_PORT`
 - `DB_NAME`
 - `DB_USER`
 - `DB_PASS`
 - `DB_CHARSET`
 - `APP_DEBUG`
 
-Em producao, recomenda-se definir `APP_DEBUG=false`.
+`APP_DEBUG` vem ativo por padrão quando a variável não existe. Em produção, use `APP_DEBUG=false`.
 
-## 5. Paginas publicas da raiz
+O projeto exige a extensão `pdo_mysql`. Quando ela não está habilitada, a aplicação lança uma mensagem explícita.
 
-| Arquivo | URL esperada | Controller/metodo | View principal | Funcao | Permissao |
-|---|---|---|---|---|---|
-| `index.php` | `/index.php` | `AuthController::showLogin` ou `processLogin` | `auth/login` | Login do sistema | Publica |
-| `logout.php` | `/logout.php` | `AuthController::logout` | N/A | Encerra sessao | Logado |
-| `dashboard.php` | `/dashboard.php` | `DashboardController::index` | `dashboard/index` | Painel inicial, calendario, alertas e indicadores | Logado |
-| `dashboard.php?action=getCalendarNotes` | mesma | `DashboardController::getCalendarNotes` | JSON | Lista anotacoes do calendario | Logado |
-| `dashboard.php?action=saveCalendarNote` | mesma | `DashboardController::saveCalendarNote` | JSON | Salva anotacao/aviso do calendario | Logado |
-| `dashboard.php?action=deleteCalendarNote` | mesma | `DashboardController::deleteCalendarNote` | JSON | Remove anotacao/aviso | Logado |
-| `prontuarios.php` | `/prontuarios.php` | `ProntuarioController::index` | `prontuarios/index` | Hub de prontuarios e acesso a fichas | Logado |
-| `acolhimento_list.php` | `/acolhimento_list.php` | `AcolhimentoController::index/delete` | `acolhimento/index` | Lista fichas de acolhimento | Logado; excluir exige permissao |
-| `acolhimento_form.php` | `/acolhimento_form.php` | `AcolhimentoController::create/store` | `acolhimento/create` | Cria/edita ficha de acolhimento | `create_records` |
-| `acolhimento_view.php` | `/acolhimento_view.php?id=...` | `AcolhimentoController::show` | `acolhimento/show` | Visualiza ficha de acolhimento | Logado |
-| `acolhimento_search.php` | `/acolhimento_search.php?q=...` | `AcolhimentoController::search` | JSON | Busca AJAX de acolhimento | Logado |
-| `socioeconomico_list.php` | `/socioeconomico_list.php` | `SocioeconomicoController::index/delete` | `socioeconomico/index` | Lista fichas socioeconomicas | Logado; excluir exige POST/CSRF |
-| `socioeconomico_form.php` | `/socioeconomico_form.php` | `SocioeconomicoController::create/store` | `socioeconomico/create_multistep` | Cria/edita ficha socioeconomica | `create_records` |
-| `socioeconomico_view.php` | `/socioeconomico_view.php?id=...` | `SocioeconomicoController::show` | `socioeconomico/show` | Visualiza ficha socioeconomica | Logado |
-| `faltas.php` | `/faltas.php` | `FaltasController` | `faltas/*` | Controle de faltas por dia/oficina | Logado; configuracoes exigem admin |
-| `desligamento.php` | `/desligamento.php` | `DesligamentoController` | `desligamento/*` | Desligamento manual/automatico e reativacao | Admin |
-| `psychology.php` | `/psychology.php` | `PsychologyController` | `psychology/*` | Area psicologica e anotacoes | Psicologo |
-| `edit_annotation.php` | `/edit_annotation.php` | Script procedural | HTML proprio | Edicao direta de anotacao psicologica | Psicologo |
-| `users.php` | `/users.php` | `UserController` | `users/*` | CRUD de usuarios | Admin |
-| `profile.php` | `/profile.php` | `ProfileController` | `profile/index` | Perfil, foto e senha | Logado |
-| `logs.php` | `/logs.php` | `LogController` | `logs/*` | Auditoria e logs do sistema | Admin |
-| `forgot.php` | `/forgot.php` | `AuthController::showForgotPassword` ou `processForgotPassword` | `auth/forgot` | Solicita recuperacao de senha e gera token local | Publica |
-| `reset_password.php` | `/reset_password.php?token=...` | `AuthController::showResetPassword` ou `processResetPassword` | `auth/reset` | Redefine senha usando token de recuperacao | Publica |
+No Docker Compose, essas variáveis são definidas no serviço `app` com `DB_HOST=db`, `DB_NAME=criancafeliz`, `DB_USER=criancafeliz` e `DB_PASS=criancafeliz`.
 
-## 6. Controllers
+## 6. Execução Local
+
+Com Apache/XAMPP/Laragon:
+
+1. Coloque a pasta no webroot.
+2. Habilite `mod_rewrite`.
+3. Mantenha `.htaccess` na raiz.
+4. Acesse a pasta pelo navegador.
+
+Com servidor embutido do PHP:
+
+```bash
+php -S localhost:8000 var/dev-router.php
+```
+
+Com Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Serviços expostos:
+
+| Serviço | Acesso |
+| --- | --- |
+| Aplicação | `http://localhost:8080/` |
+| phpMyAdmin | `http://localhost:8081/` |
+| MySQL pelo host | `localhost:3307` |
+
+Na primeira inicialização, o MySQL executa os scripts em `docker/mysql/` e importa `database/SETUP_COMPLETO_FINAL.sql`. O volume `db_data` mantém o banco entre execuções; use `docker compose down -v` apenas quando quiser recriar o banco do zero.
+
+## 7. Rotas Públicas
+
+| Rota | Controller/método | Função |
+| --- | --- | --- |
+| `/`, `/index.php`, `/login`, `/login.php` | `AuthController::showLogin` ou `processLogin` | Login. |
+| `/forgot.php` | `AuthController::showForgotPassword` ou `processForgotPassword` | Gera token de recuperação. |
+| `/reset_password.php?token=...` | `AuthController::showResetPassword` ou `processResetPassword` | Redefine senha usando token. |
+
+Observação: o envio SMTP real ainda não está implementado. O método atual registra a URL de recuperação no log do PHP e salva tokens em `data/reset_tokens.json`.
+
+## 8. Rotas Protegidas
+
+| Rota | Controller/método | Função |
+| --- | --- | --- |
+| `/logout.php` | `AuthController::logout` | Encerra sessão. |
+| `/dashboard.php` | `DashboardController::index` | Dashboard. |
+| `/dashboard.php?action=getCalendarNotes` | `DashboardController::getCalendarNotes` | Lista notas do calendário em JSON. |
+| `/dashboard.php?action=saveCalendarNote` | `DashboardController::saveCalendarNote` | Salva nota do calendário. |
+| `/dashboard.php?action=deleteCalendarNote` | `DashboardController::deleteCalendarNote` | Remove nota do calendário. |
+| `/prontuarios.php` | `ProntuarioController::index` | Busca/consulta de prontuários. |
+| `/acolhimento_list.php` | `AcolhimentoController::index` | Lista fichas de acolhimento. |
+| `/acolhimento_list.php?action=export` | `AcolhimentoController::export` | Exporta acolhimento em CSV. |
+| `/acolhimento_list.php?action=stats` | `AcolhimentoController::stats` | Estatísticas de acolhimento. |
+| `/acolhimento_form.php` | `AcolhimentoController::create` ou `store` | Cria/edita acolhimento. |
+| `/acolhimento_search.php?q=...` | `AcolhimentoController::search` | Busca AJAX. |
+| `/acolhimento_view.php?id=...` | `AcolhimentoController::show` | Visualiza ficha. |
+| `/socioeconomico_list.php` | `SocioeconomicoController::index` | Lista fichas socioeconômicas. |
+| `/socioeconomico_list.php?action=export` | `SocioeconomicoController::export` | Exporta CSV. |
+| `/socioeconomico_list.php?action=stats` | `SocioeconomicoController::stats` | Estatísticas. |
+| `/socioeconomico_list.php?action=report` | `SocioeconomicoController::report` | Relatório. |
+| `/socioeconomico_form.php` | `SocioeconomicoController::create` ou `store` | Cria/edita ficha. |
+| `/socioeconomico_view.php?id=...` | `SocioeconomicoController::show` | Visualiza ficha. |
+| `/faltas.php` | `FaltasController::index` | Frequência diária. |
+| `/faltas.php?action=oficina` | `FaltasController::oficina` | Frequência por oficina. |
+| `/faltas.php?action=historico&id=...` | `FaltasController::historico` | Histórico do atendido. |
+| `/faltas.php?action=alertas` | `FaltasController::alertas` | Alertas de faltas. |
+| `/faltas.php?action=salvarDia` | `FaltasController::salvarDia` | Endpoint AJAX. |
+| `/faltas.php?action=salvarOficina` | `FaltasController::salvarOficina` | Endpoint AJAX. |
+| `/faltas.php?action=gerenciarOficinas` | `FaltasController::gerenciarOficinas` | Administração de oficinas. |
+| `/desligamento.php` | `DesligamentoController::index` | Lista desligamentos. |
+| `/desligamento.php?action=novo&id=...` | `DesligamentoController::novo` | Novo desligamento. |
+| `/desligamento.php?action=salvar` | `DesligamentoController::salvar` | Salva desligamento. |
+| `/desligamento.php?action=reativar` | `DesligamentoController::reativar` | Reativa atendido. |
+| `/desligamento.php?action=automatico` | `DesligamentoController::automatico` | Processa desligamentos automáticos. |
+| `/psychology.php` | `PsychologyController::index` | Dashboard psicológico. |
+| `/psychology.php?action=patients` | `PsychologyController::patients` | Lista pacientes. |
+| `/psychology.php?action=patient&cpf=...` | `PsychologyController::patient` | Detalhe do paciente. |
+| `/psychology.php?action=save_note` | `PsychologyController::saveNote` | Salva anotação. |
+| `/psychology.php?action=get_note&id=...` | `PsychologyController::getNote` | Busca anotação. |
+| `/psychology.php?action=update_note` | `PsychologyController::updateNote` | Atualiza anotação. |
+| `/psychology.php?action=delete_note&id=...` | `PsychologyController::deleteNote` | Remove anotação. |
+| `/users.php` | `UserController::index` | Lista usuários. |
+| `/users.php?action=create` | `UserController::create` ou `store` | Cria usuário. |
+| `/users.php?action=edit&id=...` | `UserController::edit` ou `update` | Edita usuário. |
+| `/users.php?action=delete&id=...` | `UserController::delete` | Exclui usuário. |
+| `/users.php?action=toggle_status&id=...` | `UserController::toggleStatus` | Ativa/desativa usuário. |
+| `/logs.php` | `LogController::index` | Auditoria. |
+| `/logs.php?action=search` | `LogController::search` | Busca avançada. |
+| `/logs.php?action=show&id=...` | `LogController::show` | Detalhe de log. |
+| `/logs.php?action=export` | `LogController::export` | Exporta CSV. |
+| `/profile.php` | `ProfileController::index` | Perfil. |
+| `/profile.php?action=updatePhoto` | `ProfileController::updatePhoto` | Atualiza foto. |
+| `/profile.php?action=updatePassword` | `ProfileController::updatePassword` | Atualiza senha. |
+
+## 9. Controllers
 
 ### `BaseController`
 
-Classe base usada pelos demais controllers. Responsavel por:
-
-- renderizar views simples e views com layout;
-- adicionar dados globais: usuario atual, estado de login e `old_input`;
-- redirecionar com flash success/error;
-- responder JSON;
-- ler dados `POST` e `GET` sanitizados;
-- validar CSRF;
-- gerar CSRF;
-- tratar excecoes;
-- identificar AJAX;
-- processar upload simples.
-
-Ponto importante: `getPostData()` preserva campos JSON (`familia_json`, `despesas_json`, `despesas`, `familia`) para evitar quebra de `json_decode`.
+Fornece renderização de views/layouts, redirecionamentos com flash, JSON, leitura de dados `GET`/`POST`, CSRF, upload simples, detecção AJAX e tratamento de exceções.
 
 ### `AuthController`
 
-Controla login, logout e recuperacao de senha.
-
-- `showLogin`: mostra tela de login.
-- `processLogin`: valida CSRF e credenciais.
-- `logout`: encerra sessao.
-- `showForgotPassword`, `processForgotPassword`, `showResetPassword`, `processResetPassword`: fluxo MVC com views `auth/forgot` e `auth/reset`; gera tokens locais em `data/reset_tokens.json`, mas o envio SMTP real ainda deve ser configurado para producao.
-- `changePassword`: troca senha do usuario logado.
+Controla login, logout, recuperação de senha, reset por token e troca de senha do usuário logado.
 
 ### `DashboardController`
 
-Monta o painel inicial:
-
-- estatisticas de acolhimento e socioeconomico;
-- alertas de fichas incompletas/vencidas e faltas;
-- anotacoes/avisos do calendario;
-- APIs AJAX de calendario.
-
-Foi adicionada normalizacao de estatisticas para aceitar retorno de models JSON e MySQL.
+Monta estatísticas, alertas e calendário. Usa a tabela `agenda` para notas/avisos do calendário.
 
 ### `ProntuarioController`
 
-Lista prontuarios e exibe detalhes por CPF. Atua como entrada para visualizar dados consolidados de atendidos.
+Centraliza consulta de atendidos e dados consolidados para prontuários.
 
 ### `AcolhimentoController`
 
-Gerencia fichas de acolhimento:
-
-- listagem paginada;
-- cadastro/edicao em formulario;
-- visualizacao;
-- exclusao com permissao;
-- busca AJAX;
-- exportacao CSV;
-- estatisticas.
-
-Usa `AcolhimentoService`.
+Gerencia listagem, criação, edição, visualização, exclusão segura por POST/CSRF, busca, exportação e estatísticas de fichas de acolhimento.
 
 ### `SocioeconomicoController`
 
-Gerencia fichas socioeconomicas:
-
-- listagem paginada;
-- cadastro/edicao multi-etapas;
-- visualizacao;
-- exclusao com POST e CSRF;
-- busca;
-- exportacao CSV;
-- estatisticas;
-- relatorio.
-
-Usa `SocioeconomicoService`.
+Gerencia formulário multi-etapas, cálculo de renda, família, despesas, visualização, exclusão, exportação, estatísticas e relatório socioeconômico.
 
 ### `FaltasController`
 
-Modulo principal de frequencia:
-
-- `index`: presenca/falta por dia;
-- `oficina`: presenca/falta por oficina;
-- `salvarDia`: endpoint AJAX;
-- `salvarOficina`: endpoint AJAX;
-- `historico`: historico do atendido;
-- `alertas`: lista atendidos com faltas relevantes;
-- `gerenciarOficinas`, `salvarOficinaConfig`, `toggleOficina`: administracao de oficinas.
-
-Usa `FrequenciaDia`, `FrequenciaOficina`, `Oficina`, `Desligamento`.
+Controla frequência diária e por oficina, histórico, alertas e configuração de oficinas. A configuração de oficinas exige permissão administrativa.
 
 ### `DesligamentoController`
 
-Gerencia desligamentos:
-
-- lista desligamentos;
-- escolhe/cria novo desligamento;
-- salva desligamento;
-- reativa atendido;
-- processa desligamentos automaticos.
-
-Restrito a admin.
+Controla desligamento manual, reativação e processamento automático de desligamentos por faltas. As ações de alteração exigem permissão administrativa.
 
 ### `PsychologyController`
 
-Area psicologica:
-
-- dashboard da area;
-- lista pacientes;
-- abre paciente por CPF;
-- salva, busca, atualiza e exclui anotacoes;
-- possui metodos ainda nao implementados para avaliacao, busca e relatorio.
-
-Restrito ao papel `psicologo`.
+Controla a área psicológica, incluindo pacientes e anotações. Os métodos `saveAssessment`, `search` e `report` ainda retornam erro de método não implementado.
 
 ### `UserController`
 
-CRUD de usuarios:
-
-- lista usuarios;
-- cria;
-- edita;
-- exclui;
-- ativa/desativa.
-
-Protege autoexclusao/autodesativacao comparando ids como string para evitar falhas por tipo.
+CRUD de usuários, ativação/desativação e proteção contra autodesativação/autoexclusão.
 
 ### `ProfileController`
 
-Mostra perfil, atualiza foto e atualiza senha.
+Perfil do usuário, foto local e troca de senha.
 
 ### `LogController`
 
-Lista, busca, detalha e exporta logs/auditoria.
+Auditoria do sistema, filtros, detalhe, exportação, APIs JSON e limpeza de logs antigos. O construtor restringe acesso ao perfil `admin`.
 
-## 7. Services
+## 10. Services
 
-### `AuthService`
+| Service | Responsabilidade |
+| --- | --- |
+| `AuthService` | Login, sessão, autorização, permissões, registro, perfil e senha. |
+| `UserService` | Criação, edição, exclusão, status e estatísticas de usuários. |
+| `AcolhimentoService` | Validação, CRUD, busca, CSV e logs JSON de acolhimento. |
+| `SocioeconomicoService` | Validação, CRUD, cálculo de renda, relatórios e CSV. |
+| `PsychologyService` | Pacientes, anotações psicológicas e estatísticas da área. |
 
-Autenticacao e autorizacao.
+## 11. Models
 
-- Faz login pelo model `User`;
-- cria sessao;
-- encerra sessao;
-- retorna usuario atual;
-- valida permissoes por perfil;
-- protege rotas com `requireAuth` e `requirePermission`;
-- altera senha.
+| Model | Tabela/função principal |
+| --- | --- |
+| `BaseModel` | CRUD genérico via PDO. |
+| `User` | `Usuario`, autenticação e usuários. |
+| `Acolhimento` | `Atendido` e `Responsavel`. |
+| `Socioeconomico` | `Ficha_Socioeconomico`, `Familia`, `Despesas` e `Atendido`. |
+| `FrequenciaDia` | `Frequencia_Dia`. |
+| `FrequenciaOficina` | `Frequencia_Oficina`. |
+| `Oficina` | `Oficina`. |
+| `Desligamento` | `Desligamento` e status de `Atendido`. |
+| `PsychologyNote` | `anotacao_psicologica`. |
+| `Log` | `log`. |
 
-Correcao aplicada: admin agora realmente tem acesso amplo, exceto area psicologica. Antes o comentario dizia isso, mas a implementacao bloqueava permissoes nao listadas, como relatorios/frequencia.
+## 12. Views
 
-### `UserService`
+| Pasta | Conteúdo |
+| --- | --- |
+| `layouts` | Layout autenticado e layout de autenticação. |
+| `auth` | Login, esqueci senha e reset. |
+| `dashboard` | Dashboard principal. |
+| `prontuarios` | Busca e detalhe consolidado. |
+| `acolhimento` | Lista, formulário e visualização. |
+| `socioeconomico` | Lista, formulário multi-etapas, visualização e relatório. |
+| `faltas` | Frequência diária, oficina, histórico, alertas e oficinas. |
+| `desligamento` | Lista, seleção e novo desligamento. |
+| `psychology` | Dashboard, pacientes e detalhe/anotações. |
+| `users` | Lista, criação e edição de usuários. |
+| `profile` | Perfil. |
+| `logs` | Auditoria, busca, histórico e detalhe. |
 
-Orquestra criacao, edicao, exclusao, status e estatisticas de usuarios. Mapeia campos de banco (`idusuario`, `nome`, `nivel`) para o formato usado pelas views (`id`, `name`, `role`).
+## 13. JavaScript e CSS
 
-### `AcolhimentoService`
+JavaScript:
 
-Valida CPF, datas, CEP, telefone; cria/edita/exclui fichas; busca; exporta CSV; gera logs JSON de acoes.
-
-### `SocioeconomicoService`
-
-Valida dados socioeconomicos; cria/edita/exclui fichas; busca; calcula renda/situacao; gera relatorios e CSV; registra logs JSON.
-
-### `PsychologyService`
-
-Busca pacientes, carrega anotacoes psicologicas, salva/edita/exclui anotacoes, calcula estatisticas da area psicologica.
-
-Correcao aplicada: substituido `str_contains` por `strpos` para manter compatibilidade com PHP 7.4+.
-
-## 8. Models
-
-### Bases
-
-- `BaseModel`: CRUD generico em MySQL via PDO (antigo `BaseModelDB`).
-
-### Usuarios
-
-- `User`: model MySQL da tabela `Usuario`. Autentica por email/senha, cria usuario padrao, lista usuarios sem senha e mapeia campos para o formato das telas.
-
-### Acolhimento
-
-- `Acolhimento`: model MySQL principal para fichas de acolhimento, tabela `Atendido` e `Responsavel` (antigo `AcolhimentoDB`).
-  * `data_acolhimento` agora usa a coluna correta antes de cair para `data_cadastro`;
-  * estatisticas agora retornam `ativas` e `inativas`, chaves esperadas pelo dashboard.
-
-### Socioeconomico
-
-- `Socioeconomico`: model MySQL principal para `Ficha_Socioeconomico`, `Familia`, `Despesas` e `Atendido` (antigo `SocioeconomicoDB`).
-  * `getStatistics()` agora retorna `ativas` e `inativas`.
-
-### Frequencia e oficinas
-
-- `FrequenciaDia`: frequencia por dia (antigo `FrequenciaDiaDB`).
-- `FrequenciaOficina`: frequencia por oficina (antigo `FrequenciaOficinaDB`).
-- `Oficina`: cadastro e status de oficinas (antigo `OficinaDB`).
-
-### Desligamento
-
-- `Desligamento`: MySQL atual, controla desligamento, reativacao e estatisticas (antigo `DesligamentoDB`).
-
-### Psicologia
-
-- `PsychologyNote`: anotacoes psicologicas no banco.
-
-### Logs
-
-- `Log`: leitura e manipulacao de auditoria (antigo `LogDB`).
-
-## 9. Views
-
-### Layouts
-
-- `layouts/auth.php`: layout do login com imagem e logo.
-- `layouts/main.php`: layout principal logado, menu lateral, topbar, flash messages e scripts globais.
-
-### Autenticacao
-
-- `auth/login.php`: formulario de login com CSRF.
-
-### Dashboard
-
-- `dashboard/index.php`: calendario interativo, alertas, cards de estatisticas, anotacoes e avisos. Usa fetch para salvar/listar/remover notas.
-
-### Prontuarios
-
-- `prontuarios/index.php`: entrada para prontuarios.
-- `prontuarios/show.php`: detalhe consolidado por atendido.
-
-### Acolhimento
-
-- `acolhimento/index.php`: lista, busca AJAX, paginacao e acoes.
-- `acolhimento/create.php`: formulario principal de criacao/edicao.
-- `acolhimento/create_old.php`: versao antiga preservada; candidata a arquivamento futuro.
-- `acolhimento/show.php`: visualizacao da ficha.
-
-### Socioeconomico
-
-- `socioeconomico/index.php`: lista, filtros, paginacao, acoes seguras.
-- `socioeconomico/create_multistep.php`: formulario multi-etapas usado atualmente.
-- `socioeconomico/create.php`: formulario antigo/simplificado.
-- `socioeconomico/show.php`: visualizacao.
-
-### Faltas moderno
-
-- `faltas/dia.php`: lancamento diario.
-- `faltas/oficina.php`: lancamento por oficina.
-- `faltas/historico.php`: historico de frequencia.
-- `faltas/alertas.php`: alertas de faltas.
-- `faltas/gerenciar_oficinas.php`: CRUD/status de oficinas.
-
-### Desligamento
-
-- `desligamento/index.php`: lista.
-- `desligamento/selecionar.php`: selecao de atendido.
-- `desligamento/novo.php`: formulario.
-
-### Psicologia
-
-- `psychology/index.php`: dashboard da area.
-- `psychology/patients.php`: lista de pacientes.
-- `psychology/patient.php`: detalhe do paciente e anotacoes.
-
-### Usuarios
-
-- `users/index.php`: lista e acoes de usuario.
-- `users/create.php`: cadastro.
-- `users/edit.php`: edicao.
-
-### Perfil
-
-- `profile/index.php`: dados do usuario, foto local e troca de senha.
-
-### Logs
-
-- `logs/index.php`: listagem.
-- `logs/search.php`: busca.
-- `logs/show.php`: detalhe.
-
-## 10. JavaScript e CSS
-
-### JavaScript
-
-- `js/script.js`: scripts globais do sistema.
-- `js/chatbot.js`: chatbot/interface auxiliar carregada nos layouts.
-- `js/theme-toggle.js`: modo escuro.
-- `js/notifications.js`: notificacoes visuais.
-- `js/acolhimento-form.js`: validacoes e comportamento do formulario de acolhimento.
+- `js/script.js`: scripts globais.
+- `js/chatbot.js`: assistente integrado.
+- `js/theme-toggle.js`: alternância de tema.
+- `js/notifications.js`: notificações visuais.
+- `js/acolhimento-form.js`: comportamento do formulário de acolhimento.
 - `js/acolhimento-multistep.js`: fluxo multi-etapas de acolhimento.
-- `js/socioeconomico-multistep.js`: fluxo multi-etapas, familia, despesas e campos dinamicos socioeconomicos.
+- `js/socioeconomico-multistep.js`: fluxo multi-etapas socioeconômico.
 
-### CSS
+CSS:
 
-- `css/style.css`: estilos globais, login, layout principal, formularios, tema escuro e responsividade.
-- `css/acolhimento-form.css`: ajustes especificos do formulario de acolhimento.
+- `css/style.css`: layout principal, login, formulários, tabelas, tema claro/escuro, responsividade e classes reutilizáveis.
+- `css/acolhimento-form.css`: ajustes específicos do formulário de acolhimento.
 
-## 11. Banco de dados
+## 14. Banco de Dados
 
 Arquivos principais:
 
-- `criancafeliz.sql` e `banco.sql`: dumps/schemas principais preservados.
-- `database/SETUP_COMPLETO_FINAL.sql`: setup completo.
-- `database/migration_*.sql`: migracoes incrementais.
-- `database/fix_*.sql`: correcoes pontuais.
-- `database/triggers_*.sql`: triggers de auditoria/logs.
-- `database/migrate.php`: executor de migracoes.
-- `database/test_connection.php`: diagnostico de conexao.
+- `database/SETUP_COMPLETO_FINAL.sql`: setup completo com tabelas, índices, foreign keys, triggers/procedures e dados iniciais.
+- `database/migration.sql`: schema alinhado ao setup, útil como referência de estrutura.
+- `database/update_schema.sql`: migração pontual para remover estruturas obsoletas e recriar triggers.
+- `database/migrate.php`: executor PHP de migrações.
+- `database/test_connection.php`: diagnóstico de conexão.
+- `database/legacy_dumps/`: dumps antigos preservados.
+- `docker/mysql/01-init.sh`: importação do setup completo no container MySQL.
+- `docker/mysql/02-missing-views.sql`: view complementar aplicada após o setup no Docker.
 
-Tabelas importantes inferidas pelo codigo:
+Tabelas relevantes:
 
-- `Usuario`
-- `Atendido`
-- `Responsavel`
-- `Ficha_Socioeconomico`
-- `Familia`
-- `Despesas`
-- `Desligamento`
-- `Frequencia_Dia`
-- `Frequencia_Oficina`
-- `Oficina`
-- `frequencia`
+- `usuario` / `Usuario`
+- `atendido` / `Atendido`
+- `responsavel` / `Responsavel`
+- `ficha_socioeconomico` / `Ficha_Socioeconomico`
+- `familia` / `Familia`
+- `despesas` / `Despesas`
+- `frequencia_dia` / `Frequencia_Dia`
+- `frequencia_oficina` / `Frequencia_Oficina`
+- `oficina` / `Oficina`
+- `desligamento` / `Desligamento`
+- `agenda`
+- `log`
 - `anotacao_psicologica`
 
-## 12. Scripts auxiliares
+Ponto de atenção: há mistura de caixa alta/baixa entre scripts e código. Em ambientes Linux com `lower_case_table_names=0`, isso pode causar falhas. Antes de produção, normalize os nomes ou valide a configuração do MySQL/MariaDB.
 
-Os scripts auxiliares foram movidos para reduzir risco de confusao na raiz.
+Outro ponto importante: a área psicológica usa `anotacao_psicologica`, mas o `SETUP_COMPLETO_FINAL.sql` atual não cria essa tabela. A estrutura existe nos dumps em `database/legacy_dumps/` e deve virar migração/setup oficial antes de usar a área psicológica em um banco novo.
 
-### Diagnosticos
+No ambiente Docker, o serviço MySQL é iniciado com `lower_case_table_names=1` para reduzir problemas locais causados por variação de maiúsculas/minúsculas. Isso não elimina a pendência de normalizar o schema antes de produção Linux.
 
-- `tools/diagnostics/check_ficha_columns.php`
-- `tools/diagnostics/debug_buttons.php`
-- `tools/diagnostics/debug_edit_socio.php`
-- `tools/diagnostics/debug_renda_calculation.php`
-- `tools/diagnostics/debug_renda_list.php`
-- `tools/diagnostics/debug_socio_batch.php`
-- `tools/diagnostics/debug_socio_ficha.php`
-- `tools/diagnostics/diagnostico_login.php`
+## 15. Scripts Auxiliares
 
-### Manutencao
+Diagnósticos em `tools/diagnostics/`:
 
-- `tools/maintenance/ativar_usuarios.php`
-- `tools/maintenance/corrigir_renda_marina.php`
-- `tools/maintenance/fix_renda_marina.php`
-- `tools/maintenance/fix_users.php`
-- `tools/maintenance/fix_users_mysql.php`
-- `tools/maintenance/generate_password.php`
-- `tools/maintenance/install_database.php`
-- `tools/maintenance/limpar_sessao.php`
+- `check_ficha_columns.php`
+- `debug_buttons.php`
+- `debug_edit_socio.php`
+- `debug_renda_calculation.php`
+- `debug_renda_list.php`
+- `debug_socio_batch.php`
+- `debug_socio_ficha.php`
+- `diagnostico_login.php`
 
-### Testes manuais
+Manutenção em `tools/maintenance/`:
+
+- `ativar_usuarios.php`
+- `corrigir_renda_marina.php`
+- `fix_renda_marina.php`
+- `fix_users.php`
+- `fix_users_mysql.php`
+- `generate_password.php`
+- `install_database.php`
+- `limpar_sessao.php`
+
+Legado:
+
+- `tools/legacy/users_simple.php`
+
+Testes manuais:
 
 - `tests/manual/test_psychology.php`
 - `tests/manual/test_psychology_edit_delete.php`
 - `tests/manual/test_socioeconomico_submit.php`
 - `tests/manual/test_users.php`
 
-### Legado
+## 16. Segurança e Permissões
 
-- `tools/legacy/users_simple.php`
+Perfis atuais em `AuthService`:
 
-## 13. Erros encontrados e corrigidos
+- `admin`: acesso administrativo amplo, exceto permissões da área psicológica.
+- `psicologo`: acesso à área psicológica e anotações.
+- `funcionario`: acesso básico de consulta geral.
 
-1. Dashboard esperava `ativas` e `inativas`, mas os models MySQL retornavam apenas `total`, `porCategoria` e `porStatus`.
-   - Corrigido com normalizacao no controller e retorno consistente nos DB models.
+Rotas sensíveis:
 
-2. Admin era bloqueado em permissoes nao listadas, apesar do comentario dizer que admin tinha acesso total exceto psicologia.
-   - Corrigido em `AuthService::hasPermission()`.
+- usuários e configuração de oficinas exigem perfil administrativo;
+- logs exigem perfil `admin` diretamente no `LogController`;
+- área psicológica exige permissões psicológicas;
+- exclusões de acolhimento e socioeconômico devem ocorrer por POST com CSRF.
 
-3. Troca de senha buscava `$user['password']`, mas a coluna MySQL e `Senha`.
-   - Corrigido para aceitar `Senha` e fallback `password`.
-
-4. Exclusao em acolhimento/socioeconomico tinha atalhos inseguros ou simulacao de POST.
-   - Corrigido para aceitar apenas formulario POST com CSRF.
-
-5. Variavel MySQL `@ip_usuario` era definida com aspas duplicadas/risco de SQL incorreto.
-   - Corrigido em `LogHelper` e `logs.php` com prepared statement.
-
-6. `Socioeconomico::searchByName()` chamava `$this->db`, atributo inexistente.
-   - Corrigido para chamar `searchAdvanced()`.
-
-7. `PsychologyService` usava `str_contains`, exigindo PHP 8, embora o projeto documente PHP 7.4+.
-   - Corrigido para `strpos`.
-
-8. Consultas de frequencia procuravam tabela `usuario`, enquanto o schema usa `Usuario`.
-   - Corrigido para `Usuario`.
-
-9. `AcolhimentoDB::getFicha()` exibia `data_cadastro` como `data_acolhimento`.
-   - Corrigido para preferir `data_acolhimento`.
-
-10. Comparacoes de usuario atual com id de rota podiam falhar por tipo (`int` versus `string`).
-    - Corrigido em protecoes de usuario.
-
-11. Endpoints da area psicologica tinham validacao CSRF inconsistente em edicao/exclusao de anotacoes.
-    - Corrigido para exigir autenticacao, permissao, POST e token CSRF.
-
-12. Documentos, debug e scripts de manutencao estavam misturados com rotas publicas.
-    - Reorganizado em `docs`, `tools`, `tests`, `assets` e `var`.
-
-13. Configuracao de banco era apenas hardcoded.
-    - Adicionado suporte a variaveis de ambiente.
-
-14. `PDO::MYSQL_ATTR_INIT_COMMAND` causava fatal quando o PHP tinha PDO, mas nao tinha `pdo_mysql`.
-    - Corrigido com validacao explicita da extensao e uso da constante apenas quando ela existe.
-
-15. `AuthService` abria o model de usuario no construtor, fazendo paginas publicas dependerem do banco antes de qualquer acao.
-    - Corrigido com carregamento sob demanda do model.
-
-16. Rotas chamavam views inexistentes: `auth/forgot`, `auth/reset`, `acolhimento/edit`, `socioeconomico/edit`, `socioeconomico/report` e filtros especificos de logs.
-    - Corrigido com novas views/rotas ou reaproveitamento das views existentes.
-
-17. Rotas protegidas instanciavam controllers pesados antes de checar sessao.
-    - Adicionada verificacao inicial de login nos pontos de entrada principais.
-
-18. Unificação dos módulos `attendance.php` e `faltas.php`, concentrando o controle no banco de dados e removendo as lógicas JSON/legadas obsoletas.
-
-19. Refatoração e limpeza completa dos modelos `Acolhimento`, `Socioeconomico` e `Desligamento`, removendo classes híbridas e arquivos JSON da pasta `data/`.
-
-20. Extração de dezenas de estilos inline (`style="..."`) das views principais para o CSS centralizado, com design glassmorphic premium e suporte a variáveis de tema.
-
-## 14. Problemas ainda existentes ou melhorias recomendadas
+## 17. Pontos de Atenção Atuais
 
 Prioridade alta:
 
-- Configurar SMTP real para recuperacao de senha. As rotas e views existem, mas o envio ainda fica registrado em log ate uma integracao de email ser ligada.
-- Remover ou proteger scripts de `tools/maintenance` em producao. Eles devem ficar fora do webroot ou exigir autenticacao forte.
+- Configurar envio SMTP real no fluxo de recuperação de senha.
+- Remover ou redirecionar os resquícios de `attendance.php` no roteador e em `app/Views/prontuarios/show.php`. O módulo físico `AttendanceController` não existe mais; o módulo válido é `faltas.php`.
+- Promover a tabela `anotacao_psicologica` dos dumps legados para uma migração oficial, ou adicioná-la ao setup completo.
+- Proteger `tools/` e `database/` fora do webroot em produção, ou restringir acesso pelo servidor.
+- Normalizar nomes de tabelas para evitar problemas em Linux.
 
-Prioridade media:
+Prioridade média:
 
-- Padronizar nomes de tabelas e classes (`Atendido`, `Usuario`, `Ficha_Socioeconomico`) para reduzir problemas em servidores Linux.
-- Remover logs de debug verbosos de `SocioeconomicoDB` ou controla-los por `APP_DEBUG`.
-- Criar um roteador unico em vez de muitos roteadores pequenos na raiz.
-- Criar testes automatizados reais. Os arquivos em `tests/manual` ainda dependem de execucao manual e banco local.
-- Adicionar validacao completa de CPF. Hoje a validacao rejeita tamanho e sequencias repetidas, mas nao calcula digitos verificadores.
+- Criar testes automatizados reais além dos testes manuais.
+- Revisar endpoints psicológicos não implementados (`saveAssessment`, `search`, `report`).
+- Migrar tokens de reset de senha para banco ou serviço dedicado se o fluxo for usado em produção.
+- Criar um roteador mais declarativo para reduzir o tamanho de `index.php`.
 
 Prioridade baixa:
 
-- Padronizar idioma de nomes internos (`create/store/index` versus `salvar/novo`).
-- Separar assets publicos em uma pasta `public/` em uma versao futura.
-- Adicionar Composer/autoload PSR-4 se o projeto crescer.
-- Criar uma tela administrativa para rodar migracoes com seguranca, ou remover scripts web de migracao.
+- Padronizar idioma de nomes internos.
+- Adotar Composer/autoload PSR-4 se o projeto crescer.
+- Comprimir imagens grandes em `img/`.
 
-## 15. Convencoes sugeridas daqui para frente
+## 18. Como Validar Localmente
 
-- Manter paginas publicas na raiz apenas quando forem rotas reais.
-- Colocar scripts temporarios em `tools/diagnostics` ou `tools/maintenance`.
-- Colocar testes manuais em `tests/manual`.
-- Colocar documentacao nova em `docs/`.
-- Mover documentos antigos para `docs/archive/`.
-- Evitar links de exclusao por GET; usar POST com CSRF.
-- Evitar SQL montado com interpolacao quando houver valor externo.
-- Nao deixar scripts de correcao pontual acessiveis publicamente em producao.
-- Preferir `App::get...Model()` quando o codigo precisar respeitar o modo de persistencia.
+1. Conferir PHP:
 
-## 16. Como validar localmente
+```bash
+php -v
+php -m
+```
 
-1. Instalar PHP 7.4+ ou 8.x e MySQL/MariaDB.
-2. Criar banco `criancafeliz`.
-3. Importar `database/SETUP_COMPLETO_FINAL.sql` ou um dump principal validado.
-4. Configurar variaveis de ambiente se nao usar `root` sem senha:
-   - `DB_HOST`
-   - `DB_NAME`
-   - `DB_USER`
-   - `DB_PASS`
-5. Servir a pasta pelo Apache/XAMPP ou equivalente.
-6. Acessar `index.php`.
-7. Testar fluxo minimo:
-   - login;
-   - dashboard;
-   - listar prontuarios;
-   - criar/editar acolhimento;
-   - criar/editar socioeconomico;
-   - registrar faltas;
-   - acessar perfil;
-   - para admin, gerenciar usuarios e logs;
-   - para psicologo, acessar area psicologica.
+2. Confirmar que `pdo_mysql` aparece na lista de módulos.
 
-## 17. Observacoes de validacao desta rodada
+3. Criar e importar o banco:
 
-Nao foi possivel executar `php -l` nem subir servidor local porque o executavel `php` nao esta instalado no PATH desta maquina e nao foi encontrado em caminhos comuns de XAMPP/Wamp/Laragon.
+```bash
+mysql -u root -e "CREATE DATABASE criancafeliz CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root criancafeliz < database/SETUP_COMPLETO_FINAL.sql
+```
 
-Mesmo sem PHP local, foram feitas verificacoes estaticas de referencias, organizacao de arquivos e busca por rotas/caminhos quebrados.
+4. Subir servidor local:
+
+```bash
+php -S localhost:8000 var/dev-router.php
+```
+
+5. Acessar `http://localhost:8000/`.
+
+6. Login inicial:
+
+- email: `admin@criancafeliz.org`
+- senha: `admin123`
+
+7. Fluxo mínimo recomendado:
+
+- login;
+- dashboard;
+- prontuários;
+- listar/cadastrar acolhimento;
+- listar/cadastrar socioeconômico;
+- registrar faltas;
+- abrir perfil;
+- como admin, gerenciar usuários e logs;
+- como psicólogo, acessar área psicológica.
+
+Validação equivalente com Docker:
+
+```bash
+docker compose up --build
+```
+
+Depois acesse `http://localhost:8080/` e `http://localhost:8081/`. Para reiniciar o banco inicial em container:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+## 19. Validações Desta Atualização
+
+Nesta revisão de documentação foram checados:
+
+- estado do git e remoto do repositório;
+- lista real de arquivos versionados;
+- front controller `index.php`;
+- `.htaccess` e `var/dev-router.php`;
+- controllers, models e services existentes;
+- usuário inicial e senha do setup SQL;
+- documentação principal, setup do banco, manutenção/testes e relação de alterações.
+- arquivos Docker e fluxo de inicialização em containers.

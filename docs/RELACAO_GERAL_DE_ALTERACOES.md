@@ -1,119 +1,181 @@
 # Relação Geral de Alterações e Melhorias do Projeto
 
-Este documento apresenta o relatório completo de todas as alterações, refatorações e modernizações realizadas no **Sistema Criança Feliz** durante este ciclo de melhorias. As intervenções cobrem a limpeza do banco de dados, eliminação de módulos redundantes, transição para persistência unificada em MySQL, reorganização da estrutura física de arquivos e a modernização estética completa do frontend.
+Atualizado em 2026-06-01.
 
----
-
-## 📅 Resumo Geral das Fases
+Este documento registra o ciclo de modernização do **Sistema Criança Feliz** e o estado atual das principais mudanças estruturais, funcionais e visuais do repositório.
 
 ```mermaid
 graph TD
-    A[Início do Projeto] --> B[Consolidação de Persistência & BD]
-    B --> C[Eliminação de Redundâncias & Módulo Attendance]
-    C --> D[Refatoração Estrutural de Pastas & Rotas]
-    D --> E[Modernização Estética & CSS/Glassmorphic]
-    E --> F[Fim das Alterações & Documentação Geral]
+    A["Estado legado"] --> B["Consolidação em MySQL"]
+    B --> C["Reorganização MVC"]
+    C --> D["Front controller central"]
+    D --> E["Modernização visual"]
+    E --> F["Docker local documentado"]
+    F --> G["Camada Obsidian"]
 ```
 
----
+## 1. Consolidação de Persistência
 
-## 1. Consolidação de Persistência (Remoção de JSON e Unificação no MySQL)
+O projeto passou a operar com persistência principal em MySQL/MariaDB via PDO. Arquivos JSON locais deixaram de ser a fonte primária dos dados de negócio.
 
-O sistema anteriormente possuía um modo de armazenamento híbrido que salvava parte dos dados no MySQL e outra parte em arquivos locais JSON na pasta `data/`. Isso gerava inconsistências, lentidão e risco de perda de integridade.
+Principais pontos:
 
-### Alterações Realizadas:
-* **Deleção de Modelos JSON Obsoletos**:
-  * Deletados: `BaseModel.php`, `Acolhimento.php`, `Socioeconomico.php`, `Desligamento.php` e `Attendance.php`.
-* **Promoção dos Modelos MySQL**:
-  * Renomeamos todos os modelos que usavam o sufixo `DB` para suas versões limpas, promovendo-os a modelos principais da aplicação:
-    * `BaseModelDB` ➔ [BaseModel](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Models/BaseModel.php)
-    * `AcolhimentoDB` ➔ [Acolhimento](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Models/Acolhimento.php)
-    * `SocioeconomicoDB` ➔ [Socioeconomico](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Models/Socioeconomico.php)
-    * `DesligamentoDB` ➔ [Desligamento](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Models/Desligamento.php)
-    * `FrequenciaDiaDB` ➔ [FrequenciaDia](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Models/FrequenciaDia.php)
-    * `FrequenciaOficinaDB` ➔ [FrequenciaOficina](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Models/FrequenciaOficina.php)
-    * `LogDB` ➔ [Log](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Models/Log.php)
-    * `OficinaDB` ➔ [Oficina](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Models/Oficina.php)
-* **Migração das Notas e Avisos do Calendário**:
-  * Migramos todos os avisos escolares e notas salvos em `data/calendar_notes.json` para a tabela `agenda` do MySQL.
-  * O [DashboardController.php](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/app/Controllers/DashboardController.php) foi atualizado para consultar e salvar essas notas no banco de dados.
-* **Limpeza da pasta `data/`**:
-  * Excluídos todos os arquivos `.json` residuais (como `users.json`, `socioeconomico.json`, `calendar_notes.json`).
-  * Removemos o chaveamento dinâmico de tipo de persistência em `app/Config/App.php`, padronizando 100% no MySQL.
+- `app/Config/App.php` define `STORAGE_MODE = 'mysql'`.
+- Models principais foram consolidados em `app/Models/`.
+- Dados de calendário/notas do dashboard usam a tabela `agenda`.
+- A pasta `data/` permanece para dados runtime locais, como `reset_tokens.json`, e não deve ser tratada como banco principal.
 
----
+Arquivos relevantes:
 
-## 2. Eliminação do Módulo de Frequência Duplicado (Attendance)
+- `app/Config/Database.php`
+- `app/Config/App.php`
+- `app/Models/BaseModel.php`
+- `app/Models/Acolhimento.php`
+- `app/Models/Socioeconomico.php`
+- `app/Models/FrequenciaDia.php`
+- `app/Models/FrequenciaOficina.php`
+- `app/Models/Desligamento.php`
+- `app/Models/Log.php`
 
-O sistema continha dois fluxos paralelos e concorrentes para controle de faltas e presenças: o módulo antigo `attendance.php` (procedural/JSON) e o módulo novo `faltas.php` (MVC/MySQL).
+## 2. Reorganização da Aplicação
 
-### Alterações Realizadas:
-* **Exclusão Física Completa do Módulo Attendance**:
-  * Excluído o controller `app/Controllers/AttendanceController.php`.
-  * Excluído o service `app/Services/AttendanceService.php`.
-  * Excluída toda a pasta de views `app/Views/attendance/`.
-  * Excluída a rota pública `attendance.php` na raiz.
-* **Migração e Consolidação**:
-  * Centralizamos todas as chamadas de faltas no módulo [faltas.php](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/faltas.php).
-  * Atualizamos a geração de alertas do Dashboard e a visualização no histórico de Prontuários para consumir dados de faltas exclusivamente das tabelas de histórico do MySQL através do novo `FaltasController`.
+A aplicação foi reorganizada em camadas simples:
 
----
+- `app/Controllers`: entrada das ações MVC.
+- `app/Services`: regras de negócio.
+- `app/Models`: persistência.
+- `app/Views`: telas e layouts.
+- `css`, `js`, `img`: assets públicos.
+- `database`: SQL, migrações e diagnóstico.
+- `docker`: inicialização auxiliar do MySQL em container.
+- `tools`: scripts auxiliares.
+- `tests/manual`: testes manuais.
+- `docs`: documentação.
+- notas raiz `00`, `01` e `02`: painel Obsidian, backlog e guia de uso com Codex.
 
-## 3. Limpeza e Otimização do Banco de Dados (MySQL)
+O estado atual usa `index.php` como front controller único. O arquivo `.htaccess` redireciona rotas inexistentes para `index.php` no Apache, e `var/dev-router.php` faz o equivalente no servidor embutido do PHP.
 
-O banco de dados possuía tabelas duplicadas herdadas de protótipos de desenvolvimento e campos inconsistentes.
+## 3. Rotas e Módulos
 
-### Alterações Realizadas:
-* **Tabelas Eliminadas**:
-  * Removemos as tabelas `presenca`, `sessao` e `frequencia` por completo.
-* **Colunas Eliminadas**:
-  * `nr_comodos` da tabela `Ficha_Socioeconomico` (permanecendo apenas a coluna principal `numero_comodos`).
-  * `faixa_etaria` da tabela `Atendido` (visto que o sistema já calcula dinamicamente com base na data de nascimento).
-* **Ajuste de Triggers**:
-  * Recriamos e atualizamos as triggers de log de auditoria no MySQL (`log_ficha_socioeconomico_insert`, `log_ficha_socioeconomico_update`, `log_ficha_socioeconomico_delete`) para remover referências ao campo excluído `nr_comodos` e apontar corretamente para `numero_comodos`.
+Módulos ativos principais:
 
----
+- autenticação e recuperação de senha;
+- dashboard;
+- prontuários;
+- acolhimento;
+- socioeconômico;
+- faltas/frequência;
+- desligamento;
+- área psicológica;
+- usuários;
+- logs/auditoria;
+- perfil.
 
-## 4. Reorganização Estrutural de Pastas e Segurança
+O módulo atual de frequência é `faltas.php`, usando `FaltasController`, `FrequenciaDia`, `FrequenciaOficina` e `Oficina`.
 
-Anteriormente, diversos scripts temporários, ferramentas de diagnóstico e páginas de testes ficavam misturados na pasta raiz, apresentando risco de exposição em produção.
+Ponto de atenção: o antigo fluxo `attendance.php` foi removido fisicamente, mas ainda há referências legadas no roteador `index.php` e em `app/Views/prontuarios/show.php`. Essas referências devem ser removidas ou redirecionadas em uma próxima correção.
 
-### Alterações Realizadas:
-* **Limpeza da Raiz**:
-  * A pasta raiz foi limpa e agora contém apenas os pontos de entrada obrigatórios do sistema (como `index.php`, `dashboard.php`, `prontuarios.php`, `faltas.php`, `profile.php`, `users.php`, etc.).
-* **Organização das Pastas Auxiliares**:
-  * **`tools/diagnostics/`**: Movemos todos os scripts de debug e verificação de conexão (como `diagnostico_login.php`, `test_connection.php`).
-  * **`tools/maintenance/`**: Contém scripts utilitários e de manutenção (como `ativar_usuarios.php`, `fix_users_mysql.php`).
-  * **`tests/manual/`**: Movemos os testes manuais criados (como `test_psychology.php`, `test_socioeconomico_submit.php`).
-  * **`docs/`**: Centralizamos a documentação técnica geral do projeto.
+## 4. Banco de Dados
 
----
+O setup principal fica em:
 
-## 5. Modernização Estética e Interface Glassmorphic
+- `database/SETUP_COMPLETO_FINAL.sql`
 
-O sistema utilizava Bootstrap e estilos CSS inline rígidos, misturando regras embutidas no meio do código PHP, gerando problemas de consistência visual e quebras severas no Modo Escuro (fundo branco em inputs e textos em preto sob fundos escuros).
+Arquivos auxiliares:
 
-### Alterações Realizadas:
-* **Introdução de Variáveis CSS Nativas**:
-  * Criamos no [style.css](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/css/style.css) uma paleta de cores centralizada no `:root` e no seletor `[data-theme="dark"]`. 
-  * Isso unificou o comportamento estético do sistema, garantindo um tema escuro premium com excelente legibilidade (alto contraste) e eliminando o bug de textos invisíveis nos inputs.
-* **Implementação do Design Glassmorphic (Efeito Vidro Fosco)**:
-  * Criamos e aplicamos as classes `.card-glass`, `.stat-card-glass` e `.note-card-glass` que aplicam fundos translúcidos e `backdrop-filter: blur(12px)`.
-  * Adicionamos micro-animações: ao passar o mouse sobre os cards, eles se elevam levemente (`translateY(-2px)`) e ganham um brilho laranja difuso suave.
-* **Remoção de Estilos Inline nas Views**:
-  * **Layout (`main.php`)**: Extraímos todos os estilos internos do cabeçalho. Criamos as classes `.topbar-title`, `.user-profile-link` e `.avatar-placeholder`.
-  * **Dashboard (`dashboard/index.php`)**: Convertemos todos os cartões de indicadores, anotações e o calendário dinâmico para utilizarem as classes do stylesheet.
-  * **Prontuários (`prontuarios/index.php`)**: Substituímos as tabelas e grids de busca inline por classes globais.
-  * **Acolhimento (`acolhimento/index.php`)**: Substituímos os badges gerados dinamicamente via PHP por classes nativas (`.badge-crianca`, `.badge-adolescente`, `.badge-adulto`). Ajustamos o JavaScript de retorno dinâmico de buscas AJAX para injetar classes em vez de tags `style="..."`.
-  * **Formulários**: Refatoramos o formulário de acolhimento para que ele herde diretamente as variáveis do arquivo de estilo principal.
-* **Remoção de Injeção de Estilo por JavaScript**:
-  * O [theme-toggle.js](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/js/theme-toggle.js) foi simplificado para gerenciar estritamente a alternância do atributo `data-theme`. Eliminamos a função `applyDashboardStyles` que inseria propriedades inline no DOM de forma custosa, solucionando o bug de carregamento intermitente (efeito *flash*) e aumentando a performance.
+- `database/migration.sql`
+- `database/update_schema.sql`
+- `database/migrate.php`
+- `database/test_connection.php`
+- `database/legacy_dumps/`
+- `docker/mysql/01-init.sh`
+- `docker/mysql/02-missing-views.sql`
 
----
+Melhorias realizadas ou documentadas:
 
-## 6. Documentos de Referência Criados e Atualizados
+- uso de PDO com prepared statements;
+- validação explícita da extensão `pdo_mysql`;
+- suporte a variáveis de ambiente `DB_*`;
+- triggers de auditoria para ficha socioeconômica;
+- tabelas de frequência diária e por oficina;
+- modelos MySQL como fonte principal dos módulos.
+- ambiente Docker Compose para desenvolvimento local com app, MySQL e phpMyAdmin.
 
-As seguintes referências foram criadas/editadas para consolidar este ciclo:
-1. **[RELACAO_GERAL_DE_ALTERACOES.md](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/docs/RELACAO_GERAL_DE_ALTERACOES.md)** *(Este documento)*: Visão geral e catálogo de todas as refatorações.
-2. **[STYLING_UPGRADE.md](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/docs/STYLING_UPGRADE.md)**: Manual técnico do frontend contendo o design system, tokens, variáveis CSS e boas práticas para novas páginas.
-3. **[PROJECT_DOCUMENTATION.md](file:///c:/Users/mateu/Documents/Meu%20Segundo%20C%C3%A9rebro/Projetos/CriancaFeliz-MELHORADO/docs/PROJECT_DOCUMENTATION.md)**: Documentação geral da arquitetura interna da aplicação, controladores e serviços.
+Pontos ainda pendentes:
+
+- normalizar nomes de tabela em maiúsculas/minúsculas para evitar falhas em Linux;
+- alinhar completamente `SETUP_COMPLETO_FINAL.sql`, `migration.sql` e `update_schema.sql`;
+- promover `anotacao_psicologica` dos dumps legados para uma migração/setup oficial;
+- decidir se tabelas legadas como `sessao` e `presenca` serão preservadas ou removidas do setup final.
+
+## 5. Segurança
+
+Melhorias aplicadas:
+
+- CSRF em fluxos sensíveis;
+- senhas com `password_hash`/`password_verify`;
+- prepared statements;
+- headers básicos de segurança;
+- controle de acesso por sessão e perfil;
+- exclusões de acolhimento/socioeconômico por POST;
+- logs de auditoria em ações relevantes.
+
+Pontos importantes:
+
+- `admin` tem acesso administrativo amplo, mas não acessa a área psicológica pela regra atual de permissões.
+- `psicologo` acessa a área psicológica.
+- `funcionario` possui acesso básico de consulta.
+- `tools/` e `database/` devem ser bloqueados fora do desenvolvimento.
+- recuperação de senha ainda exige SMTP real para produção.
+
+## 6. Modernização Visual
+
+O frontend recebeu uma camada visual mais consistente:
+
+- variáveis CSS em `css/style.css`;
+- suporte a tema claro/escuro;
+- classes reutilizáveis para cards, badges, status, tabelas e botões;
+- redução de estilos inline em telas principais;
+- `js/theme-toggle.js` focado em alternância de tema via atributo `data-theme`;
+- estilos específicos de acolhimento em `css/acolhimento-form.css`.
+
+Documento complementar:
+
+- `docs/STYLING_UPGRADE.md`
+
+## 7. Documentação Atualizada
+
+Documentos principais:
+
+- `README.md`: guia de entrada do repositório.
+- `docs/PROJECT_DOCUMENTATION.md`: documentação técnica.
+- `docs/MAINTENANCE_AND_TESTING.md`: manutenção, scripts e testes.
+- `database/README_SETUP.md`: setup do banco.
+- `docs/STYLING_UPGRADE.md`: padrões visuais.
+- `docs/archive/`: histórico antigo preservado.
+- `00 - Painel do Projeto Criança Feliz.md`: navegação Obsidian do projeto.
+- `01 - Backlog Técnico.md`: pendências priorizadas em formato de tarefas.
+- `02 - Guia de Uso com Codex.md`: fluxo recomendado para trabalhar com Codex no projeto.
+
+## 8. Pendências Recomendadas
+
+Prioridade alta:
+
+- remover/redirecionar referências a `attendance.php`;
+- configurar SMTP real;
+- proteger `tools/` e `database/` em produção;
+- normalizar nomes de tabelas.
+- oficializar a tabela `anotacao_psicologica` no setup/migração.
+
+Prioridade média:
+
+- criar testes automatizados;
+- revisar endpoints psicológicos ainda não implementados;
+- reduzir o tamanho do roteador em `index.php`;
+- alinhar os scripts SQL principais.
+
+Prioridade baixa:
+
+- comprimir imagens grandes;
+- padronizar idioma de nomes internos;
+- avaliar Composer/autoload PSR-4 em uma próxima evolução.

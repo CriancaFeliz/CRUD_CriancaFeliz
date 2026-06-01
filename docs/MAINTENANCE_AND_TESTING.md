@@ -1,78 +1,172 @@
-# Manutencao, diagnosticos e testes manuais
+# Manutenção, Diagnósticos e Testes Manuais
 
-Este arquivo registra para onde foram movidos os scripts que antes estavam na raiz do projeto.
+Atualizado em 2026-06-01.
 
-## Diagnosticos
+Este documento reúne os scripts auxiliares do projeto, os cuidados antes de executá-los e um checklist de validação local.
+
+## 1. Visão Geral
+
+O sistema usa `index.php` como front controller. A raiz deve permanecer enxuta: rotas reais, assets públicos, documentação, scripts SQL e ferramentas auxiliares ficam em pastas próprias.
+
+Scripts em `tools/` e `database/` podem revelar informações ou alterar dados. Em produção, mantenha essas pastas fora do webroot ou bloqueie o acesso via configuração do servidor.
+
+Para desenvolvimento local, o projeto pode rodar diretamente no PHP ou pelo Docker Compose incluído no repositório.
+
+## 2. Diagnósticos
 
 Pasta: `tools/diagnostics/`
 
-Use estes arquivos apenas em ambiente local ou homologacao:
+Use apenas em ambiente local ou homologação.
 
-- `check_ficha_columns.php`: verifica colunas esperadas da ficha.
-- `debug_buttons.php`: diagnostica botoes/acoes da area psicologica.
-- `debug_edit_socio.php`: diagnostica edicao socioeconomica.
-- `debug_renda_calculation.php`: diagnostica calculo de renda.
-- `debug_renda_list.php`: lista dados de renda para conferencia.
-- `debug_socio_batch.php`: diagnostico em lote de fichas socioeconomicas.
-- `debug_socio_ficha.php`: diagnostico individual de ficha socioeconomica.
-- `diagnostico_login.php`: verifica usuarios e senhas no banco.
+| Script | Função |
+| --- | --- |
+| `check_ficha_columns.php` | Verifica colunas esperadas da ficha socioeconômica. |
+| `debug_buttons.php` | Diagnostica botões/ações da área psicológica. |
+| `debug_edit_socio.php` | Diagnostica edição socioeconômica. |
+| `debug_renda_calculation.php` | Diagnostica cálculo de renda. |
+| `debug_renda_list.php` | Lista dados de renda para conferência. |
+| `debug_socio_batch.php` | Diagnóstico em lote de fichas socioeconômicas. |
+| `debug_socio_ficha.php` | Diagnóstico individual de ficha socioeconômica. |
+| `diagnostico_login.php` | Verifica usuário admin e hash de senha no banco. |
 
-## Manutencao
+## 3. Manutenção
 
 Pasta: `tools/maintenance/`
 
-Use com muito cuidado, pois estes scripts alteram dados:
+Use com backup do banco e preferencialmente fora de produção.
 
-- `ativar_usuarios.php`: ativa usuarios.
-- `corrigir_renda_marina.php`: correcao pontual de renda.
-- `fix_renda_marina.php`: diagnostico/correcao pontual de renda.
-- `fix_users.php`: correcao de usuarios em fluxo legado.
-- `fix_users_mysql.php`: corrige/cria usuarios no MySQL.
-- `generate_password.php`: gera hash de senha.
-- `install_database.php`: instalador visual do banco.
-- `limpar_sessao.php`: limpa sessao.
+| Script | Função |
+| --- | --- |
+| `ativar_usuarios.php` | Ativa usuários e exibe credenciais de teste. |
+| `corrigir_renda_marina.php` | Correção pontual de renda. |
+| `fix_renda_marina.php` | Diagnóstico/correção pontual de renda. |
+| `fix_users.php` | Correção de usuários em fluxo legado. |
+| `fix_users_mysql.php` | Corrige/cria usuários no MySQL com senha padrão. |
+| `generate_password.php` | Gera hash de senha. |
+| `install_database.php` | Instalador visual do banco. |
+| `limpar_sessao.php` | Limpa sessão local. |
 
-Recomendacao: em producao, mova `tools/` para fora do webroot ou proteja com autenticacao do servidor.
+Senha padrão usada pelos scripts de correção de usuários: `admin123`.
 
-## Testes manuais
+## 4. Banco de Dados
+
+Pasta: `database/`
+
+| Arquivo | Função |
+| --- | --- |
+| `SETUP_COMPLETO_FINAL.sql` | Setup completo recomendado para ambiente novo. |
+| `migration.sql` | Schema alinhado ao setup, útil como referência ou migração base. |
+| `update_schema.sql` | Ajustes pontuais de schema e triggers. |
+| `migrate.php` | Executor PHP de migrações. |
+| `test_connection.php` | Diagnóstico de conexão com o banco. |
+| `legacy_dumps/` | Dumps antigos preservados para consulta. |
+
+Ponto de atenção: o código ainda usa nomes de tabelas com variação de caixa (`Atendido`, `atendido`, `Usuario`, `usuario`, etc.). Em servidores Linux com `lower_case_table_names=0`, valide o schema antes de produção.
+
+## 5. Testes Manuais
 
 Pasta: `tests/manual/`
 
-- `test_psychology.php`
-- `test_psychology_edit_delete.php`
-- `test_socioeconomico_submit.php`
-- `test_users.php`
+| Script | Escopo |
+| --- | --- |
+| `test_psychology.php` | Fluxo básico da área psicológica. |
+| `test_psychology_edit_delete.php` | Edição e exclusão de anotações psicológicas. |
+| `test_socioeconomico_submit.php` | Envio de ficha socioeconômica. |
+| `test_users.php` | Operações de usuários. |
 
-Eles ainda nao sao testes automatizados. Dependem de banco local, sessao e dados de exemplo.
+Esses arquivos ainda não são testes automatizados. Eles dependem de banco local, sessão e dados de exemplo.
 
-## Validacoes executadas nesta revisao
-
-- `php -l` em todos os arquivos PHP: OK em 125 arquivos.
-- Auditoria de views referenciadas por controllers: todas as views existem.
-- Smoke test com `php -S`:
-  - `index.php`: HTTP 200.
-  - `forgot.php`: HTTP 200.
-  - `reset_password.php?token=invalido`: HTTP 302 para `forgot.php`.
-  - rotas protegidas sem sessao (`dashboard.php`, `psychology.php`, `acolhimento_list.php`, `socioeconomico_list.php`, `profile.php`): HTTP 302 para login.
-  - `POST index.php` com CSRF valido e credenciais de teste: HTTP 302, sem fatal.
-
-Observacao de ambiente: o PHP CLI testado possui `PDO`, mas nao possui `pdo_mysql`. O projeto agora falha com mensagem clara nesse caso, mas para login real e banco MySQL a extensao `pdo_mysql` precisa estar habilitada.
-
-## Legado
-
-Pasta: `tools/legacy/`
-
-- `users_simple.php`: prototipo/CRUD simplificado antigo de usuarios.
-
-## Arquivos de amostra e logs
-
-- `assets/samples/dog-para-teste.jpg`: imagem de amostra que antes ficava na raiz.
-- `var/logs/debug.log`: log antigo movido da raiz.
-
-## Checklist antes de usar scripts
+## 6. Checklist Antes de Rodar Scripts
 
 1. Confirmar backup do banco.
-2. Confirmar ambiente local/homologacao.
-3. Conferir se o script usa as credenciais corretas.
-4. Executar uma vez e registrar resultado.
-5. Remover ou bloquear acesso depois do uso.
+2. Confirmar que o ambiente é local ou homologação.
+3. Conferir credenciais em `app/Config/Database.php` ou variáveis `DB_*`.
+4. Confirmar que `pdo_mysql` está habilitado.
+5. Executar o script uma vez e registrar resultado.
+6. Remover, bloquear ou tirar `tools/` do webroot após o uso.
+
+## 7. Validação Local Recomendada
+
+Verificar PHP:
+
+```bash
+php -v
+php -m
+```
+
+Confirmar lint dos arquivos PHP:
+
+```bash
+php -l index.php
+```
+
+Para validar todos os PHPs no PowerShell:
+
+```powershell
+Get-ChildItem -Recurse -Filter *.php |
+  ForEach-Object { php -l $_.FullName }
+```
+
+Subir servidor local:
+
+```bash
+php -S localhost:8000 var/dev-router.php
+```
+
+Ou subir o ambiente completo com Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+No Docker, valide:
+
+| Serviço | Resultado esperado |
+| --- | --- |
+| `http://localhost:8080/` | Tela de login. |
+| `http://localhost:8081/` | phpMyAdmin acessível. |
+| `localhost:3307` | MySQL acessível pelo host. |
+
+Para recriar o banco inicial do Docker do zero:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+Smoke test manual no navegador:
+
+| URL | Resultado esperado |
+| --- | --- |
+| `http://localhost:8000/` | Tela de login. |
+| `http://localhost:8000/forgot.php` | Tela de recuperação de senha. |
+| `http://localhost:8000/reset_password.php?token=invalido` | Redireciona para recuperação com erro. |
+| `http://localhost:8000/dashboard.php` sem sessão | Redireciona para login. |
+| `http://localhost:8000/faltas.php` sem sessão | Redireciona para login. |
+
+Login inicial após importar `SETUP_COMPLETO_FINAL.sql`:
+
+- email: `admin@criancafeliz.org`
+- senha: `admin123`
+
+## 8. Fluxo Mínimo Pós-Setup
+
+1. Login com usuário admin.
+2. Abrir dashboard.
+3. Abrir prontuários.
+4. Cadastrar e visualizar uma ficha de acolhimento.
+5. Cadastrar e visualizar uma ficha socioeconômica.
+6. Registrar frequência diária em `faltas.php`.
+7. Abrir alertas e histórico de faltas.
+8. Gerenciar usuários.
+9. Abrir logs.
+10. Validar perfil e troca de senha.
+
+## 9. Pendências Conhecidas
+
+- Configurar SMTP real para recuperação de senha.
+- Remover referências legadas a `attendance.php`; o módulo atual é `faltas.php`.
+- Criar migração oficial para `anotacao_psicologica`, hoje presente apenas nos dumps legados.
+- Automatizar testes hoje manuais.
+- Proteger scripts auxiliares fora do ambiente de desenvolvimento.
+- Normalizar nomes de tabelas para ambientes sensíveis a maiúsculas/minúsculas.
