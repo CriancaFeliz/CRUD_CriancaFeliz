@@ -169,6 +169,10 @@ Documentos principais:
 - Logs detalhados de debug passaram a obedecer `APP_DEBUG`.
 - Roadmap de relatórios criado em `docs/REPORTING_ROADMAP.md`.
 - Rastreabilidade dos requisitos criada em `docs/REQUIREMENTS_TRACEABILITY.md`.
+- Automacao Docker de integracao, smoke HTTP, permissoes e uploads multipart adicionada.
+- Backup/restauracao do banco de teste adicionado aos runners e ao CI.
+- Runbooks criados: `docs/BACKUP_RESTORE_RUNBOOK.md`, `docs/DOCUMENT_GOVERNANCE_DRAFT.md` e `docs/SMTP_SETUP.md`.
+- Imagem grande de login otimizada mantendo o mesmo caminho.
 
 ## 9. Prioridades Médias em 2026-06-01
 
@@ -189,13 +193,11 @@ Prioridade alta:
 
 Prioridade média:
 
-- criar testes de integração com banco Docker;
 - reduzir o tamanho do roteador em `index.php`;
 - alinhar completamente os scripts SQL principais;
-- testar rotina de backup/restauração.
+- definir destino real, criptografia e restore periodico de backup fora do Docker.
 
 Prioridade baixa:
 
-- comprimir imagens grandes;
 - padronizar idioma de nomes internos;
 - avaliar Composer/autoload PSR-4 em uma próxima evolução.

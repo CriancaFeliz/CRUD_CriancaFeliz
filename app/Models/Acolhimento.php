@@ -197,6 +197,33 @@ class Acolhimento extends BaseModel {
         
         return $ficha;
     }
+
+    /**
+     * Buscar ficha por CPF, aceitando entrada com ou sem mascara.
+     */
+    public function findByCpf($cpf) {
+        $normalized = preg_replace('/\D+/', '', (string) $cpf);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $stmt = $this->query("
+            SELECT idatendido
+            FROM Atendido
+            WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = ?
+               OR cpf = ?
+            LIMIT 1
+        ", [$normalized, $cpf]);
+
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            return null;
+        }
+
+        return $this->getFicha($row['idatendido']);
+    }
     
     /**
      * Formatar data yyyy-mm-dd para dd/mm/yyyy

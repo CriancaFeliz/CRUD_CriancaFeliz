@@ -6,17 +6,17 @@ Baseado nos requisitos identificados na monografia analisada.
 
 | Req. | Tema | Estado no projeto | Próxima ação |
 | --- | --- | --- | --- |
-| RF01 | Ficha de acolhimento | Implementado | Cobrir com teste de integração |
+| RF01 | Ficha de acolhimento | Implementado e coberto por integracao | Ampliar CRUD HTTP quando necessario |
 | RF02 | Prontuário digital | Parcial | Consolidar documentos, histórico e busca |
 | RF03 | Evolução escolar/social | Parcial | Definir módulo/campos oficiais |
-| RF04 | Controle de frequência | Implementado | Testes e relatórios |
+| RF04 | Controle de frequencia | Implementado e coberto por integracao | Relatorios oficiais |
 | RF05 | Critérios de desligamento | Implementado parcial | Validar regras com gestão |
 | RF06 | Transição automática | Parcial | Testar e documentar gatilhos |
-| RF07 | Perfis e níveis de acesso | Implementado parcial | Revisar matriz de permissões |
+| RF07 | Perfis e niveis de acesso | Implementado parcial, com smoke HTTP por perfil | Revisar matriz de permissoes operacional |
 | RF08 | Chatbot de dúvidas | Implementado básico | Definir escopo e base de conhecimento |
 | RF09 | Planejamento de oficinas | Parcial | Ampliar agenda/capacidade |
 | RF10 | Relatórios automáticos | Parcial | Seguir `REPORTING_ROADMAP.md` |
-| RF11 | Ficha socioeconômica | Implementado | Testes e revisão de logs |
+| RF11 | Ficha socioeconomica | Implementado e coberto por integracao | Revisao de logs e regras operacionais |
 | RF12 | Notificações | Implementado básico | Integrar eventos reais |
 | RF13 | Modo escuro/claro | Implementado | Teste visual |
 | RF14 | Dashboard interativo | Implementado parcial | Revisar indicadores |
@@ -26,7 +26,7 @@ Baseado nos requisitos identificados na monografia analisada.
 | RF18 | Agendamento de atendimentos | Parcial | Definir fluxo |
 | RF19 | Exportação de dados | Parcial | Expandir CSV/PDF/XLSX |
 | RF20 | Sistema de alertas | Parcial | Validar regras operacionais |
-| RF21 | Gestão de documentos | Parcial nesta rodada | Adicionar exclusão, versionamento e retenção |
+| RF21 | Gestao de documentos | Parcial, com upload/listagem e smoke HTTP multipart | Adicionar exclusao, versionamento e retencao |
 | RF22 | Comunicação com responsáveis | Não implementado | Definir canal e consentimentos |
 | RF23 | Auditoria e logs | Implementado parcial | Mascaramento e revisão LGPD |
 

@@ -31,6 +31,8 @@ Fontes oficiais usadas:
 - Logs de debug condicionados a `APP_DEBUG`.
 - Upload de documentos e foto com validação de extensão/MIME.
 - Bloqueio web direto a pastas sensíveis via `.htaccess`.
+- Teste automatizado de backup/restauracao no banco Docker de teste.
+- Rascunho tecnico de governanca de documentos em `docs/DOCUMENT_GOVERNANCE_DRAFT.md`.
 
 ## Plano de Adequação
 
@@ -43,8 +45,8 @@ Fontes oficiais usadas:
 | Alta | Nomear canal/responsável para solicitações de titulares | Gestão |
 | Alta | Formalizar processo de incidente de segurança | Gestão + TI |
 | Média | Mascarar CPF em telas/listagens quando possível | TI |
-| Média | Revisar backups criptografados e teste de restauração | TI |
-| Média | Criar tabela para reset tokens em vez de arquivo local | TI |
+| Média | Definir storage, criptografia e restore periodico de backups reais | TI + gestão |
+| Concluida | Criar tabela para reset tokens em vez de arquivo local | TI |
 | Média | Revisar logs para minimizar dados pessoais | TI |
 
 ## Checklist de Produção

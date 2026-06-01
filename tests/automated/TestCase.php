@@ -24,10 +24,31 @@ abstract class TestCase {
         }
     }
 
+    protected function assertEquals($expected, $actual, $message = 'Values are not equal') {
+        $this->assertions++;
+        if ($expected != $actual) {
+            throw new Exception($message . ' Expected: ' . var_export($expected, true) . ' Actual: ' . var_export($actual, true));
+        }
+    }
+
     protected function assertNotEmpty($value, $message = 'Expected value not to be empty') {
         $this->assertions++;
         if (empty($value)) {
             throw new Exception($message);
+        }
+    }
+
+    protected function assertArrayHasKey($key, $array, $message = 'Expected array key to exist') {
+        $this->assertions++;
+        if (!is_array($array) || !array_key_exists($key, $array)) {
+            throw new Exception($message . ' Missing key: ' . var_export($key, true));
+        }
+    }
+
+    protected function assertGreaterThanOrEqual($expected, $actual, $message = 'Value is lower than expected') {
+        $this->assertions++;
+        if ($actual < $expected) {
+            throw new Exception($message . ' Expected >= ' . var_export($expected, true) . ' Actual: ' . var_export($actual, true));
         }
     }
 

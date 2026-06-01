@@ -387,9 +387,17 @@ Legado:
 Testes:
 
 - `tests/run.php`
+- `tests/run_all.ps1`
+- `tests/run_all.sh`
+- `tests/run_integration.php`
+- `tests/run_http_smoke.php`
+- `tests/wait_for_database.php`
 - `tests/automated/PasswordHelperTest.php`
 - `tests/automated/BootstrapHelperTest.php`
 - `tests/automated/ReportExportHelperTest.php`
+- `tests/integration/DatabaseSchemaTest.php`
+- `tests/integration/UserIntegrationTest.php`
+- `tests/integration/CoreFlowsIntegrationTest.php`
 - `tests/manual/test_psychology.php`
 - `tests/manual/test_psychology_edit_delete.php`
 - `tests/manual/test_socioeconomico_submit.php`
@@ -408,7 +416,7 @@ Rotas sensíveis:
 - usuários e configuração de oficinas exigem perfil administrativo;
 - logs exigem perfil `admin` diretamente no `LogController`;
 - área psicológica exige permissões psicológicas;
-- exclusões de acolhimento e socioeconômico devem ocorrer por POST com CSRF.
+- exclusoes de acolhimento e socioeconomico devem ocorrer por POST com CSRF e permissao; `SocioeconomicoController::update()` exige `edit_records` e `delete()` exige `delete_records`.
 - novas senhas passam por `PasswordHelper`, com mínimo de 12 caracteres, bloqueio de senhas padrão/comuns, Argon2id quando disponível e fallback bcrypt com custo 12.
 - tokens de recuperação são gravados como SHA-256 do token, não como token puro.
 - upload de foto e documentos exige CSRF, validação de extensão/MIME e grava em `uploads/`.
@@ -432,18 +440,21 @@ Concluídos nesta revisão:
 - Persistir foto de perfil no banco.
 - Incluir anexos de documentos no prontuário.
 - Criar documentação das lacunas, LGPD, banco, relatórios e rastreabilidade.
+- Criar automacao Docker de integracao com banco e smoke HTTP.
+- Ampliar smoke HTTP para permissoes por perfil e uploads multipart de foto/documentos.
+- Automatizar backup/restauracao do banco de teste e documentar runbook.
+- Otimizar imagem grande da tela de login.
 
 Prioridade média:
 
-- Expandir testes automatizados para integração com banco.
 - Configurar SMTP real para o fluxo de reset de senha.
 - Criar um roteador mais declarativo para reduzir o tamanho de `index.php`.
+- Definir destino real, criptografia, retencao e rotina operacional de backup fora do Docker.
 
 Prioridade baixa:
 
 - Padronizar idioma de nomes internos.
 - Adotar Composer/autoload PSR-4 se o projeto crescer.
-- Comprimir imagens grandes em `img/`.
 
 ## 18. Como Validar Localmente
 

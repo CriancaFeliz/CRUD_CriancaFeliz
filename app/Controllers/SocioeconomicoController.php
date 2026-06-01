@@ -232,6 +232,7 @@ class SocioeconomicoController extends BaseController {
      */
     public function update($id) {
         $this->requireAuth();
+        $this->requirePermission('edit_records');
         
         if (!$this->isPost()) {
             redirect("socioeconomico_view.php?id=$id");
@@ -256,6 +257,7 @@ class SocioeconomicoController extends BaseController {
      */
     public function delete($id) {
         $this->requireAuth();
+        $this->requirePermission('delete_records');
         
         if (!$this->isPost()) {
             $this->json(['error' => 'Método não permitido'], 405);

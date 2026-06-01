@@ -75,9 +75,27 @@ Execute:
 php tests/run.php
 ```
 
-O runner atual cobre helpers de senha, sanitização, email, datas e escape CSV de relatórios. A CI em `.github/workflows/ci.yml` executa lint PHP, testes automatizados e validação do Docker Compose.
+Suite completa com Docker, banco descartavel e smoke HTTP:
 
-Veja também `docs/TEST_PLAN.md`.
+```powershell
+.\tests\run_all.ps1
+```
+
+Se o PowerShell bloquear scripts:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run_all.ps1
+```
+
+No Linux/macOS/CI:
+
+```bash
+./tests/run_all.sh
+```
+
+O runner atual cobre helpers de senha, sanitizacao, email, datas e escape CSV de relatorios. A automacao Docker cobre integracao com MySQL, dados iniciais, usuarios, acolhimento, socioeconomico, frequencia, desligamento, documentos, psicologia, permissoes por perfil, upload multipart de foto/documento, smoke HTTP e backup/restauracao do banco de teste.
+
+Veja também `docs/TEST_PLAN.md` e `docs/TEST_AUTOMATION.md`.
 
 ## 6. Testes Manuais
 
@@ -186,7 +204,8 @@ Login inicial após importar `SETUP_COMPLETO_FINAL.sql`:
 
 ## 10. Pendências Conhecidas
 
-- Expandir testes automatizados para fluxos com banco e upload.
 - Normalizar nomes de tabelas para ambientes sensíveis a maiúsculas/minúsculas.
 - Configurar SMTP real para recuperação de senha com provedor e credenciais de produção.
 - Executar plano LGPD e política de retenção de documentos.
+- Definir destino real, criptografia, retencao e rotina operacional de backup fora do Docker.
+- Criar comparacao automatizada para relatorios PDF/XLSX oficiais quando os modelos forem definidos.

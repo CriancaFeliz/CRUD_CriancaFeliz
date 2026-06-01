@@ -285,6 +285,10 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 - [docs/GAP_REMEDIATION_PLAN.md](docs/GAP_REMEDIATION_PLAN.md): plano das lacunas prioritárias.
 - [docs/LGPD_AND_DATA_GOVERNANCE.md](docs/LGPD_AND_DATA_GOVERNANCE.md): plano técnico-operacional de LGPD e governança de dados.
 - [docs/TEST_PLAN.md](docs/TEST_PLAN.md): suíte automatizada, CI e próximos testes.
+- [docs/TEST_AUTOMATION.md](docs/TEST_AUTOMATION.md): automação Docker para integração com banco, smoke HTTP e bloqueios operacionais.
+- [docs/BACKUP_RESTORE_RUNBOOK.md](docs/BACKUP_RESTORE_RUNBOOK.md): rotina de backup/restauracao e insumos pendentes para producao.
+- [docs/DOCUMENT_GOVERNANCE_DRAFT.md](docs/DOCUMENT_GOVERNANCE_DRAFT.md): rascunho de politica para documentos anexados.
+- [docs/SMTP_SETUP.md](docs/SMTP_SETUP.md): insumos para configurar envio SMTP real.
 - [docs/DATABASE_NORMALIZATION_PLAN.md](docs/DATABASE_NORMALIZATION_PLAN.md): plano para nomes de tabelas e ambientes Linux.
 - [docs/LEGACY_TABLE_STRATEGY.md](docs/LEGACY_TABLE_STRATEGY.md): estratégia para tabelas legadas.
 - [docs/REPORTING_ROADMAP.md](docs/REPORTING_ROADMAP.md): evolução dos relatórios.
@@ -307,8 +311,8 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 - A área psicológica usa a tabela `anotacao_psicologica`, criada pelo setup atual. Em bancos antigos, execute `database/update_schema.sql`.
 - A foto de perfil persiste em `usuario.foto_perfil`; em bancos antigos, execute `database/update_schema.sql`.
 - Documentos de prontuário ficam em `uploads/documents/`, abrem por rota autenticada e devem entrar na política de backup, retenção e descarte LGPD.
-- Testes automatizados mínimos rodam com `php tests/run.php`; a CI também valida lint e configuração do Docker Compose.
-- A imagem de login em `img/84ee2f859c98cde210228f9cf472d03b4932ff8c.jpg` é grande e pode ser comprimida para reduzir o tempo de clone/carregamento.
+- Testes unitarios rodam com `php tests/run.php`; a suite completa roda com `powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run_all.ps1` e cobre banco Docker, integracao, smoke HTTP, permissoes por perfil, uploads multipart e backup/restauracao do banco de teste.
+- A imagem de login em `img/84ee2f859c98cde210228f9cf472d03b4932ff8c.jpg` foi otimizada para reduzir clone/carregamento mantendo o mesmo caminho.
 
 ---
 

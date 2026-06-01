@@ -8,6 +8,26 @@ Atualizado em 2026-06-01.
 php tests/run.php
 ```
 
+Suite completa com Docker, banco descartavel e smoke HTTP:
+
+```powershell
+.\tests\run_all.ps1
+```
+
+Se o PowerShell bloquear scripts:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run_all.ps1
+```
+
+Ou, em Linux/macOS/CI:
+
+```bash
+./tests/run_all.sh
+```
+
+Detalhes da automacao: [docs/TEST_AUTOMATION.md](TEST_AUTOMATION.md).
+
 Lint PHP completo:
 
 ```powershell
@@ -31,6 +51,17 @@ docker compose up --build
 | `tests/automated/BootstrapHelperTest.php` | Sanitização, email e formatação de datas |
 | `tests/automated/ReportExportHelperTest.php` | Escape CSV para exportações compatíveis com planilhas |
 
+## Testes de Integracao e Smoke
+
+| Arquivo | Escopo |
+| --- | --- |
+| `tests/run_integration.php` | Runner de integracao com MySQL no container |
+| `tests/integration/DatabaseSchemaTest.php` | Conexao, tabelas/view criticas e admin inicial |
+| `tests/integration/UserIntegrationTest.php` | CRUD e autenticacao de usuario |
+| `tests/integration/CoreFlowsIntegrationTest.php` | Acolhimento, socioeconomico, faltas, desligamento, documentos e psicologia |
+| `tests/run_http_smoke.php` | Login, CSRF, sessao, paginas criticas, permissoes por perfil e uploads multipart via HTTP |
+| `tests/backup_restore_check.sh` | Dump e restore do banco de teste em schema temporario |
+
 ## CI
 
 O workflow `.github/workflows/ci.yml` executa:
@@ -39,20 +70,24 @@ O workflow `.github/workflows/ci.yml` executa:
 - PHP 8.2 com `pdo_mysql` e `fileinfo`;
 - lint de arquivos PHP;
 - `php tests/run.php`;
-- `docker compose config --quiet`.
+- `docker compose config --quiet`;
+- `docker compose -f docker-compose.test.yml config --quiet`;
+- ambiente Docker de teste;
+- testes de integracao com banco;
+- smoke tests HTTP;
+- teste de backup/restauracao;
+- logs e limpeza do ambiente em caso de falha.
 
-## Próxima Cobertura
+## Proxima Cobertura
 
 | Prioridade | Fluxo | Tipo |
 | --- | --- | --- |
-| Alta | Autenticação e permissões por perfil | Integração |
-| Alta | CRUD de acolhimento | Integração com banco |
-| Alta | Ficha socioeconômica com família/despesas | Integração com banco |
-| Alta | Upload de foto/documentos | Integração + filesystem |
-| Alta | Prontuário e busca por CPF/nome | Integração |
-| Média | Logs e exportação CSV | Integração |
-| Média | Faltas/desligamento automático | Integração |
-| Média | Área psicológica | Integração com permissões |
+| Alta | Recuperacao de senha com SMTP real ou sandbox do provedor | Integracao + provedor externo |
+| Alta | Backup e restauracao do banco real em ambiente de homologacao | Operacional + banco |
+| Alta | Normalizacao de nomes de tabelas em Linux com `lower_case_table_names=0` | Migracao + teste de restauracao |
+| Alta | Politica LGPD de documentos: remocao, retencao, versionamento e auditoria | Regra operacional + testes |
+| Media | Relatorios PDF/XLSX oficiais com comparacao de layout/arquivo | Integracao + artefato |
+| Media | Logs com mascaramento por campo sensivel | Integracao + seguranca |
 
 ## Critério Para Mercado
 

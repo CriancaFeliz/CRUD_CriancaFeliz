@@ -19,10 +19,11 @@ Esta é a nota central para navegar o projeto no Obsidian. Ela não substitui a 
 - Stack: PHP, MySQL/MariaDB, JavaScript, CSS, Docker
 - Arquitetura: MVC simples sem framework externo
 - Última frente: hardening de prioridades altas em 2026-06-01
-- Frente atual: correção das lacunas de Testes, LGPD, Banco, Documentos, Perfil/foto, Debug, Relatórios e Documentação
+- Frente atual: automacao de testes verde com banco Docker, smoke HTTP, permissoes por perfil, uploads multipart e documentacao de bloqueios operacionais
 - Entrada técnica: [[README|README]]
 - Documentação completa: [[docs/PROJECT_DOCUMENTATION|Documentação técnica]]
 - Plano de lacunas: [[04 - Plano de Lacunas e Prioridades]]
+- Pendencias externas: [[05 - Pendências Externas e Insumos]]
 - Backlog: [[01 - Backlog Técnico]]
 - Auditoria de segurança: [[03 - Auditoria de Segurança]]
 - Uso com Codex: [[02 - Guia de Uso com Codex]]
@@ -34,6 +35,10 @@ Esta é a nota central para navegar o projeto no Obsidian. Ela não substitui a 
 - [[docs/GAP_REMEDIATION_PLAN|Plano de lacunas]]: matriz de prioridades e entregas por lacuna.
 - [[docs/LGPD_AND_DATA_GOVERNANCE|LGPD e governança]]: plano técnico-operacional de dados.
 - [[docs/TEST_PLAN|Plano de testes]]: testes automatizados, CI e próximos fluxos.
+- [[docs/TEST_AUTOMATION|Automação de testes]]: comandos, stack Docker de teste e como resolver bloqueios.
+- [[docs/BACKUP_RESTORE_RUNBOOK|Backup e restore]]: rotina tecnica e insumos para producao.
+- [[docs/DOCUMENT_GOVERNANCE_DRAFT|Governanca de documentos]]: rascunho de politica de documentos anexados.
+- [[docs/SMTP_SETUP|SMTP]]: dados necessarios para envio real de recuperacao de senha.
 - [[docs/DATABASE_NORMALIZATION_PLAN|Plano do banco]]: normalização de nomes de tabelas.
 - [[docs/LEGACY_TABLE_STRATEGY|Tabelas legadas]]: decisão para tabelas antigas e compatibilidade.
 - [[docs/REPORTING_ROADMAP|Roadmap de relatórios]]: relatórios PDF/Excel e decisões pendentes.
@@ -65,6 +70,10 @@ docker compose up --build
 
 ```bash
 php -S localhost:8000 var/dev-router.php
+```
+
+```powershell
+.\tests\run_all.ps1
 ```
 
 ```powershell
