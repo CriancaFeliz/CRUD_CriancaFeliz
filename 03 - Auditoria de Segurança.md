@@ -42,6 +42,30 @@ Mudanças aplicadas:
 - [ ] SMTP real depende de provedor e credenciais.
 - [ ] Normalização completa de nomes de tabelas exige migração própria.
 
+## Revisao de 2026-06-03
+
+### Logs Administrativos
+
+Mudancas aplicadas:
+
+- As telas de logs passaram a renderizar pelo layout principal, mantendo a verificacao de acesso admin no `LogController`.
+- Valores de campos sensiveis como senha, password, token, secret, segredo, API key, cookie, session, CSRF, credencial e hash agora sao mascarados em lista, busca, detalhe, JSON bruto exibido e CSV.
+- Exportacoes CSV de logs neutralizam valores iniciados por `=`, `+`, `-` ou `@` para reduzir risco de formula injection ao abrir em planilhas.
+- Titulos enviados ao layout principal pelo modulo de logs agora sao escapados com `htmlspecialchars`, fechando risco de XSS via parametros refletidos na topbar.
+- Paginacao de logs e APIs JSON foi normalizada para inteiros positivos, com limite de `per_page` em 200.
+- Foi corrigida a chamada interna de `setFlash()` no controller de logs e o filtro legado `by_action` passou a ler `acao`.
+
+Testes executados:
+
+- `php tests/run.php`: 10 testes, 27 assercoes.
+- Lint PHP completo do repositorio: aprovado.
+- `tests/run_all.ps1`: unitarios e lint aprovados; etapa Docker bloqueada porque o Docker Desktop nao estava ativo.
+
+Limites da validacao local:
+
+- O PHP local em `C:\Program Files\PHP\current\php.exe` nao possui `pdo_mysql`, entao login/rotas com banco nao puderam ser validadas pelo servidor embutido nesta maquina.
+- A validacao completa com banco deve ser repetida com Docker Desktop ativo ou PHP com `pdo_mysql` habilitado.
+
 ## Próxima Decisão
 
 Antes de mercado, decidir se a autenticação continuará interna ou se será substituída/integrada a um provedor externo de identidade.

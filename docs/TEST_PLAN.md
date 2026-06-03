@@ -1,6 +1,6 @@
 # Plano de Testes
 
-Atualizado em 2026-06-01.
+Atualizado em 2026-06-03.
 
 ## Como Rodar
 
@@ -50,6 +50,7 @@ docker compose up --build
 | `tests/automated/PasswordHelperTest.php` | Política, hash, verificação e exceção de senha fraca |
 | `tests/automated/BootstrapHelperTest.php` | Sanitização, email e formatação de datas |
 | `tests/automated/ReportExportHelperTest.php` | Escape CSV para exportações compatíveis com planilhas |
+| `tests/automated/LogHelperTest.php` | Mascaramento de campos sensiveis em logs e neutralizacao de formulas em CSV |
 
 ## Testes de Integracao e Smoke
 
@@ -87,7 +88,7 @@ O workflow `.github/workflows/ci.yml` executa:
 | Alta | Normalizacao de nomes de tabelas em Linux com `lower_case_table_names=0` | Migracao + teste de restauracao |
 | Alta | Politica LGPD de documentos: remocao, retencao, versionamento e auditoria | Regra operacional + testes |
 | Media | Relatorios PDF/XLSX oficiais com comparacao de layout/arquivo | Integracao + artefato |
-| Media | Logs com mascaramento por campo sensivel | Integracao + seguranca |
+| Media | Logs com mascaramento por campo sensivel em fluxo com banco Docker | Integracao + seguranca |
 
 ## Critério Para Mercado
 

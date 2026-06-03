@@ -1,6 +1,6 @@
 # Documento de Modernização Estética do Frontend
 
-Atualizado em 2026-05-27.
+Atualizado em 2026-06-03.
 
 Este documento descreve as melhorias implementadas na arquitetura de estilos e no design visual do **Sistema Criança Feliz**, substituindo propriedades inline rígidas por um design system baseado em variáveis CSS, classes reutilizáveis e transições de tema.
 
@@ -77,6 +77,11 @@ Centralizamos todos os tokens visuais na folha de estilos principal: `css/style.
   - Removidos os blocos de estilos em tempo de execução baseados em PHP.
   - Atualizadas as funções auxiliares JavaScript (`formatStatus()` e `formatCategoria()`) para injetarem classes CSS seguras em vez de tags HTML com propriedades inline de fundo e cor.
   - Refatoração dos botões e mensagens de tabela para utilizarem a classe centralizadora `.actions-cell`.
+- **`app/Views/logs/*.php` e `app/Controllers/LogController.php`**:
+  - O modulo de logs passou a usar `renderWithLayout('main', ...)`, herdando sidebar, topbar, tema claro/escuro e scripts globais.
+  - As telas de lista, busca, detalhe e historico foram convertidas de HTML completo independente para views parciais.
+  - Os estilos inline e blocos `<style>` locais foram substituidos por classes globais em `css/style.css`, como `.logs-shell`, `.logs-filter-grid`, `.logs-table-card`, `.log-action-badge` e `.log-detail-card`.
+  - Os botoes de acao passaram a usar Font Awesome e classes padronizadas (`.btn`, `.btn.secondary`, `.btn-icon.view-btn`).
 
 ---
 

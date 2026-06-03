@@ -269,24 +269,34 @@ class Log extends BaseModel {
     public function exportToCSV($filters = []) {
         $result = $this->searchAdvanced($filters, 1, 10000);
         
-        $csv = "ID,Data,Ação,Tabela,Registro,Valor Anterior,Valor Atual,Usuário,IP\n";
+        $rows = [];
         
         foreach ($result['data'] as $log) {
-            $csv .= sprintf(
-                "%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%d,\"%s\"\n",
-                $log['id_log'],
-                $log['data_alteracao'],
-                $log['acao'],
-                $log['tabela_afetada'],
-                str_replace('"', '""', $log['registro_alt']),
-                str_replace('"', '""', substr($log['valor_anterior'], 0, 100)),
-                str_replace('"', '""', substr($log['valor_atual'], 0, 100)),
-                $log['id_usuario'] ?? 'N/A',
-                $log['ip_usuario'] ?? 'N/A'
-            );
+            $masked = LogHelper::maskLogRow($log);
+            $rows[] = [
+                'id' => $log['id_log'],
+                'data' => $log['data_alteracao'],
+                'acao' => $log['acao'],
+                'tabela' => $log['tabela_afetada'],
+                'registro' => LogHelper::neutralizeSpreadsheetFormula($masked['registro_alt'] ?? ''),
+                'valor_anterior' => LogHelper::neutralizeSpreadsheetFormula(substr((string) ($masked['valor_anterior'] ?? ''), 0, 100)),
+                'valor_atual' => LogHelper::neutralizeSpreadsheetFormula(substr((string) ($masked['valor_atual'] ?? ''), 0, 100)),
+                'usuario' => $log['id_usuario'] ?? 'N/A',
+                'ip' => $log['ip_usuario'] ?? 'N/A'
+            ];
         }
-        
-        return $csv;
+
+        return ReportExportHelper::csv([
+            'id' => 'ID',
+            'data' => 'Data',
+            'acao' => 'Ação',
+            'tabela' => 'Tabela',
+            'registro' => 'Registro',
+            'valor_anterior' => 'Valor Anterior',
+            'valor_atual' => 'Valor Atual',
+            'usuario' => 'Usuário',
+            'ip' => 'IP'
+        ], $rows);
     }
     
     /**

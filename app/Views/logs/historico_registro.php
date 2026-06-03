@@ -1,61 +1,69 @@
 <?php
-$registroId = $registro_id ?? '';
-?>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historico do Registro - Crianca Feliz</title>
-    <link rel="stylesheet" href="css/style.css">
-    <style>
-        .logs-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .logs-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-        .btn-link { background: #6b7b84; color: #fff; padding: 10px 14px; border-radius: 6px; text-decoration: none; }
-        .logs-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
-        .logs-table th { background: #f0a36b; color: #fff; padding: 12px; text-align: left; }
-        .logs-table td { padding: 12px; border-bottom: 1px solid #e9ecef; vertical-align: top; }
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
-        .badge.insert { background: #d4edda; color: #155724; }
-        .badge.update { background: #fff3cd; color: #856404; }
-        .badge.delete { background: #f8d7da; color: #721c24; }
-        .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 20px; flex-wrap: wrap; }
-        .pagination a, .pagination span { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; }
-        .pagination .active { background: #3498db; color: #fff; border-color: #3498db; }
-    </style>
-</head>
-<body>
-    <div class="logs-container">
-        <div class="logs-header">
-            <h1>Historico do registro #<?php echo htmlspecialchars($registroId); ?></h1>
-            <a class="btn-link" href="logs.php">Voltar aos logs</a>
-        </div>
+require_once APP_PATH . '/Views/logs/_helpers.php';
 
-        <table class="logs-table">
+$registroId = $registro_id ?? '';
+$pagination = $pagination ?? ['current_page' => 1, 'last_page' => 1, 'total' => 0];
+?>
+
+<div class="logs-shell">
+    <div class="logs-toolbar">
+        <div>
+            <h2 class="logs-title">Histórico do registro #<?php echo cfLogEsc($registroId); ?></h2>
+            <p class="logs-subtitle">Linha do tempo auditável das alterações deste registro.</p>
+        </div>
+        <div class="logs-actions">
+            <a href="logs.php" class="btn secondary">
+                <i class="fas fa-arrow-left"></i>
+                Voltar aos logs
+            </a>
+        </div>
+    </div>
+
+    <div class="card-glass logs-table-card p-0 overflow-hidden">
+        <table class="table-glass logs-table">
             <thead>
                 <tr>
-                    <th>Acao</th>
+                    <th>Ação</th>
                     <th>Tabela</th>
-                    <th>Descricao</th>
+                    <th>Descrição</th>
                     <th>Campo</th>
                     <th>Data/Hora</th>
-                    <th></th>
+                    <th class="actions-cell">Ações</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($logs)): ?>
                     <tr>
-                        <td colspan="6" style="text-align:center; padding:30px;">Nenhum log encontrado para este registro.</td>
+                        <td colspan="6">
+                            <div class="empty-state-container">
+                                <div class="empty-state-icon"><i class="fas fa-timeline"></i></div>
+                                <h3 class="empty-state-title">Nenhum log encontrado</h3>
+                                <p class="empty-state-text">Este registro ainda não possui histórico auditável.</p>
+                            </div>
+                        </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($logs as $log): ?>
+                        <?php
+                        $field = $log['campo_alterado'] ?? '';
+                        $description = cfLogExcerpt($log['registro_alt'] ?? '', $field, 120);
+                        $descriptionFull = cfLogMasked($log['registro_alt'] ?? '', $field);
+                        ?>
                         <tr>
-                            <td><span class="badge <?php echo strtolower($log['acao'] ?? ''); ?>"><?php echo htmlspecialchars($log['acao'] ?? ''); ?></span></td>
-                            <td><?php echo htmlspecialchars($log['tabela_afetada'] ?? ''); ?></td>
-                            <td><?php echo htmlspecialchars($log['registro_alt'] ?? ''); ?></td>
-                            <td><?php echo htmlspecialchars($log['campo_alterado'] ?? '-'); ?></td>
-                            <td><?php echo !empty($log['data_alteracao']) ? date('d/m/Y H:i:s', strtotime($log['data_alteracao'])) : '-'; ?></td>
-                            <td><a href="logs.php?action=show&id=<?php echo urlencode($log['id_log'] ?? ''); ?>">Ver</a></td>
+                            <td><?php echo cfLogActionBadge($log['acao'] ?? ''); ?></td>
+                            <td><strong><?php echo cfLogEsc(cfLogTableLabel($log['tabela_afetada'] ?? '')); ?></strong></td>
+                            <td>
+                                <span class="log-description" title="<?php echo cfLogEsc($descriptionFull); ?>">
+                                    <?php echo cfLogEsc($description); ?>
+                                </span>
+                            </td>
+                            <td><?php echo cfLogEsc($log['campo_alterado'] ?? '-'); ?></td>
+                            <td><span class="log-time"><?php echo cfLogEsc(cfLogDate($log['data_alteracao'] ?? null)); ?></span></td>
+                            <td class="actions-cell">
+                                <a href="logs.php?action=show&id=<?php echo urlencode($log['id_log'] ?? ''); ?>" class="btn-icon view-btn" title="Ver detalhes">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -63,16 +71,16 @@ $registroId = $registro_id ?? '';
         </table>
 
         <?php if (($pagination['last_page'] ?? 1) > 1): ?>
-            <div class="pagination">
-                <?php for ($i = 1; $i <= $pagination['last_page']; $i++): ?>
+            <?php $window = cfLogPaginationWindow($pagination['current_page'], $pagination['last_page']); ?>
+            <div class="pagination card-pagination">
+                <?php for ($i = $window['start']; $i <= $window['end']; $i++): ?>
                     <?php if ($i == $pagination['current_page']): ?>
-                        <span class="active"><?php echo $i; ?></span>
+                        <span class="logs-page-link active"><?php echo $i; ?></span>
                     <?php else: ?>
-                        <a href="logs.php?action=historico&id=<?php echo urlencode($registroId); ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                        <a href="logs.php?action=historico&id=<?php echo urlencode($registroId); ?>&page=<?php echo $i; ?>" class="logs-page-link"><?php echo $i; ?></a>
                     <?php endif; ?>
                 <?php endfor; ?>
             </div>
         <?php endif; ?>
     </div>
-</body>
-</html>
+</div>
