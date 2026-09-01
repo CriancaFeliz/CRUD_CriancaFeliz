@@ -21,8 +21,8 @@ class DashboardController extends BaseController {
         
         try {
             // Obter estatísticas
-            $statsAcolhimento = $this->normalizeFichaStats($this->acolhimentoService->getStatistics());
-            $statsSocioeconomico = $this->normalizeFichaStats($this->socioeconomicoService->getStatistics());
+            $statsAcolhimento = $this->acolhimentoService->getStatistics();
+            $statsSocioeconomico = $this->socioeconomicoService->getStatistics();
             
             // Obter alertas
             $alertas = $this->getAlertas();
@@ -56,8 +56,8 @@ class DashboardController extends BaseController {
         $this->requireAuth();
         
         try {
-            $statsAcolhimento = $this->normalizeFichaStats($this->acolhimentoService->getStatistics());
-            $statsSocioeconomico = $this->normalizeFichaStats($this->socioeconomicoService->getStatistics());
+            $statsAcolhimento = $this->acolhimentoService->getStatistics();
+            $statsSocioeconomico = $this->socioeconomicoService->getStatistics();
             
             $stats = [
                 'acolhimento' => $statsAcolhimento,
@@ -187,29 +187,17 @@ class DashboardController extends BaseController {
             
             // Alertas de faltas e desligamentos
             try {
-                $frequenciaModel = new FrequenciaDia();
-                $desligamentoModel = new Desligamento();
-                
-                // Buscar atendidos com alertas de faltas
-                $atendidosComAlertas = $frequenciaModel->getAtendidosComAlertas();
+                $attendanceService = new AttendanceService();
+                $atendidosComAlertas = $attendanceService->getAtendidosComAlertas();
                 
                 $excessoFaltas = 0;
-                foreach ($atendidosComAlertas as $atendido) {
-                    if ($atendido['total_faltas'] >= 3) {
-                        $excessoFaltas++;
-                    }
-                }
-                
-                // Buscar atendidos com idade limite (>= 18 anos)
-                $acolhimentoModel = new Acolhimento();
-                $todosAtendidos = $acolhimentoModel->findAll();
                 $idadeLimite = 0;
                 
-                foreach ($todosAtendidos as $atendido) {
-                    $id = $atendido['idatendido'] ?? $atendido['id'];
-                    if (($atendido['status'] ?? 'Ativo') === 'Ativo' && !$desligamentoModel->isDesligado($id)) {
-                        $idade = calculateAge($atendido['data_nascimento'] ?? '');
-                        if ($idade >= 18) {
+                foreach ($atendidosComAlertas as $atendido) {
+                    foreach ($atendido['alertas'] as $alerta) {
+                        if ($alerta['tipo'] === 'excesso_faltas') {
+                            $excessoFaltas++;
+                        } elseif ($alerta['tipo'] === 'idade_limite') {
                             $idadeLimite++;
                         }
                     }
@@ -221,7 +209,7 @@ class DashboardController extends BaseController {
                         'titulo' => 'Excesso de Faltas',
                         'mensagem' => "$excessoFaltas atendido(s) com excesso de faltas não justificadas",
                         'icone' => '⚠️',
-                        'link' => 'desligamento.php'
+                        'link' => 'attendance.php?action=alertas'
                     ];
                 }
                 
@@ -231,7 +219,7 @@ class DashboardController extends BaseController {
                         'titulo' => 'Desligamento Pendente',
                         'mensagem' => "$idadeLimite atendido(s) completou(aram) 18 anos - Desligamento automático pendente",
                         'icone' => '🎂',
-                        'link' => 'desligamento.php'
+                        'link' => 'attendance.php?action=alertas'
                     ];
                 }
             } catch (Exception $e) {
@@ -277,59 +265,28 @@ class DashboardController extends BaseController {
         
         return $alertas;
     }
-
-    /**
-     * Normaliza estatisticas vindas de models JSON e MySQL.
-     */
-    private function normalizeFichaStats($stats) {
-        $stats = is_array($stats) ? $stats : [];
-        $stats['total'] = intval($stats['total'] ?? 0);
-
-        if (!isset($stats['ativas']) || !isset($stats['inativas'])) {
-            $ativas = 0;
-            $inativas = 0;
-
-            foreach (($stats['porStatus'] ?? []) as $row) {
-                $status = strtolower($row['status'] ?? '');
-                $totalStatus = intval($row['total'] ?? 0);
-
-                if ($status === 'ativo' || $status === 'active') {
-                    $ativas += $totalStatus;
-                } else {
-                    $inativas += $totalStatus;
-                }
-            }
-
-            $stats['ativas'] = $ativas;
-            $stats['inativas'] = $inativas ?: max(0, $stats['total'] - $ativas);
-        }
-
-        return $stats;
-    }
     
     /**
      * Obtém anotações do calendário
      */
     private function getAnotacoesCalendario() {
-        try {
-            $pdo = Database::getConnection();
-            $currentMonth = date('Y-m');
-            
-            $stmt = $pdo->prepare("
-                SELECT id_notificacao as id, mensagem as note, tipo as type, DATE(data_envio) as date
-                FROM agenda
-                WHERE data_envio LIKE ?
-                ORDER BY data_envio ASC
-            ");
-            $stmt->execute([$currentMonth . '%']);
-            $allNotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            $anotacoes = [];
-            $avisos = [];
-            
-            foreach ($allNotes as $item) {
+        $notesFile = DATA_PATH . '/calendar_notes.json';
+        
+        if (!file_exists($notesFile)) {
+            return ['anotacoes' => [], 'avisos' => []];
+        }
+        
+        $allNotes = json_decode(file_get_contents($notesFile), true) ?: [];
+        
+        // Filtrar anotações do mês atual
+        $currentMonth = date('Y-m');
+        $anotacoes = [];
+        $avisos = [];
+        
+        foreach ($allNotes as $id => $item) {
+            if (strpos($item['date'], $currentMonth) === 0) {
                 $noteData = [
-                    'id' => $item['id'],
+                    'id' => $id,
                     'date' => $item['date'],
                     'note' => $item['note'],
                     'type' => $item['type'] ?? 'anotacao',
@@ -342,58 +299,87 @@ class DashboardController extends BaseController {
                     $anotacoes[] = $noteData;
                 }
             }
-            
-            return ['anotacoes' => $anotacoes, 'avisos' => $avisos];
-        } catch (Exception $e) {
-            error_log("Erro ao buscar anotações do calendário: " . $e->getMessage());
-            return ['anotacoes' => [], 'avisos' => []];
         }
+        
+        // Ordenar por data
+        usort($anotacoes, function($a, $b) {
+            return strcmp($a['date'], $b['date']);
+        });
+        
+        usort($avisos, function($a, $b) {
+            return strcmp($a['date'], $b['date']);
+        });
+        
+        return ['anotacoes' => $anotacoes, 'avisos' => $avisos];
     }
     
     /**
      * Obtém anotações por mês
      */
     private function getAnotacoesPorMes($month) {
-        try {
-            $pdo = Database::getConnection();
-            $stmt = $pdo->prepare("
-                SELECT id_notificacao as id, mensagem as note, tipo as type, DATE(data_envio) as date
-                FROM agenda
-                WHERE data_envio LIKE ?
-                ORDER BY data_envio ASC
-            ");
-            $stmt->execute([$month . '%']);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
-            error_log("Erro ao buscar anotações por mês: " . $e->getMessage());
+        $notesFile = DATA_PATH . '/calendar_notes.json';
+        
+        if (!file_exists($notesFile)) {
             return [];
         }
+        
+        $allNotes = json_decode(file_get_contents($notesFile), true) ?: [];
+        
+        $monthNotes = [];
+        foreach ($allNotes as $id => $item) {
+            if (strpos($item['date'], $month) === 0) {
+                $monthNotes[] = [
+                    'id' => $id,
+                    'date' => $item['date'],
+                    'note' => $item['note'],
+                    'type' => $item['type'] ?? 'anotacao'
+                ];
+            }
+        }
+        
+        return $monthNotes;
     }
     
     /**
      * Salva anotação
      */
     private function saveNote($date, $note, $type = 'anotacao') {
-        $pdo = Database::getConnection();
-        $dateTimeStr = $date . ' 00:00:00';
+        $notesFile = DATA_PATH . '/calendar_notes.json';
         
-        $stmt = $pdo->prepare("
-            INSERT INTO agenda (mensagem, tipo, lida, data_envio)
-            VALUES (?, ?, 0, ?)
-        ");
-        $stmt->execute([trim($note), $type, $dateTimeStr]);
-        return $pdo->lastInsertId();
+        if (!file_exists($notesFile)) {
+            file_put_contents($notesFile, json_encode([]));
+        }
+        
+        $notes = json_decode(file_get_contents($notesFile), true) ?: [];
+        
+        // Gerar ID único
+        $id = uniqid('note_', true);
+        
+        $notes[$id] = [
+            'date' => $date,
+            'note' => trim($note),
+            'type' => $type,
+            'created_at' => date('Y-m-d H:i:s')
+        ];
+        
+        file_put_contents($notesFile, json_encode($notes, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        
+        return $id;
     }
     
     /**
      * Remove anotação
      */
     private function deleteNote($id) {
-        $pdo = Database::getConnection();
-        $stmt = $pdo->prepare("
-            DELETE FROM agenda
-            WHERE id_notificacao = ?
-        ");
-        $stmt->execute([$id]);
+        $notesFile = DATA_PATH . '/calendar_notes.json';
+        
+        if (!file_exists($notesFile)) {
+            return;
+        }
+        
+        $notes = json_decode(file_get_contents($notesFile), true) ?: [];
+        unset($notes[$id]);
+        
+        file_put_contents($notesFile, json_encode($notes, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 }

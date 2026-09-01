@@ -22,6 +22,28 @@ class ThemeManager {
         console.log('Theme Manager inicializado - Tema atual:', this.currentTheme);
     }
 
+    setupDynamicObserver() {
+        // Observer para detectar mudanças no DOM (elementos adicionados dinamicamente)
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // Reaplicar estilos quando novos elementos são adicionados
+                    setTimeout(() => {
+                        this.applyDashboardStyles(this.currentTheme);
+                    }, 100);
+                }
+            });
+        });
+
+        // Observar mudanças no dashboard
+        const dashboard = document.querySelector('.app');
+        if (dashboard) {
+            observer.observe(dashboard, {
+                childList: true,
+                subtree: true
+            });
+        }
+    }
 
     createToggleButton() {
         // Verificar se já existe um toggle
@@ -131,6 +153,86 @@ class ThemeManager {
         // Adicionar classe ao body para compatibilidade
         document.body.classList.remove('light-theme', 'dark-theme');
         document.body.classList.add(`${theme}-theme`);
+        
+        // Aplicar estilos específicos para o dashboard
+        this.applyDashboardStyles(theme);
+    }
+
+    applyDashboardStyles(theme) {
+        // Verificar se estamos no dashboard
+        const isDashboard = document.querySelector('.app') && document.querySelector('.sidebar');
+        
+        if (isDashboard) {
+            const body = document.body;
+            const app = document.querySelector('.app');
+            const sidebar = document.querySelector('.sidebar');
+            const content = document.querySelector('.content');
+            
+            if (theme === 'dark') {
+                // Aplicar estilos escuros específicos
+                if (body) body.style.background = '#121a1f';
+                if (app) app.style.background = '#121a1f';
+                if (sidebar) sidebar.style.background = '#0e2a33';
+                if (content) {
+                    content.style.background = '#1e2a32';
+                    content.style.color = '#ffffff';
+                }
+                
+                // Aplicar aos cards
+                const cards = document.querySelectorAll('.card');
+                cards.forEach(card => {
+                    card.style.background = '#2d2d2d';
+                    card.style.color = '#ffffff';
+                    card.style.boxShadow = '0 2px 10px rgba(0,0,0,.3)';
+                });
+                
+                // Aplicar aos stats
+                const stats = document.querySelectorAll('.stat');
+                stats.forEach(stat => {
+                    stat.style.background = '#2d2d2d';
+                    stat.style.color = '#ffffff';
+                });
+                
+                // Aplicar aos notes
+                const notes = document.querySelectorAll('.note');
+                notes.forEach(note => {
+                    note.style.background = '#2d2d2d';
+                    note.style.color = '#ffffff';
+                });
+                
+            } else {
+                // Remover estilos inline para voltar ao padrão
+                if (body) body.style.background = '';
+                if (app) app.style.background = '';
+                if (sidebar) sidebar.style.background = '';
+                if (content) {
+                    content.style.background = '';
+                    content.style.color = '';
+                }
+                
+                // Remover estilos dos cards
+                const cards = document.querySelectorAll('.card');
+                cards.forEach(card => {
+                    card.style.background = '';
+                    card.style.color = '';
+                    card.style.boxShadow = '';
+                });
+                
+                // Remover estilos dos stats
+                const stats = document.querySelectorAll('.stat');
+                stats.forEach(stat => {
+                    stat.style.background = '';
+                    stat.style.color = '';
+                });
+                
+                // Remover estilos dos notes
+                const notes = document.querySelectorAll('.note');
+                notes.forEach(note => {
+                    note.style.background = '';
+                    note.style.color = '';
+                });
+            }
+        }
     }
 
     saveTheme() {

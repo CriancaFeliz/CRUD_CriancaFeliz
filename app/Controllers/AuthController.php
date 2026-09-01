@@ -79,7 +79,7 @@ class AuthController extends BaseController {
             'messages' => $this->getFlashMessages()
         ];
         
-        $this->renderWithLayout('auth', 'auth/forgot', $data);
+        $this->render('auth/forgot', $data);
     }
     
     /**
@@ -131,7 +131,7 @@ class AuthController extends BaseController {
             'messages' => $this->getFlashMessages()
         ];
         
-        $this->renderWithLayout('auth', 'auth/reset', $data);
+        $this->render('auth/reset', $data);
     }
     
     /**
@@ -233,9 +233,7 @@ class AuthController extends BaseController {
         $this->saveResetToken($email, $token, $expiry);
         
         // Montar URL de reset
-        $basePath = str_replace('\\', '/', dirname($_SERVER['PHP_SELF']));
-        $basePath = rtrim($basePath, '/');
-        $resetUrl = 'http://' . $_SERVER['HTTP_HOST'] . $basePath . '/reset_password.php?token=' . $token;
+        $resetUrl = 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/reset_password.php?token=' . $token;
         
         // Enviar email (implementar SMTP conforme memória)
         $this->sendEmail($email, 'Recuperação de Senha - Criança Feliz', $resetUrl);
@@ -306,10 +304,7 @@ class AuthController extends BaseController {
         $user = $userModel->findByEmail($email);
         
         if ($user) {
-            $userId = $user['idusuario'] ?? $user['id'] ?? null;
-            if ($userId) {
-                $userModel->updateUser($userId, ['password' => $password]);
-            }
+            $userModel->updateUser($user['id'], ['password' => $password]);
         }
         
         // Marcar token como usado

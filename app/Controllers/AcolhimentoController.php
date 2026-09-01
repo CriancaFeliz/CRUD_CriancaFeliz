@@ -56,12 +56,11 @@ class AcolhimentoController extends BaseController {
      */
     public function create() {
         $this->requireAuth();
+        $this->requirePermission('create_records');
         
         // Verificar se é edição
         $editId = $_GET['id'] ?? null;
         $ficha = null;
-
-        $this->requirePermission($editId ? 'edit_records' : 'create_records');
         
         if ($editId) {
             try {
@@ -89,18 +88,19 @@ class AcolhimentoController extends BaseController {
      */
     public function store() {
         $this->requireAuth();
+        $this->requirePermission('create_records');
+        
         if (!$this->isPost()) {
             redirect('acolhimento_form.php');
         }
         
         try {
+            $this->validateCSRF();
+            
             $data = $this->getPostData();
             
             // Verificar se é edição
             $id = $data['id'] ?? null;
-
-            $this->requirePermission(!empty($id) ? 'edit_records' : 'create_records');
-            $this->validateCSRF();
             
             error_log('=== ACOLHIMENTO STORE ===');
             error_log('ID recebido: ' . ($id ?? 'NENHUM'));
@@ -167,14 +167,12 @@ class AcolhimentoController extends BaseController {
             
             $data = [
                 'title' => 'Editar Ficha de Acolhimento',
-                'pageTitle' => 'Editar Ficha de Acolhimento',
                 'ficha' => $ficha,
-                'editId' => $id,
                 'csrf_token' => $this->generateCSRF(),
                 'messages' => $this->getFlashMessages()
             ];
             
-            $this->renderWithLayout('main', 'acolhimento/create', $data);
+            $this->renderWithLayout('main', 'acolhimento/edit', $data);
             
         } catch (Exception $e) {
             $this->handleException($e);

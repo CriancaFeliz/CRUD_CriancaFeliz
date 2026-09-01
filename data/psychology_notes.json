@@ -1,0 +1,17 @@
+[
+    {
+        "patient_cpf": "53253532332",
+        "psychologist_id": "psi001",
+        "psychologist_name": "Dr. Maria Silva",
+        "note_type": "avaliacao",
+        "title": "Primeira Consulta - Avaliação Inicial",
+        "content": "Paciente apresentou-se colaborativo durante a primeira sessão. Demonstrou interesse em participar das atividades propostas. Relatou algumas dificuldades de relacionamento na escola, mas mostra-se motivado para mudanças positivas.\r\n\r\nDurante a sessão, foi possível observar boa capacidade de comunicação e expressão de sentimentos. Paciente consegue identificar emoções básicas e demonstra consciência sobre seus comportamentos.",
+        "mood_assessment": "3",
+        "behavior_notes": "Paciente manteve contato visual adequado, postura corporal relaxada. Demonstrou ansiedade leve no início da sessão, mas se mostrou mais confortável conforme a conversa fluiu. Não apresentou comportamentos disruptivos.",
+        "recommendations": "1. Continuar sessões semanais para desenvolvimento de habilidades sociais\r\n2. Trabalhar técnicas de relaxamento para manejo da ansiedade\r\n3. Envolver a família no processo terapêutico\r\n4. Coordenar com a escola para acompanhamento do progresso acadêmico",
+        "next_session": "2025-10-08T14:00",
+        "updated_at": "2025-10-02 04:16:33",
+        "id": "note_001",
+        "created_at": "2025-10-01 15:30:00"
+    }
+]

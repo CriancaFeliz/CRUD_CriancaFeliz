@@ -132,11 +132,12 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                                 
                                 // Botão Excluir (somente admin)
                                 if ($isAdmin) {
-                                    echo '<form method="POST" action="socioeconomico_list.php?delete=' . urlencode($id) . '" style="display:inline; margin:0 2px;" onsubmit="return confirm(\'Tem certeza que deseja excluir esta ficha?\')">';
-                                    echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrf_token ?? '') . '">';
-                                    echo '<button type="submit" class="btn-icon" title="Excluir" style="background:#e74c3c; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:13px; margin:0 2px; display:inline-block;">';
-                                    echo '<i class="fas fa-trash"></i></button>';
-                                    echo '</form>';
+                                    echo '<a href="socioeconomico_list.php?delete=' . urlencode($id) . '" ';
+                                    echo 'class="btn-icon" ';
+                                    echo 'title="Excluir" ';
+                                    echo 'onclick="return confirm(\'Tem certeza que deseja excluir esta ficha?\')" ';
+                                    echo 'style="background:#e74c3c; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
+                                    echo '<i class="fas fa-trash"></i></a>';
                                 }
                             } else {
                                 echo '<span style="color: #999; font-size: 12px;">ID inválido</span>';

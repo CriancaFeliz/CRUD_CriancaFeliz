@@ -1,188 +1,119 @@
 <?php
 
 /**
- * Model para Desligamento - MySQL
+ * Model para controle de desligamentos
  */
 class Desligamento extends BaseModel {
     
     public function __construct() {
-        parent::__construct('Desligamento', 'id_desligamento');
+        parent::__construct('desligamentos.json');
     }
     
     /**
-     * Registrar desligamento
+     * Registra desligamento
      */
-    public function registrarDesligamento($idAtendido, $data) {
-        $pdo = Database::getConnection();
-        $userId = $_SESSION['user_id'] ?? null;
+    public function registerDesligamento($atendidoId, $data) {
+        $record = [
+            'id' => uniqid('deslig_'),
+            'atendido_id' => $atendidoId,
+            'atendido_nome' => $data['atendido_nome'] ?? '',
+            'atendido_cpf' => $data['atendido_cpf'] ?? '',
+            'motivo' => $data['motivo'] ?? '',
+            'tipo_motivo' => $data['tipo_motivo'] ?? 'manual', // manual, idade, excesso_faltas
+            'data_desligamento' => $data['data_desligamento'] ?? date('Y-m-d'),
+            'observacao' => $data['observacao'] ?? '',
+            'automatico' => $data['automatico'] ?? false,
+            'registrado_por' => $_SESSION['user_id'] ?? null,
+            'registrado_por_nome' => $_SESSION['user_name'] ?? 'Sistema',
+            'registrado_em' => date('Y-m-d H:i:s')
+        ];
         
-        $sql = "INSERT INTO Desligamento 
-                (id_atendido, motivo, tipo_motivo, data_desligamento, observacao, automatico, pode_retornar, desligado_por)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            $idAtendido,
-            $data['motivo'],
-            $data['tipo_motivo'] ?? 'outros',
-            $data['data_desligamento'] ?? date('Y-m-d'),
-            $data['observacao'] ?? null,
-            $data['automatico'] ?? false,
-            $data['pode_retornar'] ?? true,
-            $userId
-        ]);
-        
-        // Atualizar status do atendido
-        $this->atualizarStatusAtendido($idAtendido, 'Desligado');
-        
-        return $pdo->lastInsertId();
+        return $this->create($record);
     }
     
     /**
-     * Verificar se atendido está desligado
+     * Verifica se atendido já foi desligado
      */
-    public function isDesligado($idAtendido) {
-        $pdo = Database::getConnection();
-        $sql = "SELECT COUNT(*) FROM Desligamento WHERE id_atendido = ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$idAtendido]);
-        return $stmt->fetchColumn() > 0;
+    public function isDesligado($atendidoId) {
+        $desligamentos = $this->findBy('atendido_id', $atendidoId);
+        return !empty($desligamentos);
     }
     
     /**
-     * Buscar desligamento por atendido
+     * Busca desligamento de um atendido
      */
-    public function getByAtendido($idAtendido) {
-        $pdo = Database::getConnection();
-        $sql = "SELECT d.*, a.nome as atendido_nome, u.nome as desligado_por_nome
-                FROM Desligamento d
-                INNER JOIN Atendido a ON d.id_atendido = a.idatendido
-                LEFT JOIN Usuario u ON d.desligado_por = u.idusuario
-                WHERE d.id_atendido = ?";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$idAtendido]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+    public function getByAtendido($atendidoId) {
+        $desligamentos = $this->findBy('atendido_id', $atendidoId);
+        return !empty($desligamentos) ? $desligamentos[0] : null;
     }
     
     /**
-     * Listar desligamentos com filtros
+     * Lista desligamentos com filtros
      */
-    public function listar($filtros = []) {
-        $pdo = Database::getConnection();
-        $sql = "SELECT d.*, a.nome as atendido_nome, a.cpf, u.nome as desligado_por_nome
-                FROM Desligamento d
-                INNER JOIN Atendido a ON d.id_atendido = a.idatendido
-                LEFT JOIN Usuario u ON d.desligado_por = u.idusuario
-                WHERE 1=1";
+    public function listDesligamentos($filters = []) {
+        $desligamentos = $this->findAll();
         
-        $params = [];
-        
-        if (!empty($filtros['tipo_motivo'])) {
-            $sql .= " AND d.tipo_motivo = ?";
-            $params[] = $filtros['tipo_motivo'];
+        if (!empty($filters['tipo_motivo'])) {
+            $desligamentos = array_filter($desligamentos, function($d) use ($filters) {
+                return $d['tipo_motivo'] === $filters['tipo_motivo'];
+            });
         }
         
-        if (!empty($filtros['automatico'])) {
-            $sql .= " AND d.automatico = ?";
-            $params[] = $filtros['automatico'];
+        if (!empty($filters['data_inicio'])) {
+            $desligamentos = array_filter($desligamentos, function($d) use ($filters) {
+                return $d['data_desligamento'] >= $filters['data_inicio'];
+            });
         }
         
-        if (!empty($filtros['data_inicio'])) {
-            $sql .= " AND d.data_desligamento >= ?";
-            $params[] = $filtros['data_inicio'];
+        if (!empty($filters['data_fim'])) {
+            $desligamentos = array_filter($desligamentos, function($d) use ($filters) {
+                return $d['data_desligamento'] <= $filters['data_fim'];
+            });
         }
         
-        if (!empty($filtros['data_fim'])) {
-            $sql .= " AND d.data_desligamento <= ?";
-            $params[] = $filtros['data_fim'];
-        }
+        // Ordenar por data decrescente
+        usort($desligamentos, function($a, $b) {
+            return strcmp($b['data_desligamento'], $a['data_desligamento']);
+        });
         
-        $sql .= " ORDER BY d.data_desligamento DESC";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return array_values($desligamentos);
     }
     
     /**
-     * Cancelar desligamento (reativar)
+     * Cancela desligamento (reativa atendido)
      */
-    public function cancelarDesligamento($idAtendido) {
-        $pdo = Database::getConnection();
-        
-        // Remover desligamento
-        $sql = "DELETE FROM Desligamento WHERE id_atendido = ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$idAtendido]);
-        
-        // Reativar atendido
-        $this->atualizarStatusAtendido($idAtendido, 'Ativo');
-        
-        return true;
+    public function cancelDesligamento($desligamentoId) {
+        return $this->delete($desligamentoId);
     }
     
     /**
-     * Desligar automaticamente por excesso de faltas
+     * Obtém estatísticas de desligamentos
      */
-    public function desligarPorExcessoFaltas() {
-        $pdo = Database::getConnection();
+    public function getStatistics() {
+        $desligamentos = $this->findAll();
         
-        // Buscar atendidos com 3 ou mais faltas
-        $sql = "SELECT 
-                    a.idatendido,
-                    a.nome,
-                    COUNT(CASE WHEN fd.status = 'F' THEN 1 END) as total_faltas
-                FROM Atendido a
-                LEFT JOIN Frequencia_Dia fd ON a.idatendido = fd.id_atendido
-                WHERE a.status = 'Ativo'
-                    AND NOT EXISTS (SELECT 1 FROM Desligamento d WHERE d.id_atendido = a.idatendido)
-                GROUP BY a.idatendido, a.nome
-                HAVING COUNT(CASE WHEN fd.status = 'F' THEN 1 END) >= 3";
+        $stats = [
+            'total' => count($desligamentos),
+            'por_idade' => 0,
+            'por_excesso_faltas' => 0,
+            'manual' => 0,
+            'automaticos' => 0
+        ];
         
-        $stmt = $pdo->query($sql);
-        $atendidos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        $desligados = [];
-        foreach ($atendidos as $atendido) {
-            $this->registrarDesligamento($atendido['idatendido'], [
-                'motivo' => 'Desligamento automático por excesso de faltas (' . $atendido['total_faltas'] . ' faltas)',
-                'tipo_motivo' => 'excesso_faltas',
-                'automatico' => true,
-                'pode_retornar' => true
-            ]);
-            $desligados[] = $atendido;
+        foreach ($desligamentos as $d) {
+            if ($d['tipo_motivo'] === 'idade') {
+                $stats['por_idade']++;
+            } elseif ($d['tipo_motivo'] === 'excesso_faltas') {
+                $stats['por_excesso_faltas']++;
+            } else {
+                $stats['manual']++;
+            }
+            
+            if ($d['automatico']) {
+                $stats['automaticos']++;
+            }
         }
         
-        return $desligados;
-    }
-    
-    /**
-     * Estatísticas de desligamentos
-     */
-    public function getEstatisticas() {
-        $pdo = Database::getConnection();
-        $sql = "SELECT 
-                    COUNT(*) as total,
-                    COUNT(CASE WHEN tipo_motivo = 'idade' THEN 1 END) as por_idade,
-                    COUNT(CASE WHEN tipo_motivo = 'excesso_faltas' THEN 1 END) as por_faltas,
-                    COUNT(CASE WHEN tipo_motivo = 'pedido_familia' THEN 1 END) as por_pedido,
-                    COUNT(CASE WHEN tipo_motivo = 'transferencia' THEN 1 END) as por_transferencia,
-                    COUNT(CASE WHEN tipo_motivo = 'outros' THEN 1 END) as outros,
-                    COUNT(CASE WHEN automatico = 1 THEN 1 END) as automaticos
-                FROM Desligamento";
-        
-        $stmt = $pdo->query($sql);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Atualizar status do atendido
-     */
-    private function atualizarStatusAtendido($idAtendido, $status) {
-        $pdo = Database::getConnection();
-        $sql = "UPDATE Atendido SET status = ? WHERE idatendido = ?";
-        $stmt = $pdo->prepare($sql);
-        return $stmt->execute([$status, $idAtendido]);
+        return $stats;
     }
 }

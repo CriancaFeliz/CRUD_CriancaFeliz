@@ -23,9 +23,9 @@ class LogHelper {
             } else {
                 $pdo->exec("SET @usuario_id = NULL");
             }
-
-            $stmt = $pdo->prepare("SET @ip_usuario = ?");
-            $stmt->execute([$ipUsuario]);
+            
+            $ipQuoted = $pdo->quote($ipUsuario);
+            $pdo->exec("SET @ip_usuario = " . $ipQuoted);
             
         } catch (Exception $e) {
             // Log silencioso - não interrompe a execução

@@ -1,286 +1,284 @@
 -- =====================================================
 -- MIGRAÇÃO DO BANCO DE DADOS - CRIANÇA FELIZ
--- Versão Alinhada com SETUP_COMPLETO_FINAL.sql
 -- =====================================================
 
 CREATE DATABASE IF NOT EXISTS criancafeliz CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE criancafeliz;
 
 -- =====================================================
--- TABELAS
+-- TABELA: Usuario
 -- =====================================================
-
-CREATE TABLE IF NOT EXISTS `agenda` (
-  `id_notificacao` int(11) NOT NULL AUTO_INCREMENT,
-  `mensagem` varchar(255) DEFAULT NULL,
-  `tipo` varchar(50) DEFAULT NULL,
-  `lida` tinyint(1) DEFAULT NULL,
-  `data_envio` datetime DEFAULT NULL,
-  PRIMARY KEY (`id_notificacao`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `responsavel` (
-  `idresponsavel` int(11) NOT NULL AUTO_INCREMENT,
-  `nome` varchar(100) DEFAULT NULL,
-  `cpf` varchar(14) DEFAULT NULL,
-  `rg` varchar(20) DEFAULT NULL,
-  `telefone` varchar(15) DEFAULT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `parentesco` varchar(50) DEFAULT NULL,
-  `endereco` varchar(255) DEFAULT NULL,
-  `numero` varchar(20) DEFAULT NULL,
-  `complemento` varchar(100) DEFAULT NULL,
-  `bairro` varchar(100) DEFAULT NULL,
-  `cidade` varchar(100) DEFAULT NULL,
-  `cep` varchar(10) DEFAULT NULL,
-  PRIMARY KEY (`idresponsavel`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `usuario` (
-  `idusuario` int(11) NOT NULL AUTO_INCREMENT,
-  `nome` varchar(100) DEFAULT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `Senha` varchar(100) DEFAULT NULL,
-  `nivel` varchar(50) DEFAULT NULL,
-  `status` varchar(20) DEFAULT NULL,
-  PRIMARY KEY (`idusuario`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `atendido` (
-  `idatendido` int(11) NOT NULL AUTO_INCREMENT,
-  `status` varchar(20) DEFAULT 'Ativo',
-  `data_cadastro` date DEFAULT NULL,
-  `data_acolhimento` date DEFAULT NULL,
-  `nome` varchar(100) DEFAULT NULL,
-  `data_nascimento` date DEFAULT NULL,
-  `cpf` varchar(14) DEFAULT NULL,
-  `rg` varchar(20) DEFAULT NULL,
-  `endereco` varchar(255) DEFAULT NULL,
-  `foto` varchar(255) DEFAULT NULL,
-  `id_responsavel` int(11) DEFAULT NULL,
-  PRIMARY KEY (`idatendido`),
-  KEY `id_responsavel` (`id_responsavel`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `desligamento` (
-  `id_desligamento` int(11) NOT NULL AUTO_INCREMENT,
-  `id_atendido` int(11) NOT NULL,
-  `motivo` varchar(100) NOT NULL,
-  `tipo_motivo` enum('idade','excesso_faltas','pedido_familia','transferencia','outros') NOT NULL,
-  `data_desligamento` date NOT NULL,
-  `observacao` text DEFAULT NULL,
-  `automatico` tinyint(1) DEFAULT 0,
-  `pode_retornar` tinyint(1) DEFAULT 1,
-  `desligado_por` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_desligamento`),
-  UNIQUE KEY `unique_desligamento` (`id_atendido`),
-  KEY `desligado_por` (`desligado_por`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `ficha_socioeconomico` (
-  `idficha` int(11) NOT NULL AUTO_INCREMENT,
-  `id_atendido` int(11) NOT NULL,
-  `nome_menor` varchar(255) DEFAULT NULL,
-  `entrevistado` varchar(255) DEFAULT NULL,
-  `residencia` varchar(100) DEFAULT NULL,
-  `construcao` varchar(100) DEFAULT NULL,
-  `numero_comodos` int(11) DEFAULT NULL,
-  `assistente_social` varchar(255) DEFAULT NULL,
-  `cadunico` varchar(100) DEFAULT NULL,
-  `agua` tinyint(1) DEFAULT 0,
-  `esgoto` tinyint(1) DEFAULT 0,
-  `energia` tinyint(1) DEFAULT 0,
-  `renda_familiar` decimal(10,2) DEFAULT 0,
-  `renda_per_capita` decimal(10,2) DEFAULT NULL,
-  `qtd_pessoas` int(11) DEFAULT 0,
-  `cond_residencia` varchar(100) DEFAULT NULL,
-  `moradia` varchar(100) DEFAULT NULL,
-  `nr_veiculos` int(11) DEFAULT 0,
-  `observacoes` longtext DEFAULT NULL,
-  `bolsa_familia` tinyint(1) DEFAULT 0,
-  `auxilio_brasil` tinyint(1) DEFAULT 0,
-  `bpc` tinyint(1) DEFAULT 0,
-  `auxilio_emergencial` tinyint(1) DEFAULT 0,
-  `seguro_desemprego` tinyint(1) DEFAULT 0,
-  `aposentadoria` tinyint(1) DEFAULT 0,
-  `data_criacao` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `data_atualizacao` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`idficha`),
-  UNIQUE KEY `id_atendido` (`id_atendido`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `despesas` (
-  `id_despesa` int(11) NOT NULL AUTO_INCREMENT,
-  `id_ficha` int(11) NOT NULL,
-  `valor_despesa` decimal(10,2) DEFAULT 0,
-  `tipo_renda` varchar(100) DEFAULT NULL,
-  `valor_renda` decimal(10,2) DEFAULT 0,
-  `data_criacao` timestamp DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id_despesa`),
-  KEY `id_ficha` (`id_ficha`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `dias_atendimento` (
-  `id_dia` int(11) NOT NULL AUTO_INCREMENT,
-  `data_atendimento` date NOT NULL,
-  `descricao` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`id_dia`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `documento` (
-  `iddocumento` int(11) NOT NULL AUTO_INCREMENT,
-  `tipo` varchar(50) DEFAULT NULL,
-  `arquivo` varchar(255) DEFAULT NULL,
-  `data_upload` datetime DEFAULT NULL,
-  `IDatendido` int(11) DEFAULT NULL,
-  PRIMARY KEY (`iddocumento`),
-  KEY `IDatendido` (`IDatendido`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `encontro` (
-  `id_encontro` int(11) NOT NULL AUTO_INCREMENT,
-  `Dataencontro` date DEFAULT NULL,
-  `ID_usuario` int(11) DEFAULT NULL,
-  `evolucao` varchar(255) DEFAULT NULL,
-  `id_atendido` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id_encontro`),
-  KEY `ID_usuario` (`ID_usuario`),
-  KEY `id_atendido` (`id_atendido`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `familia` (
-  `id_familia` int(11) NOT NULL AUTO_INCREMENT,
-  `id_ficha` int(11) NOT NULL,
-  `nome` varchar(255) NOT NULL,
-  `parentesco` varchar(100) NOT NULL,
-  `data_nasc` date DEFAULT NULL,
-  `formacao` varchar(100) DEFAULT NULL,
-  `renda` decimal(10,2) DEFAULT 0,
-  `data_criacao` timestamp DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id_familia`),
-  KEY `id_ficha` (`id_ficha`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `frequencia_dia` (
-  `id_frequencia_dia` int(11) NOT NULL AUTO_INCREMENT,
-  `id_atendido` int(11) NOT NULL,
-  `data` date NOT NULL,
-  `status` enum('P','F','J') NOT NULL,
-  `justificativa` text DEFAULT NULL,
-  `observacao` text DEFAULT NULL,
-  `registrado_por` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_frequencia_dia`),
-  UNIQUE KEY `unique_frequencia_dia` (`id_atendido`,`data`),
-  KEY `registrado_por` (`registrado_por`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `oficina` (
-  `id_oficina` int(11) NOT NULL AUTO_INCREMENT,
-  `nome` varchar(100) NOT NULL,
-  `descricao` text DEFAULT NULL,
-  `dia_semana` enum('Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo') DEFAULT NULL,
-  `horario_inicio` time DEFAULT NULL,
-  `horario_fim` time DEFAULT NULL,
-  `ativo` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_oficina`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `frequencia_oficina` (
-  `id_frequencia` int(11) NOT NULL AUTO_INCREMENT,
-  `id_atendido` int(11) NOT NULL,
-  `id_oficina` int(11) NOT NULL,
-  `data` date NOT NULL,
-  `status` enum('P','F','J') NOT NULL,
-  `justificativa` text DEFAULT NULL,
-  `observacao` text DEFAULT NULL,
-  `registrado_por` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_frequencia`),
-  UNIQUE KEY `unique_frequencia` (`id_atendido`,`id_oficina`,`data`),
-  KEY `registrado_por` (`registrado_por`),
-  KEY `idx_oficina` (`id_oficina`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `log` (
-  `id_log` int(11) NOT NULL AUTO_INCREMENT,
-  `data_alteracao` datetime DEFAULT NULL,
-  `registro_alt` varchar(255) DEFAULT NULL,
-  `valor_anterior` longtext DEFAULT NULL,
-  `valor_atual` longtext DEFAULT NULL,
-  `acao` varchar(50) DEFAULT NULL,
-  `tabela_afetada` varchar(100) DEFAULT NULL,
-  `id_usuario` int(11) DEFAULT NULL,
-  `id_registro` int(11) DEFAULT NULL,
-  `campo_alterado` varchar(255) DEFAULT NULL,
-  `ip_usuario` varchar(45) DEFAULT NULL,
-  `dados_completos` longtext DEFAULT NULL,
-  PRIMARY KEY (`id_log`),
-  KEY `id_usuario` (`id_usuario`)
+CREATE TABLE IF NOT EXISTS Usuario (
+  idusuario INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(100),
+  email VARCHAR(100) UNIQUE,
+  Senha VARCHAR(100),
+  nivel VARCHAR(50),
+  status VARCHAR(20),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =====================================================
--- RESTRIÇÕES DE CHAVE ESTRANGEIRA (FOREIGN KEYS)
+-- TABELA: Agenda
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Agenda (
+  id_notificacao INT AUTO_INCREMENT PRIMARY KEY,
+  mensagem VARCHAR(255),
+  tipo VARCHAR(50),
+  lida BOOLEAN DEFAULT FALSE,
+  data_envio DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TABELA: Log
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Log (
+  id_log INT AUTO_INCREMENT PRIMARY KEY,
+  data_alteracao DATETIME DEFAULT CURRENT_TIMESTAMP,
+  registro_alt VARCHAR(100),
+  valor_anterior TEXT,
+  valor_atual TEXT,
+  acao VARCHAR(50),
+  tabela_afetada VARCHAR(100),
+  id_usuario INT,
+  FOREIGN KEY (id_usuario) REFERENCES Usuario(idusuario)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TABELA: Responsavel
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Responsavel (
+  idresponsavel INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(100),
+  cpf VARCHAR(14) UNIQUE,
+  rg VARCHAR(20),
+  telefone VARCHAR(15),
+  email VARCHAR(100),
+  parentesco VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TABELA: Atendido
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Atendido (
+  idatendido INT AUTO_INCREMENT PRIMARY KEY,
+  status VARCHAR(20) DEFAULT 'Ativo',
+  data_cadastro DATE,
+  nome VARCHAR(100),
+  data_nascimento DATE,
+  faixa_etaria VARCHAR(20),
+  cpf VARCHAR(14) UNIQUE,
+  rg VARCHAR(20),
+  endereco VARCHAR(255),
+  numero VARCHAR(20),
+  complemento VARCHAR(100),
+  bairro VARCHAR(100),
+  cidade VARCHAR(100),
+  cep VARCHAR(10),
+  foto VARCHAR(255),
+  id_responsavel INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_responsavel) REFERENCES Responsavel(idresponsavel)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TABELA: Ficha_Acolhimento
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Ficha_Acolhimento (
+  idficha_acolhimento INT AUTO_INCREMENT PRIMARY KEY,
+  id_atendido INT UNIQUE,
+  data_acolhimento DATE,
+  encaminha_por VARCHAR(100),
+  queixa_principal TEXT,
+  escola VARCHAR(100),
+  periodo VARCHAR(20),
+  ponto_referencia VARCHAR(255),
+  cras VARCHAR(100),
+  ubs VARCHAR(100),
+  cad_unico VARCHAR(20),
+  acolhimento_responsavel VARCHAR(100),
+  acolhimento_funcao VARCHAR(100),
+  carimbo VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_atendido) REFERENCES Atendido(idatendido)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TABELA: Encontro
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Encontro (
+  id_encontro INT AUTO_INCREMENT PRIMARY KEY,
+  Dataencontro DATE,
+  ID_usuario INT,
+  evolucao TEXT,
+  id_atendido INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (ID_usuario) REFERENCES Usuario(idusuario)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
+  FOREIGN KEY (id_atendido) REFERENCES Atendido(idatendido)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TABELA: Documento
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Documento (
+  iddocumento INT AUTO_INCREMENT PRIMARY KEY,
+  tipo VARCHAR(50),
+  arquivo VARCHAR(255),
+  data_upload DATETIME DEFAULT CURRENT_TIMESTAMP,
+  IDatendido INT,
+  FOREIGN KEY (IDatendido) REFERENCES Atendido(idatendido)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TABELA: Ficha_Socioeconomico
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Ficha_Socioeconomico (
+  idficha INT AUTO_INCREMENT PRIMARY KEY,
+  agua BOOLEAN,
+  esgoto BOOLEAN,
+  renda_familiar DECIMAL(10,2),
+  energia BOOLEAN,
+  qtd_pessoas INT,
+  cond_residencia VARCHAR(100),
+  moradia VARCHAR(100),
+  nr_veiculos INT,
+  observacoes TEXT,
+  entrevistado VARCHAR(100),
+  residencia VARCHAR(100),
+  nr_comodos INT,
+  construcao VARCHAR(100),
+  id_atendido INT UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_atendido) REFERENCES Atendido(idatendido)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TABELA: Familia
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Familia (
+  id_familia INT AUTO_INCREMENT PRIMARY KEY,
+  id_ficha INT,
+  nome VARCHAR(100),
+  parentesco VARCHAR(50),
+  data_nasc DATE,
+  formacao VARCHAR(100),
+  renda DECIMAL(10,2),
+  FOREIGN KEY (id_ficha) REFERENCES Ficha_Socioeconomico(idficha)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TABELA: Despesas
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Despesas (
+  id_despesa INT AUTO_INCREMENT PRIMARY KEY,
+  valor_despesa DECIMAL(10,2),
+  tipo_renda VARCHAR(50),
+  valor_renda DECIMAL(10,2),
+  id_ficha INT,
+  FOREIGN KEY (id_ficha) REFERENCES Ficha_Socioeconomico(idficha)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- =====================================================
+-- TRIGGERS DE LOG (Comentados - criar manualmente se necessário)
 -- =====================================================
 
-ALTER TABLE `atendido` ADD CONSTRAINT `atendido_ibfk_1` FOREIGN KEY (`id_responsavel`) REFERENCES `responsavel` (`idresponsavel`) ON DELETE SET NULL ON UPDATE CASCADE;
+-- NOTA: Triggers devem ser criados via phpMyAdmin ou MySQL CLI
+-- PDO não suporta DELIMITER
 
-ALTER TABLE `desligamento` 
-  ADD CONSTRAINT `desligamento_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `desligamento_ibfk_2` FOREIGN KEY (`desligado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
+-- Para criar os triggers manualmente:
+-- 1. Acesse phpMyAdmin
+-- 2. Selecione o banco 'criancafeliz'
+-- 3. Vá em SQL e execute cada trigger separadamente
 
-ALTER TABLE `despesas` ADD CONSTRAINT `despesas_ibfk_1` FOREIGN KEY (`id_ficha`) REFERENCES `ficha_socioeconomico` (`idficha`) ON DELETE CASCADE ON UPDATE CASCADE;
+/*
+CREATE TRIGGER log_update_all
+AFTER UPDATE ON Usuario
+FOR EACH ROW
+INSERT INTO Log (data_alteracao, registro_alt, valor_anterior, valor_atual, acao, tabela_afetada, id_usuario)
+VALUES (
+    NOW(),
+    CONCAT('Campo alterado em Usuario.idusuario = ', OLD.idusuario),
+    CONCAT('Nome antigo: ', OLD.nome, ', Email antigo: ', OLD.email),
+    CONCAT('Nome novo: ', NEW.nome, ', Email novo: ', NEW.email),
+    'UPDATE',
+    'Usuario',
+    @usuario_id
+);
 
-ALTER TABLE `documento` ADD CONSTRAINT `documento_ibfk_1` FOREIGN KEY (`IDatendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE TRIGGER log_insert_all
+AFTER INSERT ON Usuario
+FOR EACH ROW
+INSERT INTO Log (data_alteracao, registro_alt, valor_anterior, valor_atual, acao, tabela_afetada, id_usuario)
+VALUES (
+    NOW(),
+    CONCAT('Novo registro em Usuario.idusuario = ', NEW.idusuario),
+    NULL,
+    CONCAT('Nome: ', NEW.nome, ', Email: ', NEW.email),
+    'INSERT',
+    'Usuario',
+    @usuario_id
+);
 
-ALTER TABLE `encontro` 
-  ADD CONSTRAINT `encontro_ibfk_1` FOREIGN KEY (`ID_usuario`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `encontro_ibfk_2` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `familia` ADD CONSTRAINT `familia_ibfk_1` FOREIGN KEY (`id_ficha`) REFERENCES `ficha_socioeconomico` (`idficha`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `ficha_socioeconomico` ADD CONSTRAINT `ficha_socioeconomico_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `frequencia_dia` 
-  ADD CONSTRAINT `frequencia_dia_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `frequencia_dia_ibfk_2` FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE `frequencia_oficina` 
-  ADD CONSTRAINT `frequencia_oficina_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `frequencia_oficina_ibfk_2` FOREIGN KEY (`id_oficina`) REFERENCES `oficina` (`id_oficina`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `frequencia_oficina_ibfk_3` FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE `log` ADD CONSTRAINT `log_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`idusuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE TRIGGER log_delete_all
+AFTER DELETE ON Usuario
+FOR EACH ROW
+INSERT INTO Log (data_alteracao, registro_alt, valor_anterior, valor_atual, acao, tabela_afetada, id_usuario)
+VALUES (
+    NOW(),
+    CONCAT('Removido Usuario.idusuario = ', OLD.idusuario),
+    CONCAT('Nome: ', OLD.nome, ', Email: ', OLD.email),
+    NULL,
+    'DELETE',
+    'Usuario',
+    @usuario_id
+);
+*/
 
 -- =====================================================
 -- DADOS INICIAIS
 -- =====================================================
 
-INSERT IGNORE INTO `usuario` (`idusuario`, `nome`, `email`, `Senha`, `nivel`, `status`) VALUES
-(1, 'Administrador', 'admin@criancafeliz.org', '$2y$10$qWMLn9zbVgS5WQhPuMrZue8CbVOxQ.bUOFSZH3BG0Wcdp7ciMTwMi', 'admin', 'Ativo');
+-- Usuário admin padrão (senha: admin123)
+INSERT INTO Usuario (nome, email, Senha, nivel, status) 
+VALUES ('Administrador', 'admin@criancafeliz.org', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrador', 'Ativo')
+ON DUPLICATE KEY UPDATE nome = nome;
 
-INSERT IGNORE INTO `responsavel` (`idresponsavel`, `nome`, `cpf`, `telefone`, `email`, `parentesco`) VALUES
-(1, 'Maria Souza', '123.456.789-00', '(11) 91234-5678', 'maria.souza@example.com', 'Mãe'),
-(2, 'João Pereira', '987.654.321-00', '(11) 99876-5432', 'joao.pereira@example.com', 'Pai');
+-- =====================================================
+-- ÍNDICES PARA PERFORMANCE
+-- =====================================================
 
-INSERT IGNORE INTO `atendido` (`idatendido`, `status`, `data_cadastro`, `data_acolhimento`, `nome`, `data_nascimento`, `cpf`, `id_responsavel`) VALUES
-(1, 'Ativo', '2025-10-18', '2025-10-18', 'Ana Beatriz Silva', '2012-05-14', '111.222.333-44', 1),
-(2, 'Ativo', '2025-10-18', '2025-10-18', 'Carlos Eduardo Santos', '2010-09-02', NULL, 2),
-(3, 'Ativo', '2025-10-18', '2025-10-18', 'Luiza Ferreira', '2013-03-28', NULL, NULL);
+CREATE INDEX idx_usuario_email ON Usuario(email);
+CREATE INDEX idx_atendido_cpf ON Atendido(cpf);
+CREATE INDEX idx_responsavel_cpf ON Responsavel(cpf);
+CREATE INDEX idx_log_usuario ON Log(id_usuario);
+CREATE INDEX idx_log_data ON Log(data_alteracao);
+CREATE INDEX idx_encontro_atendido ON Encontro(id_atendido);
+CREATE INDEX idx_documento_atendido ON Documento(IDatendido);
 
-INSERT IGNORE INTO `oficina` (`id_oficina`, `nome`, `descricao`, `dia_semana`, `horario_inicio`, `horario_fim`, `ativo`) VALUES
-(1, 'Reforço Escolar', 'Aulas de reforço para crianças', 'Terça', '14:00:00', '16:00:00', 1),
-(2, 'Artes', 'Oficina de artes e artesanato', 'Terça', '14:00:00', '16:00:00', 1),
-(3, 'Esportes', 'Atividades esportivas', 'Quarta', '14:00:00', '16:00:00', 1),
-(4, 'Música', 'Aulas de música e canto', 'Quinta', '14:00:00', '16:00:00', 1),
-(5, 'Dança', 'Oficina de dança', 'Sexta', '14:00:00', '16:00:00', 1),
-(6, 'Teatro', 'Oficina de teatro', 'Sábado', '09:00:00', '11:00:00', 1);
-
--- Nota: Triggers e Procedures adicionais devem ser instalados através
--- do arquivo SETUP_COMPLETO_FINAL.sql pelo phpMyAdmin se necessário.
+-- =====================================================
+-- FIM DA MIGRAÇÃO
+-- =====================================================

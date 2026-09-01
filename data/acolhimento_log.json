@@ -1,0 +1,92 @@
+[
+    {
+        "id": "68edc86a00f53",
+        "action": "update",
+        "ficha_id": "ac_68cef0e6d2d69",
+        "description": "Ficha de acolhimento atualizada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 05:50:02",
+        "ip": "::1"
+    },
+    {
+        "id": "68edc95e15905",
+        "action": "update",
+        "ficha_id": "ac_68cef0e6d2d69",
+        "description": "Ficha de acolhimento atualizada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 05:54:06",
+        "ip": "::1"
+    },
+    {
+        "id": "68edcbb7f0b91",
+        "action": "update",
+        "ficha_id": "ac_68cef0e6d2d69",
+        "description": "Ficha de acolhimento atualizada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 06:04:07",
+        "ip": "::1"
+    },
+    {
+        "id": "691a5271e7f05",
+        "action": "create",
+        "ficha_id": 7,
+        "description": "Ficha de acolhimento criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-16 23:38:41",
+        "ip": "::1"
+    },
+    {
+        "id": "691a5c8192654",
+        "action": "delete",
+        "ficha_id": "3",
+        "description": "Ficha de acolhimento excluída",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-17 00:21:37",
+        "ip": "::1"
+    },
+    {
+        "id": "691a5d585e479",
+        "action": "update",
+        "ficha_id": "7",
+        "description": "Ficha de acolhimento atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-17 00:25:12",
+        "ip": "::1"
+    },
+    {
+        "id": "6a84a4b0b6362",
+        "action": "create",
+        "ficha_id": 9,
+        "description": "Ficha de acolhimento criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2026-08-18 15:30:08",
+        "ip": "10.0.0.121"
+    },
+    {
+        "id": "6a84a52ceb957",
+        "action": "update",
+        "ficha_id": "9",
+        "description": "Ficha de acolhimento atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2026-08-18 15:32:12",
+        "ip": "10.0.0.121"
+    },
+    {
+        "id": "6a84aa2d0f9c1",
+        "action": "create",
+        "ficha_id": 11,
+        "description": "Ficha de acolhimento criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2026-08-18 15:53:33",
+        "ip": "10.0.0.121"
+    }
+]

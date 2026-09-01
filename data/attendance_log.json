@@ -1,0 +1,32 @@
+[
+    {
+        "id": "68e84ee0d77c2",
+        "action": "desligamento",
+        "atendido_id": "ac_68cef0e6d2d69",
+        "description": "Desligamento: idade",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-10 02:10:08",
+        "ip": "::1"
+    },
+    {
+        "id": "68e84f1a5fce8",
+        "action": "reativacao",
+        "atendido_id": "ac_68cef0e6d2d69",
+        "description": "Atendido reativado",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-10 02:11:06",
+        "ip": "::1"
+    },
+    {
+        "id": "68f2d785b7556",
+        "action": "desligamento",
+        "atendido_id": "2",
+        "description": "Desligamento: outro",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-18 01:55:49",
+        "ip": "::1"
+    }
+]

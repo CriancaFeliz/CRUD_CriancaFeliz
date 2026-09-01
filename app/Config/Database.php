@@ -6,47 +6,43 @@
 class Database {
     
     // Configurações de conexão
-    private static $host = 'localhost';
-    private static $dbname = 'criancafeliz';
-    private static $username = 'root';
-    private static $password = '';
+    private static $host = null;
+    private static $dbname = null;
+    private static $username = null;
+    private static $password = null;
+    private static $port = null;
     private static $charset = 'utf8mb4';
     
     // Instância PDO (singleton)
     private static $pdo = null;
+
+    private static function initConfig() {
+        if (self::$host === null) {
+            self::$host = getenv('DB_HOST') ?: 'localhost';
+            self::$port = getenv('DB_PORT') ?: '3306';
+            self::$dbname = getenv('DB_DATABASE') ?: (getenv('DB_NAME') ?: 'criancafeliz_db');
+            self::$username = getenv('DB_USERNAME') ?: (getenv('DB_USER') ?: 'criancafeliz_criancafeliz');
+            self::$password = getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : 'Windows10@';
+        }
+    }
     
     /**
      * Obter conexão PDO (singleton)
      */
     public static function getConnection() {
         if (self::$pdo === null) {
+            self::initConfig();
             try {
-                $host = getenv('DB_HOST') ?: self::$host;
-                $port = getenv('DB_PORT') ?: null;
-                $dbname = getenv('DB_NAME') ?: self::$dbname;
-                $username = getenv('DB_USER') ?: self::$username;
-                $password = getenv('DB_PASS') !== false ? getenv('DB_PASS') : self::$password;
-                $charset = getenv('DB_CHARSET') ?: self::$charset;
-
-                if (!extension_loaded('pdo_mysql')) {
-                    throw new Exception('A extensao pdo_mysql nao esta habilitada neste PHP.');
-                }
-
-                $dsn = "mysql:host=" . $host . ($port ? ";port=" . $port : "") . ";dbname=" . $dbname . ";charset=" . $charset;
+                $dsn = "mysql:host=" . self::$host . ";port=" . self::$port . ";dbname=" . self::$dbname . ";charset=" . self::$charset;
                 
                 $options = [
                     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES   => false
+                    PDO::ATTR_EMULATE_PREPARES   => false,
+                    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
                 ];
-
-                if (defined('Pdo\Mysql::ATTR_INIT_COMMAND')) {
-                    $options[constant('Pdo\Mysql::ATTR_INIT_COMMAND')] = "SET NAMES utf8mb4";
-                } elseif (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
-                    $options[constant('PDO::MYSQL_ATTR_INIT_COMMAND')] = "SET NAMES utf8mb4";
-                }
                 
-                self::$pdo = new PDO($dsn, $username, $password, $options);
+                self::$pdo = new PDO($dsn, self::$username, self::$password, $options);
                 
                 error_log('✅ Conexão com banco de dados estabelecida');
                 
@@ -125,3 +121,4 @@ class Database {
         }
     }
 }
+

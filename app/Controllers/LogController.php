@@ -11,7 +11,7 @@ class LogController extends BaseController {
     
     public function __construct() {
         parent::__construct();
-        $this->logModel = new Log();
+        $this->logModel = new LogDB();
         $this->userModel = new User();
         
         // Verificar se está autenticado
@@ -83,19 +83,10 @@ class LogController extends BaseController {
                 'per_page' => $logs['per_page']
             ],
             'filtro_tabela' => $table,
-            'filters' => [
-                'tabela' => $table,
-                'acao' => null,
-                'usuario_id' => null,
-                'data_inicio' => null,
-                'data_fim' => null,
-                'busca' => null
-            ],
-            'usuarios' => $this->userModel->all(),
             'stats' => $this->logModel->getStatistics()
         ];
         
-        return view('logs/search', $data);
+        return view('logs/by_table', $data);
     }
     
     /**
@@ -120,19 +111,10 @@ class LogController extends BaseController {
                 'per_page' => $logs['per_page']
             ],
             'filtro_acao' => $action,
-            'filters' => [
-                'tabela' => null,
-                'acao' => $action,
-                'usuario_id' => null,
-                'data_inicio' => null,
-                'data_fim' => null,
-                'busca' => null
-            ],
-            'usuarios' => $this->userModel->all(),
             'stats' => $this->logModel->getStatistics()
         ];
         
-        return view('logs/search', $data);
+        return view('logs/by_action', $data);
     }
     
     /**
@@ -163,19 +145,10 @@ class LogController extends BaseController {
                 'per_page' => $logs['per_page']
             ],
             'filtro_usuario' => $user,
-            'filters' => [
-                'tabela' => null,
-                'acao' => null,
-                'usuario_id' => $userId,
-                'data_inicio' => null,
-                'data_fim' => null,
-                'busca' => null
-            ],
-            'usuarios' => $this->userModel->all(),
             'stats' => $this->logModel->getStatistics()
         ];
         
-        return view('logs/search', $data);
+        return view('logs/by_user', $data);
     }
     
     /**

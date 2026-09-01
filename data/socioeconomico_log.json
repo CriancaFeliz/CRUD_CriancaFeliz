@@ -1,0 +1,522 @@
+[
+    {
+        "id": "68edb6a5ba124",
+        "action": "create",
+        "ficha_id": "68edb6a5b9c155.68030901",
+        "description": "Ficha socioeconômica criada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:34:13",
+        "ip": "::1"
+    },
+    {
+        "id": "68edb6b8e4151",
+        "action": "create",
+        "ficha_id": "68edb6b8e3fac8.07736529",
+        "description": "Ficha socioeconômica criada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:34:32",
+        "ip": "::1"
+    },
+    {
+        "id": "68edb7f6d19ea",
+        "action": "delete",
+        "ficha_id": "68edb6a5b9c155.68030901",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:39:50",
+        "ip": "::1"
+    },
+    {
+        "id": "68edb8036eae3",
+        "action": "create",
+        "ficha_id": "68edb8036e9464.98160084",
+        "description": "Ficha socioeconômica criada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:40:03",
+        "ip": "::1"
+    },
+    {
+        "id": "68edb80711946",
+        "action": "delete",
+        "ficha_id": "68edb8036e9464.98160084",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:40:07",
+        "ip": "::1"
+    },
+    {
+        "id": "68edb80f0eb56",
+        "action": "create",
+        "ficha_id": "68edb80f0e9506.73478984",
+        "description": "Ficha socioeconômica criada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:40:15",
+        "ip": "::1"
+    },
+    {
+        "id": "68edb995d532d",
+        "action": "delete",
+        "ficha_id": "68edb80f0e9506.73478984",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:46:45",
+        "ip": "::1"
+    },
+    {
+        "id": "68edb99f8f0fa",
+        "action": "create",
+        "ficha_id": "68edb99f8ef669.53046124",
+        "description": "Ficha socioeconômica criada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:46:55",
+        "ip": "::1"
+    },
+    {
+        "id": "68edb9e4d5b30",
+        "action": "create",
+        "ficha_id": "68edb9e4d597b4.77761153",
+        "description": "Ficha socioeconômica criada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:48:04",
+        "ip": "::1"
+    },
+    {
+        "id": "68edba7ebb1fc",
+        "action": "delete",
+        "ficha_id": "68edb6b8e3fac8.07736529",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:50:38",
+        "ip": "::1"
+    },
+    {
+        "id": "68edba800124d",
+        "action": "delete",
+        "ficha_id": "68edb99f8ef669.53046124",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:50:40",
+        "ip": "::1"
+    },
+    {
+        "id": "68edba8ee06f4",
+        "action": "create",
+        "ficha_id": "68edba8ee051b2.62772781",
+        "description": "Ficha socioeconômica criada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:50:54",
+        "ip": "::1"
+    },
+    {
+        "id": "68edbb80b6a26",
+        "action": "delete",
+        "ficha_id": "68edb9e4d597b4.77761153",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:54:56",
+        "ip": "::1"
+    },
+    {
+        "id": "68edbb9e66672",
+        "action": "create",
+        "ficha_id": "68edbb9e664851.15349319",
+        "description": "Ficha socioeconômica criada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:55:26",
+        "ip": "::1"
+    },
+    {
+        "id": "68edbba87f74b",
+        "action": "update",
+        "ficha_id": "68edbb9e664851.15349319",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:55:36",
+        "ip": "::1"
+    },
+    {
+        "id": "68edbbac59c35",
+        "action": "delete",
+        "ficha_id": "68edba8ee051b2.62772781",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:55:40",
+        "ip": "::1"
+    },
+    {
+        "id": "68edbbb8c2ed9",
+        "action": "update",
+        "ficha_id": "68edbb9e664851.15349319",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:55:52",
+        "ip": "::1"
+    },
+    {
+        "id": "68edbc86631c4",
+        "action": "update",
+        "ficha_id": "68edbb9e664851.15349319",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 04:59:18",
+        "ip": "::1"
+    },
+    {
+        "id": "68edbd75391a2",
+        "action": "update",
+        "ficha_id": "68edbb9e664851.15349319",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 05:03:17",
+        "ip": "::1"
+    },
+    {
+        "id": "68edc4114defd",
+        "action": "update",
+        "ficha_id": "68edbb9e664851.15349319",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-14 05:31:29",
+        "ip": "::1"
+    },
+    {
+        "id": "691d31f384831",
+        "action": "create",
+        "ficha_id": 8,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-19 03:56:51",
+        "ip": "::1"
+    },
+    {
+        "id": "691d32d230b5b",
+        "action": "create",
+        "ficha_id": 9,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-19 04:00:34",
+        "ip": "::1"
+    },
+    {
+        "id": "691d33c2a0591",
+        "action": "create",
+        "ficha_id": 10,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-19 04:04:34",
+        "ip": "::1"
+    },
+    {
+        "id": "6924910599c03",
+        "action": "create",
+        "ficha_id": 5,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-24 18:08:21",
+        "ip": "::1"
+    },
+    {
+        "id": "6936050b84983",
+        "action": "update",
+        "ficha_id": "9",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-07 23:51:55",
+        "ip": "::1"
+    },
+    {
+        "id": "693605e7cd61f",
+        "action": "create",
+        "ficha_id": 10,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-07 23:55:35",
+        "ip": "::1"
+    },
+    {
+        "id": "693608b2664cd",
+        "action": "create",
+        "ficha_id": 11,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 00:07:30",
+        "ip": "::1"
+    },
+    {
+        "id": "69360ba52cfc1",
+        "action": "create",
+        "ficha_id": 12,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 00:20:05",
+        "ip": "::1"
+    },
+    {
+        "id": "6936f771b36ff",
+        "action": "create",
+        "ficha_id": 6,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:06:09",
+        "ip": "::1"
+    },
+    {
+        "id": "6936f90447cc5",
+        "action": "update",
+        "ficha_id": "6",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:12:52",
+        "ip": "::1"
+    },
+    {
+        "id": "6936f929c29af",
+        "action": "delete",
+        "ficha_id": "5",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:13:29",
+        "ip": "::1"
+    },
+    {
+        "id": "6937014f8fa97",
+        "action": "delete",
+        "ficha_id": "6",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:48:15",
+        "ip": "::1"
+    },
+    {
+        "id": "69370198099c9",
+        "action": "create",
+        "ficha_id": 7,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:49:28",
+        "ip": "::1"
+    },
+    {
+        "id": "69370ff713f96",
+        "action": "create",
+        "ficha_id": 8,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 18:50:47",
+        "ip": "::1"
+    },
+    {
+        "id": "6937103b29694",
+        "action": "delete",
+        "ficha_id": "7",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 18:51:55",
+        "ip": "::1"
+    },
+    {
+        "id": "69371089b8033",
+        "action": "update",
+        "ficha_id": "8",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 18:53:13",
+        "ip": "::1"
+    },
+    {
+        "id": "693711d37b383",
+        "action": "update",
+        "ficha_id": "8",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 18:58:43",
+        "ip": "::1"
+    },
+    {
+        "id": "69371d6eb8c1e",
+        "action": "create",
+        "ficha_id": 9,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 19:48:14",
+        "ip": "::1"
+    },
+    {
+        "id": "69371f7045188",
+        "action": "create",
+        "ficha_id": 10,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 19:56:48",
+        "ip": "::1"
+    },
+    {
+        "id": "6937a8d728763",
+        "action": "create",
+        "ficha_id": 9,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 05:43:03",
+        "ip": "::1"
+    },
+    {
+        "id": "6937a953ab60c",
+        "action": "update",
+        "ficha_id": "9",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 05:45:07",
+        "ip": "::1"
+    },
+    {
+        "id": "6937a99ced472",
+        "action": "update",
+        "ficha_id": "9",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 05:46:20",
+        "ip": "::1"
+    },
+    {
+        "id": "6937ab82974bb",
+        "action": "update",
+        "ficha_id": "9",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 05:54:26",
+        "ip": "::1"
+    },
+    {
+        "id": "6937ad7cccdec",
+        "action": "create",
+        "ficha_id": 10,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 06:02:52",
+        "ip": "::1"
+    },
+    {
+        "id": "6937ad8537b4d",
+        "action": "delete",
+        "ficha_id": "9",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 06:03:01",
+        "ip": "::1"
+    },
+    {
+        "id": "6937adc1d5a9e",
+        "action": "update",
+        "ficha_id": "10",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 06:04:01",
+        "ip": "::1"
+    },
+    {
+        "id": "6937ae0324ccc",
+        "action": "update",
+        "ficha_id": "10",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 06:05:07",
+        "ip": "::1"
+    },
+    {
+        "id": "6937af6fae1ab",
+        "action": "update",
+        "ficha_id": "10",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 06:11:11",
+        "ip": "::1"
+    },
+    {
+        "id": "6937b08d4ddd4",
+        "action": "update",
+        "ficha_id": "10",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 06:15:57",
+        "ip": "::1"
+    },
+    {
+        "id": "6937b165b8da9",
+        "action": "update",
+        "ficha_id": "10",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 06:19:33",
+        "ip": "::1"
+    },
+    {
+        "id": "6937b233da772",
+        "action": "update",
+        "ficha_id": "10",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 06:22:59",
+        "ip": "::1"
+    },
+    {
+        "id": "6a84a5ae080e2",
+        "action": "create",
+        "ficha_id": 10,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2026-08-18 15:34:22",
+        "ip": "10.0.0.121"
+    }
+]

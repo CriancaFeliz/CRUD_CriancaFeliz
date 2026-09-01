@@ -1,0 +1,18 @@
+[
+    {
+        "id": "68f2d785b6d107.98191105",
+        "atendido_id": "2",
+        "atendido_nome": "",
+        "atendido_cpf": "12345678901",
+        "motivo": "outro",
+        "tipo_motivo": "manual",
+        "data_desligamento": "2025-10-18",
+        "observacao": "aaaaaaaaaaaa",
+        "automatico": false,
+        "registrado_por": "admin001",
+        "registrado_por_nome": "Administrador",
+        "registrado_em": "2025-10-18 01:55:49",
+        "created_at": "2025-10-18 01:55:49",
+        "updated_at": "2025-10-18 01:55:49"
+    }
+]

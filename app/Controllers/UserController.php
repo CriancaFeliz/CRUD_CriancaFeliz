@@ -207,7 +207,7 @@ class UserController extends BaseController {
             $currentUser = $this->authService->getCurrentUser();
             
             // Não permitir que admin exclua a si mesmo
-            if ((string) $currentUser['id'] === (string) $id) {
+            if ($currentUser['id'] === $id) {
                 throw new Exception('Não é possível excluir seu próprio usuário');
             }
             
@@ -235,7 +235,7 @@ class UserController extends BaseController {
             $currentUser = $this->authService->getCurrentUser();
             
             // Não permitir que admin desative a si mesmo
-            if ((string) $currentUser['id'] === (string) $id) {
+            if ($currentUser['id'] === $id) {
                 throw new Exception('Não é possível alterar o status do seu próprio usuário');
             }
             

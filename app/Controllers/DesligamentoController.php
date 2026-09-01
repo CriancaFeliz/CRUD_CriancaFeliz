@@ -10,8 +10,8 @@ class DesligamentoController extends BaseController {
     
     public function __construct() {
         parent::__construct();
-        $this->desligamentoDB = new Desligamento();
-        $this->frequenciaDiaDB = new FrequenciaDia();
+        $this->desligamentoDB = new DesligamentoDB();
+        $this->frequenciaDiaDB = new FrequenciaDiaDB();
     }
     
     /**
@@ -64,7 +64,7 @@ class DesligamentoController extends BaseController {
                 return;
             }
             
-            $acolhimentoModel = new Acolhimento();
+            $acolhimentoModel = new AcolhimentoDB();
             $atendido = $acolhimentoModel->findById($id);
             
             if (!$atendido) {
@@ -313,7 +313,7 @@ class DesligamentoController extends BaseController {
             $search = $this->getParam('search', '');
             
             // Buscar atendidos ativos
-            $acolhimentoModel = new Acolhimento();
+            $acolhimentoModel = new AcolhimentoDB();
             $atendidos = $acolhimentoModel->findAll();
             
             // Filtrar apenas não desligados

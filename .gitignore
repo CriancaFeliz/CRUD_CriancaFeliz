@@ -1,27 +1,11 @@
-# Ambiente
-/.env
-.env.*
-
-# Dados locais e sensíveis
-/data/*.json
-/data/*.log
-/data/reset_tokens.json
-
 # Logs
-/var/logs/*.log
 *.log
+data/*.log
 
-# Uploads
-/uploads/
+# Archives
+*.zip
+*.tar.gz
 
-# Sistema operacional
-Thumbs.db
+# System files
 .DS_Store
-desktop.ini
-
-# IDE / Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+Thumbs.db

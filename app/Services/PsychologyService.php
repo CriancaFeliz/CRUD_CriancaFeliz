@@ -131,7 +131,7 @@ class PsychologyService
 
             $next = $data['next_session'] ?? null;
             if (!empty($next)) {
-                if (strpos($next, 'T') !== false) {
+                if (str_contains($next, 'T')) {
                     $next = explode('T', $next)[0];
                 }
                 $ts = strtotime($next);

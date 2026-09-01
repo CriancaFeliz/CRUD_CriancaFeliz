@@ -7,15 +7,7 @@ class AuthService {
     private $userModel;
     
     public function __construct() {
-        $this->userModel = null;
-    }
-
-    private function users() {
-        if ($this->userModel === null) {
-            $this->userModel = new User();
-        }
-
-        return $this->userModel;
+        $this->userModel = new User();
     }
     
     /**
@@ -40,7 +32,7 @@ class AuthService {
         }
         
         // Verificar se usuário existe
-        $userExists = $this->users()->findByEmail($email);
+        $userExists = $this->userModel->findByEmail($email);
         
         if (!$userExists) {
             throw new Exception('Email ou senha incorretos');
@@ -53,7 +45,7 @@ class AuthService {
         }
         
         // Tentar autenticar
-        $user = $this->users()->authenticate($email, $password);
+        $user = $this->userModel->authenticate($email, $password);
         
         if (!$user) {
             throw new Exception('Email ou senha incorretos');
@@ -139,7 +131,7 @@ class AuthService {
             return false;
         }
         
-        $role = $_SESSION['user_role'] ?? '';
+        $role = $_SESSION['user_role'];
         
         // Definir permissões por role
         $permissions = [
@@ -170,24 +162,20 @@ class AuthService {
             ]
         ];
         
-        // Admin tem acesso total, exceto permissões da área psicológica.
-        if ($role === 'admin') {
-            $psychologyPermissions = [
-                'psychological_notes',
-                'view_psychological_area',
-                'edit_psychological_notes',
-                'add_psychological_note',
-                'delete_psychological_note'
-            ];
-
-            return !in_array($permission, $psychologyPermissions, true);
-        }
-
         if (!isset($permissions[$role])) {
             return false;
         }
-
-        return in_array($permission, $permissions[$role], true);
+        
+        // Admin tem todas as permissões exceto área psicológica
+        if ($role === 'admin' && $permission === 'psychological_notes') {
+            return false;
+        }
+        
+        if ($role === 'admin' && $permission === 'view_psychological_area') {
+            return false;
+        }
+        
+        return in_array($permission, $permissions[$role]);
     }
     
     /**
@@ -223,7 +211,7 @@ class AuthService {
      * Registra novo usuário
      */
     public function register($data) {
-        return $this->users()->createUser($data);
+        return $this->userModel->createUser($data);
     }
     
     /**
@@ -231,11 +219,11 @@ class AuthService {
      */
     public function updateProfile($id, $data) {
         // Verificar se é o próprio usuário ou admin
-        if ((string) $_SESSION['user_id'] !== (string) $id && !$this->hasPermission('manage_users')) {
+        if ($_SESSION['user_id'] !== $id && !$this->hasPermission('manage_users')) {
             throw new Exception('Acesso negado');
         }
         
-        return $this->users()->updateUser($id, $data);
+        return $this->userModel->updateUser($id, $data);
     }
     
     /**
@@ -243,16 +231,14 @@ class AuthService {
      */
     public function changePassword($currentPassword, $newPassword) {
         $userId = $_SESSION['user_id'];
-        $user = $this->users()->findById($userId);
+        $user = $this->userModel->findById($userId);
         
         if (!$user) {
             throw new Exception('Usuário não encontrado');
         }
         
         // Verificar senha atual
-        $passwordHash = $user['Senha'] ?? $user['password'] ?? null;
-
-        if (!$passwordHash || !password_verify($currentPassword, $passwordHash)) {
+        if (!password_verify($currentPassword, $user['password'])) {
             throw new Exception('Senha atual incorreta');
         }
         
@@ -262,7 +248,7 @@ class AuthService {
         }
         
         // Atualizar senha
-        return $this->users()->updateUser($userId, [
+        return $this->userModel->updateUser($userId, [
             'password' => $newPassword
         ]);
     }

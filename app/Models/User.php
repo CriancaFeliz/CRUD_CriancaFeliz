@@ -3,7 +3,7 @@
 /**
  * Model para usuários do sistema - MYSQL
  */
-class User extends BaseModel {
+class User extends BaseModelDB {
     
     public function __construct() {
         parent::__construct('Usuario', 'idusuario');

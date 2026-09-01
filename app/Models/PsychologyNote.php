@@ -1,6 +1,6 @@
 <?php
 
-class PsychologyNote extends BaseModel
+class PsychologyNote extends BaseModelDB
 {
     public function __construct()
     {

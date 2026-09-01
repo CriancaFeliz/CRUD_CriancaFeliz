@@ -45,8 +45,7 @@ class SocioeconomicoController extends BaseController {
                 'current_page' => $result['current_page'] ?? 1,
                 'last_page' => $result['last_page'] ?? 1,
                 'per_page' => $result['per_page'] ?? 10,
-                'messages' => $this->getFlashMessages(),
-                'csrf_token' => $this->generateCSRF()
+                'messages' => $this->getFlashMessages()
             ];
             
             $this->renderWithLayout('main', 'socioeconomico/index', $data);
@@ -61,12 +60,11 @@ class SocioeconomicoController extends BaseController {
      */
     public function create() {
         $this->requireAuth();
+        $this->requirePermission('create_records');
         
         // Verificar se é edição
         $id = $this->getParam('id');
         $ficha = null;
-
-        $this->requirePermission($id ? 'edit_records' : 'create_records');
         
         if ($id) {
             try {
@@ -92,16 +90,16 @@ class SocioeconomicoController extends BaseController {
      */
     public function store() {
         $this->requireAuth();
+        $this->requirePermission('create_records');
         
         if (!$this->isPost()) {
             redirect('socioeconomico_form.php');
         }
         
         try {
-            $data = $this->getPostData();
-
-            $this->requirePermission(!empty($data['id']) ? 'edit_records' : 'create_records');
             $this->validateCSRF();
+            
+            $data = $this->getPostData();
             
             // Debug: Log dos dados recebidos
             error_log('=== SOCIOECONOMICO STORE ===');
@@ -208,7 +206,6 @@ class SocioeconomicoController extends BaseController {
      */
     public function edit($id) {
         $this->requireAuth();
-        $this->requirePermission('edit_records');
         
         try {
             $ficha = $this->socioeconomicoService->getFicha($id);
@@ -220,7 +217,7 @@ class SocioeconomicoController extends BaseController {
                 'messages' => $this->getFlashMessages()
             ];
             
-            $this->renderWithLayout('main', 'socioeconomico/create_multistep', $data);
+            $this->renderWithLayout('main', 'socioeconomico/edit', $data);
             
         } catch (Exception $e) {
             $this->handleException($e);

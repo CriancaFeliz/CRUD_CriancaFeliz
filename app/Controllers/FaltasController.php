@@ -12,10 +12,10 @@ class FaltasController extends BaseController {
     
     public function __construct() {
         parent::__construct();
-        $this->frequenciaDiaDB = new FrequenciaDia();
-        $this->frequenciaOficinaDB = new FrequenciaOficina();
-        $this->oficinaDB = new Oficina();
-        $this->desligamentoDB = new Desligamento();
+        $this->frequenciaDiaDB = new FrequenciaDiaDB();
+        $this->frequenciaOficinaDB = new FrequenciaOficinaDB();
+        $this->oficinaDB = new OficinaDB();
+        $this->desligamentoDB = new DesligamentoDB();
     }
     
     /**
@@ -30,7 +30,7 @@ class FaltasController extends BaseController {
             $faixaEtaria = $this->getParam('faixa_etaria', '');
             
             // Buscar todos os atendidos ativos
-            $acolhimentoModel = new Acolhimento();
+            $acolhimentoModel = new AcolhimentoDB();
             $atendidos = $acolhimentoModel->findAll();
             
             // Filtrar desligados
@@ -125,7 +125,7 @@ class FaltasController extends BaseController {
                 $oficinaAtual = $this->oficinaDB->findById($idOficina);
                 
                 // Buscar atendidos ativos
-                $acolhimentoModel = new Acolhimento();
+                $acolhimentoModel = new AcolhimentoDB();
                 $todosAtendidos = $acolhimentoModel->findAll();
                 
                 foreach ($todosAtendidos as $atendido) {
@@ -250,7 +250,7 @@ class FaltasController extends BaseController {
         $this->requireAuth();
         
         try {
-            $acolhimentoModel = new Acolhimento();
+            $acolhimentoModel = new AcolhimentoDB();
             $atendido = $acolhimentoModel->findById($id);
             
             if (!$atendido) {
