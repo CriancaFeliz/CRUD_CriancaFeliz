@@ -2,7 +2,7 @@
     <h2 class="login-title">NOVA SENHA</h2>
 
     <?php if (!empty($messages['error'])): ?>
-        <div class="error-message"><?php echo htmlspecialchars($messages['error']); ?></div>
+        <div class="error-message" role="alert"><?php echo htmlspecialchars($messages['error']); ?></div>
     <?php endif; ?>
 
     <form action="reset_password.php" method="POST">
@@ -10,11 +10,13 @@
         <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
 
         <div class="input-group">
-            <input type="password" name="password" placeholder="Nova senha" autocomplete="new-password" minlength="12" required>
+            <label class="sr-only" for="password">Nova senha</label>
+            <input type="password" id="password" name="password" placeholder="Nova senha" autocomplete="new-password" minlength="12" required>
         </div>
 
         <div class="input-group">
-            <input type="password" name="confirm_password" placeholder="Confirmar senha" autocomplete="new-password" minlength="12" required>
+            <label class="sr-only" for="confirm_password">Confirmar nova senha</label>
+            <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirmar senha" autocomplete="new-password" minlength="12" required>
         </div>
 
         <button type="submit" class="login-btn">Redefinir senha</button>
