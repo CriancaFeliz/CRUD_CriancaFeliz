@@ -7,6 +7,9 @@
 /data/*.json
 /data/*.log
 /data/reset_tokens.json
+/database/legacy_dumps/
+*.sql.bak
+*.sql.dump
 
 # Logs
 /var/logs/*.log

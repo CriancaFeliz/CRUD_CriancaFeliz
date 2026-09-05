@@ -68,6 +68,10 @@ nessa matriz depende de validação formal da ONG.
 - importação integral do schema em MariaDB isolado;
 - inspeção visual dos quatro relatórios no navegador.
 
+Em 05/09/2026, a validação foi repetida localmente no XAMPP com uma base
+isolada `criancafeliz_test`: os mesmos testes rápidos, de integração e HTTP
+foram aprovados sem alterar a base existente `criancafeliz`.
+
 Os números mudam quando novos testes são adicionados. A fonte executável é a
 pasta `tests/`.
 
@@ -80,8 +84,8 @@ pasta `tests/`.
 - definir e testar a rotina automatizada de backup fora do servidor;
 - decidir se SMS/e-mail para responsáveis faz parte do escopo;
 - decidir se operação offline é realmente necessária;
-- remover do repositório os dumps históricos com dados pessoais antes de uma
-  publicação pública.
+- manter backups e dumps com dados reais fora do repositório; a pasta
+  `database/legacy_dumps/` é ignorada pelo Git para evitar novo envio acidental.
 
 ## Documentos relacionados
 
