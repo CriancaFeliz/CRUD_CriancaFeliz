@@ -1,6 +1,8 @@
 # Documentação Técnica - Sistema Criança Feliz
 
-Atualizado em 2026-06-01.
+Inventário estrutural iniciado em 2026-06-01. Para o estado validado em
+05/09/2026, consulte primeiro `docs/CURRENT_STATE.md`, `docs/ERD.md` e
+`docs/UML.md`.
 
 Este documento descreve a organização atual do projeto `CriancaFeliz/CRUD_CriancaFeliz`, com foco em arquitetura, fluxo de requisição, rotas, módulos, banco de dados, scripts auxiliares e pontos de atenção para manutenção.
 
@@ -106,11 +108,12 @@ Variáveis de ambiente suportadas:
 - `DB_CHARSET`
 - `APP_DEBUG`
 
-`APP_DEBUG` vem ativo por padrão quando a variável não existe. Em produção, use `APP_DEBUG=false`.
+`APP_DEBUG` vem desativado quando a variável não existe. Em produção, mantenha `APP_DEBUG=false`.
 
 O projeto exige a extensão `pdo_mysql`. Quando ela não está habilitada, a aplicação lança uma mensagem explícita.
 
-No Docker Compose, essas variáveis são definidas no serviço `app` com `DB_HOST=db`, `DB_NAME=criancafeliz`, `DB_USER=criancafeliz` e `DB_PASS=criancafeliz`.
+No Docker Compose, essas variáveis são definidas no serviço `app`; a senha
+usa `MYSQL_APP_PASSWORD` ou o padrão exclusivamente local documentado.
 
 ## 6. Execução Local
 
@@ -310,9 +313,8 @@ JavaScript:
 - `js/chatbot.js`: assistente integrado.
 - `js/theme-toggle.js`: alternância de tema.
 - `js/notifications.js`: notificações visuais.
-- `js/acolhimento-form.js`: comportamento do formulário de acolhimento.
-- `js/acolhimento-multistep.js`: fluxo multi-etapas de acolhimento.
-- `js/socioeconomico-multistep.js`: fluxo multi-etapas socioeconômico.
+- `js/acolhimento-wizard.js`: fluxo seguro em quatro etapas.
+- `js/socioeconomico-wizard.js`: fluxo seguro em cinco etapas.
 
 CSS:
 
@@ -326,11 +328,8 @@ Arquivos principais:
 - `database/SETUP_COMPLETO_FINAL.sql`: setup completo com tabelas, índices, foreign keys, triggers/procedures e dados iniciais.
 - `database/migration.sql`: schema alinhado ao setup, útil como referência de estrutura.
 - `database/update_schema.sql`: migração pontual para remover estruturas obsoletas e recriar triggers.
-- `database/migrate.php`: executor PHP de migrações.
-- `database/test_connection.php`: diagnóstico de conexão.
 - `database/legacy_dumps/`: dumps antigos preservados.
 - `docker/mysql/01-init.sh`: importação do setup completo no container MySQL.
-- `docker/mysql/02-missing-views.sql`: view complementar aplicada após o setup no Docker.
 
 Tabelas relevantes:
 
@@ -482,10 +481,8 @@ php -S localhost:8000 var/dev-router.php
 
 5. Acessar `http://localhost:8000/`.
 
-6. Login inicial:
-
-- email: `admin@criancafeliz.org`
-- senha: `AlterarEstaSenha!2026`
+6. Crie o primeiro administrador com `tools/maintenance/create_admin.php` e
+   credenciais exclusivas fornecidas pelo ambiente.
 
 7. Fluxo mínimo recomendado:
 

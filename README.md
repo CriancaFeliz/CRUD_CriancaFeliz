@@ -47,6 +47,7 @@
 | Socioeconômico | Formulário multi-etapas, família, despesas, cálculo de renda e relatórios. |
 | Controle de faltas | Frequência diária e por oficina, histórico e alertas. |
 | Desligamento | Desligamento manual, processamento automático por faltas e reativação. |
+| Relatórios | Central administrativa com filtros, indicadores, CSV seguro e impressão/PDF. |
 | Área psicológica | Lista de pacientes, prontuário psicológico e anotações por paciente. |
 | Usuários | CRUD de usuários com papéis e ativação/desativação. |
 | Logs | Auditoria com filtros, detalhe de alterações, APIs JSON e exportação CSV. |
@@ -96,13 +97,15 @@ Importe o schema completo:
 mysql -u root criancafeliz < database/SETUP_COMPLETO_FINAL.sql
 ```
 
-Usuário inicial criado pelo setup:
+O setup não cria usuário nem distribui senha conhecida. Copie `.env.example` para
+`.env`, configure o banco e preencha temporariamente `INITIAL_ADMIN_EMAIL` e
+`INITIAL_ADMIN_PASSWORD`. Depois crie o primeiro administrador:
 
-| Campo | Valor |
-| --- | --- |
-| Email | `admin@criancafeliz.org` |
-| Senha | `AlterarEstaSenha!2026` |
-| Perfil | `admin` |
+```bash
+php tools/maintenance/create_admin.php
+```
+
+Apague os valores `INITIAL_ADMIN_*` do `.env` assim que a conta for criada.
 
 > Em algumas instalações MySQL/Linux, nomes de tabela são sensíveis a maiúsculas e minúsculas. O código atual usa nomes como `Atendido`, `Usuario` e `Ficha_Socioeconomico`, enquanto alguns scripts SQL também preservam nomes em minúsculas. Se o ambiente tiver `lower_case_table_names=0`, valide a importação e os nomes das tabelas antes de usar em produção.
 
@@ -155,10 +158,14 @@ Credenciais do MySQL no Docker:
 
 | Usuário | Senha | Uso |
 | --- | --- | --- |
-| `root` | `root` | administração/phpMyAdmin |
-| `criancafeliz` | `criancafeliz` | aplicação |
+| `root` | `root_dev` | administração/phpMyAdmin |
+| `criancafeliz` | `criancafeliz_dev` | aplicação |
 
-Na primeira subida, o container do MySQL importa `database/SETUP_COMPLETO_FINAL.sql` via `docker/mysql/01-init.sh` e depois aplica `docker/mysql/02-missing-views.sql`. O volume `db_data` preserva o banco entre execuções; se precisar recriar o banco do zero, pare e remova o volume:
+Essas senhas são apenas padrões de desenvolvimento e podem ser substituídas no
+arquivo `.env` por `MYSQL_ROOT_PASSWORD` e `MYSQL_APP_PASSWORD`. Na primeira
+subida, o container importa o schema canônico
+`database/SETUP_COMPLETO_FINAL.sql`. O volume `db_data` preserva o banco entre
+execuções; para recriar somente o ambiente local do zero:
 
 ```bash
 docker compose down -v
@@ -175,31 +182,23 @@ docker compose down
 
 ## Configuração
 
-As credenciais padrão ficam em `app/Config/Database.php`:
-
-| Parâmetro | Padrão |
-| --- | --- |
-| Host | `localhost` |
-| Banco | `criancafeliz` |
-| Usuário | `root` |
-| Senha | vazia |
-| Charset | `utf8mb4` |
-
-Também é possível configurar por variáveis de ambiente:
+O sistema exige que host, banco e usuário sejam configurados no ambiente ou no
+arquivo `.env` local:
 
 ```env
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=criancafeliz
-DB_USER=root
-DB_PASS=
+DB_USER=usuario_da_aplicacao
+DB_PASS=senha_forte
 DB_CHARSET=utf8mb4
+APP_ENV=development
 APP_DEBUG=false
+APP_BASE_URL=http://localhost/CRUD_CriancaFeliz
 ```
 
-No Docker Compose, essas variáveis já são definidas no serviço `app`; o host do banco dentro da rede Docker é `db`.
-
-Em produção, defina `APP_DEBUG=false` para ocultar detalhes de erro.
+No Docker Compose, o host do banco dentro da rede é `db`. Em produção, use
+`APP_ENV=production`, `APP_DEBUG=false`, HTTPS e credenciais exclusivas.
 
 ---
 
@@ -225,7 +224,7 @@ CRUD_CriancaFeliz/
 ├── tests/automated/     # Testes automatizados mínimos
 ├── tests/manual/        # Testes manuais
 ├── tools/               # Diagnósticos, manutenção e legado
-├── var/                 # Roteador de dev e logs locais
+├── var/                 # Roteador, logs e documentos privados
 ├── Dockerfile           # Imagem PHP/Apache da aplicação
 ├── docker-compose.yml   # Ambiente local com app, MySQL e phpMyAdmin
 ├── .htaccess            # Rewrite para o front controller
@@ -259,6 +258,7 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 | `/faltas.php?action=historico&id=...` | Histórico de frequência. |
 | `/faltas.php?action=alertas` | Alertas de faltas. |
 | `/desligamento.php` | Lista e gestão de desligamentos. |
+| `/reports.php` | Central administrativa de relatórios e exportações. |
 | `/psychology.php` | Dashboard da área psicológica. |
 | `/psychology.php?action=patients` | Lista de pacientes da psicologia. |
 | `/psychology.php?action=report` | Relatório psicológico com impressão/PDF e CSV compatível com Excel. |
@@ -281,6 +281,10 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 
 ## Documentação
 
+- [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md): fonte principal do estado realmente entregue e das pendências externas.
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): instalação nova, atualização legada e checklist seguro.
+- [docs/ERD.md](docs/ERD.md): DER atual do schema canônico.
+- [docs/UML.md](docs/UML.md): componentes e sequências dos fluxos principais.
 - [docs/PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md): arquitetura, rotas, controllers, services, models, banco e pendências.
 - [docs/GAP_REMEDIATION_PLAN.md](docs/GAP_REMEDIATION_PLAN.md): plano das lacunas prioritárias.
 - [docs/LGPD_AND_DATA_GOVERNANCE.md](docs/LGPD_AND_DATA_GOVERNANCE.md): plano técnico-operacional de LGPD e governança de dados.
@@ -304,14 +308,14 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 
 ## Observações importantes
 
-- Os scripts em `tools/maintenance/` podem alterar dados. Use apenas com backup e preferencialmente fora de produção.
+- `tools/maintenance/create_admin.php` funciona somente em linha de comando e exige senha forte fornecida pelo ambiente.
 - O fluxo de recuperação de senha guarda hashes de tokens em `password_reset_tokens` e registra a URL no log do PHP enquanto não há SMTP real. Para produção, implemente envio SMTP real.
 - A pasta `data/` guarda dados locais/runtime e não deve ser usada como fonte principal de persistência.
 - O módulo atual de frequência é `faltas.php`; acessos legados a `attendance.php` são redirecionados para as rotas atuais.
 - A área psicológica usa a tabela `anotacao_psicologica`, criada pelo setup atual. Em bancos antigos, execute `database/update_schema.sql`.
 - A foto de perfil persiste em `usuario.foto_perfil`; em bancos antigos, execute `database/update_schema.sql`.
-- Documentos de prontuário ficam em `uploads/documents/`, abrem por rota autenticada e devem entrar na política de backup, retenção e descarte LGPD.
-- Testes unitarios rodam com `php tests/run.php`; a suite completa roda com `powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run_all.ps1` e cobre banco Docker, integracao, smoke HTTP, permissoes por perfil, uploads multipart e backup/restauracao do banco de teste.
+- Novos documentos de prontuário ficam em `var/private/documents/` e só abrem por rota autenticada. A leitura de caminhos legados em `uploads/documents/` foi mantida para migração.
+- Testes rápidos rodam com `php tests/run.php`; a suíte completa roda com `powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run_all.ps1` e cobre banco, integração, smoke HTTP, perfis, relatórios, uploads privados e backup/restauração.
 - A imagem de login em `img/84ee2f859c98cde210228f9cf472d03b4932ff8c.jpg` foi otimizada para reduzir clone/carregamento mantendo o mesmo caminho.
 
 ---

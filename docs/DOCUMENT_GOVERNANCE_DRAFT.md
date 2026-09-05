@@ -8,7 +8,8 @@ Este documento organiza a politica minima para documentos anexados ao prontuario
 
 - Documentos sao anexados em `prontuarios.php?action=upload_document`.
 - Upload exige login, CSRF, permissao `edit_records`, extensao permitida e MIME valido.
-- Arquivos ficam em `uploads/documents/`.
+- Novos arquivos ficam em `var/private/documents/`; caminhos legados em
+  `uploads/documents/` continuam legíveis somente pela rota autenticada.
 - Abertura de documentos acontece por rota autenticada.
 - A suite HTTP testa upload multipart e registro na tabela `documento`.
 
@@ -30,7 +31,7 @@ Este documento organiza a politica minima para documentos anexados ao prontuario
 3. Criar fluxo de remocao com justificativa e trilha de auditoria, sem apagar fisicamente antes da regra de retencao.
 4. Definir versao quando um documento for substituido.
 5. Bloquear listagem/download para perfis sem finalidade de atendimento.
-6. Incluir `uploads/documents/` na rotina de backup criptografado.
+6. Incluir `var/private/documents/` e os anexos legados na rotina de backup criptografado.
 7. Revisar nomes de arquivo para nunca expor CPF, nome completo ou tipo sensivel no caminho publico.
 
 ## Decisoes Que Faltam

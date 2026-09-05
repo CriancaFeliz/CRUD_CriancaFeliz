@@ -1,6 +1,7 @@
 # Manutenção, Diagnósticos e Testes Manuais
 
-Atualizado em 2026-06-01.
+Atualizado em 05/09/2026. O fluxo oficial de implantação está em
+`docs/DEPLOYMENT.md`.
 
 Este documento reúne os scripts auxiliares do projeto, os cuidados antes de executá-los e um checklist de validação local.
 
@@ -38,17 +39,10 @@ Use com backup do banco e preferencialmente fora de produção.
 
 | Script | Função |
 | --- | --- |
-| `ativar_usuarios.php` | Ativa usuários e exibe credenciais de teste. |
-| `corrigir_renda_marina.php` | Correção pontual de renda. |
-| `fix_renda_marina.php` | Diagnóstico/correção pontual de renda. |
-| `fix_users.php` | Correção de usuários em fluxo legado. |
-| `fix_users_mysql.php` | Corrige/cria usuários no MySQL com senha padrão. |
-| `generate_password.php` | Gera hash de senha. |
-| `install_database.php` | Instalador visual do banco. |
-| `limpar_sessao.php` | Limpa sessão local. |
-| `migrate_reset_tokens.php` | Migra tokens válidos de `data/reset_tokens.json` para `password_reset_tokens`. |
+| `create_admin.php` | Cria o primeiro administrador via CLI com senha forte fornecida pelo ambiente. |
 
-Senha padrão usada pelos scripts de correção de usuários: `AlterarEstaSenha!2026`, ou o valor da variável `INITIAL_ADMIN_PASSWORD`.
+Os demais scripts antigos dessa pasta são legados e não fazem parte do fluxo
+oficial. Eles permanecem bloqueados para acesso web até a remoção aprovada.
 
 ## 4. Banco de Dados
 
@@ -59,8 +53,6 @@ Pasta: `database/`
 | `SETUP_COMPLETO_FINAL.sql` | Setup completo recomendado para ambiente novo. |
 | `migration.sql` | Schema alinhado ao setup, útil como referência ou migração base. |
 | `update_schema.sql` | Ajustes pontuais de schema e triggers. |
-| `migrate.php` | Executor PHP de migrações. |
-| `test_connection.php` | Diagnóstico de conexão com o banco. |
 | `legacy_dumps/` | Dumps antigos preservados para consulta. |
 
 Ponto de atenção: o código ainda usa nomes de tabelas com variação de caixa (`Atendido`, `atendido`, `Usuario`, `usuario`, etc.). Em servidores Linux com `lower_case_table_names=0`, valide o schema antes de produção.
@@ -184,10 +176,8 @@ Smoke test manual no navegador:
 | `http://localhost:8000/dashboard.php` sem sessão | Redireciona para login. |
 | `http://localhost:8000/faltas.php` sem sessão | Redireciona para login. |
 
-Login inicial após importar `SETUP_COMPLETO_FINAL.sql`:
-
-- email: `admin@criancafeliz.org`
-- senha: `AlterarEstaSenha!2026`
+O setup não cria login. Use `tools/maintenance/create_admin.php` uma vez,
+com credenciais exclusivas, antes do fluxo mínimo.
 
 ## 9. Fluxo Mínimo Pós-Setup
 

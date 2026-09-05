@@ -11,9 +11,12 @@ services:
       DB_PORT: 3306
       DB_NAME: criancafeliz
       DB_USER: criancafeliz
-      DB_PASS: criancafeliz
+      DB_PASS: ${MYSQL_APP_PASSWORD:-criancafeliz_dev}
       DB_CHARSET: utf8mb4
-      APP_DEBUG: "true"
+      APP_ENV: development
+      APP_DEBUG: "false"
+      APP_BASE_URL: http://localhost:8080
+      SOCIAL_INCOME_REFERENCE: ${SOCIAL_INCOME_REFERENCE:-1621.00}
     ports:
       - "8080:80"
     volumes:
@@ -29,18 +32,17 @@ services:
     environment:
       MYSQL_DATABASE: criancafeliz
       MYSQL_USER: criancafeliz
-      MYSQL_PASSWORD: criancafeliz
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD:-criancafeliz_dev}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev}
       TZ: America/Sao_Paulo
     ports:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./docker/mysql/01-init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
-      - ./docker/mysql/02-missing-views.sql:/docker-entrypoint-initdb.d/02-missing-views.sql:ro
       - ./database/SETUP_COMPLETO_FINAL.sql:/docker-init/SETUP_COMPLETO_FINAL.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -54,7 +56,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev}
     ports:
       - "8081:80"
 

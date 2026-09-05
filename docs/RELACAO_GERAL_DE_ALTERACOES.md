@@ -86,11 +86,8 @@ Arquivos auxiliares:
 
 - `database/migration.sql`
 - `database/update_schema.sql`
-- `database/migrate.php`
-- `database/test_connection.php`
 - `database/legacy_dumps/`
 - `docker/mysql/01-init.sh`
-- `docker/mysql/02-missing-views.sql`
 
 Melhorias realizadas ou documentadas:
 

@@ -306,8 +306,7 @@ class HttpSmokeTest extends TestCase {
         $this->assertSame(200, $show['status'], 'Prontuario deve abrir antes do upload');
 
         $csrfToken = $this->extractCsrfToken($show['body']);
-        $publicPath = null;
-        $hadHtaccess = file_exists(BASE_PATH . '/uploads/documents/.htaccess');
+        $privatePath = null;
 
         try {
             $response = $client->postMultipart('/prontuarios.php?action=upload_document', [
@@ -335,15 +334,27 @@ class HttpSmokeTest extends TestCase {
             );
             $this->assertNotEmpty($document, 'Documento deve ser gravado no banco');
             $this->assertSame('identidade', $document['tipo'], 'Tipo do documento deve ser preservado');
-            $this->assertTrue(strpos($document['arquivo'], 'uploads/documents/') === 0, 'Documento deve ficar no diretorio esperado');
+            $this->assertTrue(strpos($document['arquivo'], 'var/private/documents/') === 0, 'Documento deve ficar na area privada');
 
-            $publicPath = $document['arquivo'];
-            $this->assertTrue(is_file(BASE_PATH . '/' . $publicPath), 'Documento enviado deve existir no disco');
+            $privatePath = $document['arquivo'];
+            $this->assertTrue(is_file(BASE_PATH . '/' . $privatePath), 'Documento enviado deve existir no disco');
+
+            $direct = $client->get('/' . $privatePath);
+            $this->assertTrue(
+                in_array($direct['status'], [403, 404], true),
+                'Documento privado nao pode ser acessado por URL direta'
+            );
+
+            $view = $client->get('/prontuarios.php?action=document&id=' . (int) $document['iddocumento']);
+            $this->assertSame(200, $view['status'], 'Documento privado deve ser entregue pela rota autenticada');
+            $this->assertTrue(
+                stripos(implode("\n", $view['headers']), 'Cache-Control: private, no-store') !== false,
+                'Documento privado nao deve ficar em cache compartilhado'
+            );
         } finally {
-            if ($publicPath) {
-                $this->cleanupPublicUpload($publicPath);
+            if ($privatePath) {
+                $this->cleanupPrivateDocument($privatePath);
             }
-            $this->cleanupUploadSubdir('documents', $hadHtaccess);
         }
     }
 
@@ -605,6 +616,16 @@ class HttpSmokeTest extends TestCase {
         }
 
         if (strpos($filePath, $uploadsRoot . DIRECTORY_SEPARATOR) === 0) {
+            @unlink($filePath);
+        }
+    }
+
+    private function cleanupPrivateDocument($privatePath) {
+        $privateRoot = realpath(BASE_PATH . '/var/private/documents');
+        $filePath = realpath(BASE_PATH . '/' . ltrim($privatePath, '/\\'));
+
+        if ($privateRoot && $filePath && is_file($filePath)
+            && strpos($filePath, $privateRoot . DIRECTORY_SEPARATOR) === 0) {
             @unlink($filePath);
         }
     }

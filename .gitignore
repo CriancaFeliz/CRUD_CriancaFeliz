@@ -10,6 +10,7 @@
 
 # Logs
 /var/logs/*.log
+/var/private/
 *.log
 
 # Uploads

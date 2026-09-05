@@ -18,8 +18,8 @@ Esta é a nota central para navegar o projeto no Obsidian. Ela não substitui a 
 - Status: ativo
 - Stack: PHP, MySQL/MariaDB, JavaScript, CSS, Docker
 - Arquitetura: MVC simples sem framework externo
-- Última frente: hardening de prioridades altas em 2026-06-01
-- Frente atual: automacao de testes verde com banco Docker, smoke HTTP, permissoes por perfil, uploads multipart e documentacao de bloqueios operacionais
+- Última frente: segurança, formulários e relatórios consolidados em 05/09/2026
+- Frente atual: revisão final, documentação de implantação e aceite institucional
 - Entrada técnica: [[README|README]]
 - Documentação completa: [[docs/PROJECT_DOCUMENTATION|Documentação técnica]]
 - Plano de lacunas: [[04 - Plano de Lacunas e Prioridades]]
@@ -31,6 +31,9 @@ Esta é a nota central para navegar o projeto no Obsidian. Ela não substitui a 
 ## Mapa de Documentação
 
 - [[README|README]]: entrada principal do repositório.
+- [[docs/CURRENT_STATE|Estado atual]]: fonte principal do que está realmente entregue.
+- [[docs/DEPLOYMENT|Implantação segura]]: instalação, atualização e aceite.
+- [[docs/ERD|DER]] e [[docs/UML|UML]]: dados, componentes e fluxos.
 - [[docs/PROJECT_DOCUMENTATION|Documentação técnica]]: arquitetura, rotas, controllers, models, services e pendências.
 - [[docs/GAP_REMEDIATION_PLAN|Plano de lacunas]]: matriz de prioridades e entregas por lacuna.
 - [[docs/LGPD_AND_DATA_GOVERNANCE|LGPD e governança]]: plano técnico-operacional de dados.
@@ -60,6 +63,7 @@ Esta é a nota central para navegar o projeto no Obsidian. Ela não substitui a 
 - Área psicológica
 - Usuários
 - Logs e auditoria
+- Central de relatórios
 - Perfil
 
 ## Comandos Úteis

@@ -12,7 +12,8 @@ Use este arquivo para um ambiente novo:
 database/SETUP_COMPLETO_FINAL.sql
 ```
 
-Ele cria a estrutura principal do sistema, índices, relacionamentos, triggers/procedures e dados iniciais de teste.
+Ele cria a estrutura principal, índices, relacionamentos, triggers/procedures,
+view de alertas e oficinas iniciais. Não cria usuários nem dados de atendidos.
 
 ## 2. Pré-Requisitos
 
@@ -71,11 +72,14 @@ Credenciais:
 | --- | --- |
 | Banco | `criancafeliz` |
 | Usuário da aplicação | `criancafeliz` |
-| Senha da aplicação | `criancafeliz` |
+| Senha da aplicação | `criancafeliz_dev` |
 | Usuário root | `root` |
-| Senha root | `root` |
+| Senha root | `root_dev` |
 
-Na primeira criação do volume `db_data`, o MySQL executa `docker/mysql/01-init.sh`, importa `database/SETUP_COMPLETO_FINAL.sql` e aplica `docker/mysql/02-missing-views.sql`.
+Na primeira criação do volume `db_data`, o MySQL executa
+`docker/mysql/01-init.sh` e importa
+`database/SETUP_COMPLETO_FINAL.sql`. As senhas podem ser substituídas por
+`MYSQL_APP_PASSWORD` e `MYSQL_ROOT_PASSWORD` no `.env`.
 
 Se o volume já existir, os scripts de inicialização do MySQL não rodam novamente. Para recriar o banco do zero:
 
@@ -86,16 +90,10 @@ docker compose up --build
 
 ## 5. Dados Iniciais
 
-Usuário administrador:
-
-| Campo | Valor |
-| --- | --- |
-| Email | `admin@criancafeliz.org` |
-| Senha | `AlterarEstaSenha!2026` |
-| Perfil | `admin` |
-| Status | `Ativo` |
-
-O script também inclui responsáveis, atendidos e oficinas de exemplo.
+Não existe usuário padrão. Após configurar o `.env`, defina
+`INITIAL_ADMIN_NAME`, `INITIAL_ADMIN_EMAIL` e uma
+`INITIAL_ADMIN_PASSWORD` forte, execute
+`php tools/maintenance/create_admin.php` e remova essas variáveis.
 
 ## 6. Tabelas Principais
 
@@ -158,37 +156,28 @@ Essas variáveis são preparadas em `LogHelper` e também em algumas rotas admin
 | --- | --- |
 | `migration.sql` | Schema alinhado ao setup, útil como base de comparação. |
 | `update_schema.sql` | Migração pontual para remover estruturas obsoletas e recriar triggers. |
-| `migrate.php` | Executor PHP de migrações. |
-| `test_connection.php` | Teste de conexão com o banco. |
 | `legacy_dumps/` | Dumps antigos para consulta histórica. |
 | `../docker/mysql/01-init.sh` | Script de importação usado pelo MySQL no Docker. |
-| `../docker/mysql/02-missing-views.sql` | View complementar aplicada no ambiente Docker. |
 
 ## 9. Configuração da Aplicação
 
-As credenciais padrão ficam em `app/Config/Database.php`:
-
-| Parâmetro | Valor padrão |
-| --- | --- |
-| Host | `localhost` |
-| Banco | `criancafeliz` |
-| Usuário | `root` |
-| Senha | vazia |
-| Charset | `utf8mb4` |
-
-Também é possível usar variáveis de ambiente:
+Host, banco e usuário são obrigatórios e devem ser fornecidos por variáveis de
+ambiente ou por um arquivo `.env` não versionado:
 
 ```env
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=criancafeliz
-DB_USER=root
-DB_PASS=
+DB_USER=usuario_da_aplicacao
+DB_PASS=senha_forte
 DB_CHARSET=utf8mb4
+APP_ENV=development
 APP_DEBUG=false
 ```
 
-No Docker Compose, a aplicação usa `DB_HOST=db`, `DB_NAME=criancafeliz`, `DB_USER=criancafeliz` e `DB_PASS=criancafeliz`.
+No Docker Compose, a aplicação usa `DB_HOST=db`,
+`DB_NAME=criancafeliz` e `DB_USER=criancafeliz`; a senha vem de
+`MYSQL_APP_PASSWORD` ou do padrão exclusivamente local.
 
 ## 10. Pontos de Atenção
 
@@ -228,9 +217,9 @@ Erro com nomes de tabelas em Linux
 
 - [ ] Banco `criancafeliz` criado.
 - [ ] `SETUP_COMPLETO_FINAL.sql` importado sem erros.
-- [ ] Usuário `admin@criancafeliz.org` consegue fazer login com `AlterarEstaSenha!2026`.
+- [ ] Primeiro administrador criado por `tools/maintenance/create_admin.php` com senha exclusiva.
 - [ ] `pdo_mysql` habilitado no PHP usado pelo servidor web.
 - [ ] `APP_DEBUG=false` configurado em produção.
 - [ ] Rotas protegidas redirecionam para login quando não há sessão.
 - [ ] Dashboard abre após login.
-- [ ] Módulos de acolhimento, socioeconômico, faltas, usuários e logs abrem no ambiente local.
+- [ ] Módulos de acolhimento, socioeconômico, faltas, relatórios, usuários e logs abrem no ambiente local.

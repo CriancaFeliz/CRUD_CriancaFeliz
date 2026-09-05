@@ -2,6 +2,7 @@
 .gitignore
 var/*.log
 var/logs/*.log
+var/private
 data/*.log
 data/*.json
 database/legacy_dumps

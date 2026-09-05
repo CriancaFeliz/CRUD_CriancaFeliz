@@ -1,6 +1,7 @@
 -- =====================================================
 -- MIGRAÇÃO DO BANCO DE DADOS - CRIANÇA FELIZ
--- Versão Alinhada com SETUP_COMPLETO_FINAL.sql
+-- ARQUIVO LEGADO DE REFERÊNCIA. Para banco novo use SETUP_COMPLETO_FINAL.sql;
+-- para upgrade use migrations/20260825_upgrade_legacy_production.sql.
 -- =====================================================
 
 CREATE DATABASE IF NOT EXISTS criancafeliz CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
@@ -297,20 +298,8 @@ ALTER TABLE `frequencia_oficina`
 ALTER TABLE `log` ADD CONSTRAINT `log_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`idusuario`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- =====================================================
--- DADOS INICIAIS
+-- DADOS INICIAIS NÃO PESSOAIS
 -- =====================================================
-
-INSERT IGNORE INTO `usuario` (`idusuario`, `nome`, `email`, `Senha`, `nivel`, `status`) VALUES
-(1, 'Administrador', 'admin@criancafeliz.org', '$2y$12$GZIwUJ/.t.yQ7DICaT137OQgjAv.OsOx8BAp6eah81iSXcejwxwz6', 'admin', 'Ativo');
-
-INSERT IGNORE INTO `responsavel` (`idresponsavel`, `nome`, `cpf`, `telefone`, `email`, `parentesco`) VALUES
-(1, 'Maria Souza', '123.456.789-00', '(11) 91234-5678', 'maria.souza@example.com', 'Mãe'),
-(2, 'João Pereira', '987.654.321-00', '(11) 99876-5432', 'joao.pereira@example.com', 'Pai');
-
-INSERT IGNORE INTO `atendido` (`idatendido`, `status`, `data_cadastro`, `data_acolhimento`, `nome`, `data_nascimento`, `cpf`, `id_responsavel`) VALUES
-(1, 'Ativo', '2025-10-18', '2025-10-18', 'Ana Beatriz Silva', '2012-05-14', '111.222.333-44', 1),
-(2, 'Ativo', '2025-10-18', '2025-10-18', 'Carlos Eduardo Santos', '2010-09-02', NULL, 2),
-(3, 'Ativo', '2025-10-18', '2025-10-18', 'Luiza Ferreira', '2013-03-28', NULL, NULL);
 
 INSERT IGNORE INTO `oficina` (`id_oficina`, `nome`, `descricao`, `dia_semana`, `horario_inicio`, `horario_fim`, `ativo`) VALUES
 (1, 'Reforço Escolar', 'Aulas de reforço para crianças', 'Terça', '14:00:00', '16:00:00', 1),

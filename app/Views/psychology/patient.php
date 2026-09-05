@@ -591,14 +591,8 @@ function forceDarkModeColors() {
     }
 }
 
-// Executar a cada 100ms para garantir
-setInterval(forceDarkModeColors, 100);
-
-// Executar quando a página carrega
-document.addEventListener('DOMContentLoaded', forceDarkModeColors);
-
-// Executar novamente após um pequeno delay (para garantir)
-setTimeout(forceDarkModeColors, 100);
+// O tema é resolvido pelas regras CSS abaixo. Não monitore nem reescreva o DOM
+// continuamente: isso consumia CPU durante toda a permanência nesta tela.
 </script>
 
 <style>

@@ -1,6 +1,6 @@
 # Automacao de Testes
 
-Atualizado em 2026-06-01.
+Atualizado em 05/09/2026.
 
 Este documento descreve a automacao criada para validar o banco e a aplicacao em um ambiente descartavel, sem usar o banco real da maquina.
 
@@ -11,8 +11,8 @@ A suite automatizada agora cobre tres camadas:
 | Camada | Comando | O que valida |
 | --- | --- | --- |
 | Unitarios PHP | `php tests/run.php` | Helpers, senha, sanitizacao, datas e CSV |
-| Integracao com banco | `php tests/run_integration.php` dentro do container `app` | Schema, dados iniciais, usuarios, acolhimento, socioeconomico, frequencia, desligamento, documentos e psicologia |
-| Smoke HTTP | `php tests/run_http_smoke.php` dentro do container `app` | Login, CSRF, sessao, redirecionamento, paginas criticas, permissoes por perfil e uploads multipart |
+| Integracao com banco | `php tests/run_integration.php` dentro do container `app` | Schema, usuários, acolhimento, socioeconômico, frequência, desligamento, documentos, psicologia e relatórios |
+| Smoke HTTP | `php tests/run_http_smoke.php` dentro do container `app` | Login, CSRF, sessão, perfis, relatórios e uploads privados |
 | Backup/restore | `tests/backup_restore_check.sh` dentro do container `db` | Dump logico, restore em schema temporario e validacao minima dos dados |
 
 ## Rodar Tudo no Windows
@@ -89,7 +89,7 @@ docker compose -f docker-compose.test.yml down -v --remove-orphans
 
 - Conexao PDO/MySQL dentro do container.
 - Existencia das tabelas e da view `atendidos_com_alerta`.
-- Usuario admin inicial e senha documentada.
+- Criação de usuários de teste isolados, sem conta ou senha padrão de produção.
 - CRUD/autenticacao de usuario pelo model.
 - Criacao e busca de acolhimento por CPF.
 - Criacao socioeconomica com familia, despesas e log por trigger.
@@ -99,7 +99,8 @@ docker compose -f docker-compose.test.yml down -v --remove-orphans
 - Smoke HTTP de login, CSRF, sessao e paginas criticas.
 - Smoke HTTP de permissoes por perfil: admin acessa usuarios e nao acessa psicologia; psicologo acessa psicologia e nao acessa usuarios/cadastro; funcionario nao acessa rotas restritas.
 - Smoke HTTP de upload multipart da foto de perfil, com CSRF, MIME, arquivo gravado e persistencia em `Usuario.foto_perfil`.
-- Smoke HTTP de upload multipart de documento do prontuario, com CSRF, MIME, registro em `documento` e arquivo em `uploads/documents/`.
+- Smoke HTTP de upload multipart de documento, com CSRF, MIME, registro em
+  `documento`, armazenamento privado, bloqueio da URL direta e entrega autenticada.
 - Guarda de permissao direta em exclusao socioeconomica por HTTP, antes da validacao CSRF, para evitar tentativa de mutacao por perfil sem `delete_records`.
 - Backup e restauracao logica do banco de teste, validando que o dump sobe em um schema temporario separado.
 

@@ -239,14 +239,11 @@ class ProntuarioController extends BaseController {
                 throw new Exception('Conteúdo do arquivo não corresponde a um documento permitido');
             }
 
-            $uploadDir = BASE_PATH . '/uploads/documents';
+            $uploadDir = BASE_PATH . '/var/private/documents';
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-
-            $htaccess = $uploadDir . '/.htaccess';
-            if (!file_exists($htaccess)) {
-                @file_put_contents($htaccess, "Options -Indexes\nRequire all denied\n");
+                if (!mkdir($uploadDir, 0750, true) && !is_dir($uploadDir)) {
+                    throw new Exception('Não foi possível preparar a área segura de documentos');
+                }
             }
 
             $fileName = $atendidoId . '_' . bin2hex(random_bytes(16)) . '.' . $extension;
@@ -256,7 +253,12 @@ class ProntuarioController extends BaseController {
             }
 
             $documentModel = new Document();
-            $documentModel->createForAtendido($atendidoId, $tipo, 'uploads/documents/' . $fileName);
+            try {
+                $documentModel->createForAtendido($atendidoId, $tipo, 'var/private/documents/' . $fileName);
+            } catch (Throwable $exception) {
+                @unlink($targetPath);
+                throw $exception;
+            }
 
             $redirect = 'prontuarios.php';
             if ($cpf !== '') {
@@ -274,7 +276,7 @@ class ProntuarioController extends BaseController {
     }
 
     public function viewDocument($id) {
-        $this->requireAuth();
+        $this->requirePermission('view_all_records');
 
         try {
             $documentModel = new Document();
@@ -283,11 +285,22 @@ class ProntuarioController extends BaseController {
                 throw new Exception('Documento não encontrado');
             }
 
-            $relativePath = $document['arquivo'] ?? '';
-            $baseDir = realpath(BASE_PATH . '/uploads/documents');
+            $relativePath = ltrim((string) ($document['arquivo'] ?? ''), '/\\');
             $filePath = realpath(BASE_PATH . '/' . $relativePath);
+            $allowedDirectories = [
+                realpath(BASE_PATH . '/var/private/documents'),
+                realpath(BASE_PATH . '/uploads/documents') // Compatibilidade com anexos legados.
+            ];
+            $isAllowed = false;
 
-            if (!$baseDir || !$filePath || strpos($filePath, $baseDir . DIRECTORY_SEPARATOR) !== 0 || !is_file($filePath)) {
+            foreach (array_filter($allowedDirectories) as $allowedDirectory) {
+                if ($filePath && strpos($filePath, $allowedDirectory . DIRECTORY_SEPARATOR) === 0) {
+                    $isAllowed = true;
+                    break;
+                }
+            }
+
+            if (!$filePath || !$isAllowed || !is_file($filePath)) {
                 throw new Exception('Arquivo não encontrado');
             }
 
@@ -305,6 +318,8 @@ class ProntuarioController extends BaseController {
             header('Content-Length: ' . filesize($filePath));
             header('Content-Disposition: inline; filename="' . basename($filePath) . '"');
             header('X-Content-Type-Options: nosniff');
+            header('Cache-Control: private, no-store, max-age=0');
+            header('Pragma: no-cache');
             readfile($filePath);
             exit;
         } catch (Exception $e) {
