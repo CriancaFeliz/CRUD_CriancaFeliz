@@ -101,7 +101,7 @@
                 </tr>
             <?php else: ?>
                 <?php foreach ($atendidos as $atendido): ?>
-                    <?php $id = $atendido['idatendido'] ?? $atendido['id']; ?>
+                    <?php $id = (int)($atendido['idatendido'] ?? $atendido['id'] ?? 0); ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($atendido['nome']); ?></strong></td>
                         <td><?php echo htmlspecialchars($atendido['cpf'] ?? 'N/A'); ?></td>

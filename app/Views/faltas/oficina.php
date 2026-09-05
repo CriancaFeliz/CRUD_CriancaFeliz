@@ -120,7 +120,7 @@
                 <select name="oficina" required>
                     <option value="">Escolha uma oficina...</option>
                     <?php foreach ($oficinas as $ofc): ?>
-                        <option value="<?php echo $ofc['id_oficina']; ?>" 
+                        <option value="<?php echo (int)($ofc['id_oficina'] ?? 0); ?>"
                                 <?php echo ($idOficina == $ofc['id_oficina']) ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($ofc['nome']); ?>
                             <?php if ($ofc['dia_semana']): ?>
@@ -184,7 +184,7 @@
                 <?php else: ?>
                     <?php foreach ($atendidos as $atendido): ?>
                         <?php
-                            $id = $atendido['idatendido'] ?? $atendido['id'];
+                            $id = (int)($atendido['idatendido'] ?? $atendido['id'] ?? 0);
                             $frequencia = $atendido['frequencia'];
                             $status = $frequencia['status'] ?? null;
                             $statusPresente = ($status === 'P');
@@ -201,7 +201,7 @@
                                                name="status_<?php echo $id; ?>" 
                                                value="P" 
                                                <?php echo $statusPresente ? 'checked' : ''; ?>
-                                               onchange="salvarFrequenciaOficina(<?php echo $id; ?>, <?php echo $idOficina; ?>, 'P', '<?php echo $data; ?>')">
+                                               class="workshop-attendance-option" data-atendido-id="<?php echo $id; ?>" data-oficina-id="<?php echo (int)$idOficina; ?>" data-status="P" data-date="<?php echo e($data); ?>">
                                         <label>Presente</label>
                                     </div>
                                     <div class="checkbox-item">
@@ -209,7 +209,7 @@
                                                name="status_<?php echo $id; ?>" 
                                                value="F" 
                                                <?php echo $statusFalta ? 'checked' : ''; ?>
-                                               onchange="salvarFrequenciaOficina(<?php echo $id; ?>, <?php echo $idOficina; ?>, 'F', '<?php echo $data; ?>')">
+                                               class="workshop-attendance-option" data-atendido-id="<?php echo $id; ?>" data-oficina-id="<?php echo (int)$idOficina; ?>" data-status="F" data-date="<?php echo e($data); ?>">
                                         <label>Falta</label>
                                     </div>
                                     <div class="checkbox-item">
@@ -217,7 +217,7 @@
                                                name="status_<?php echo $id; ?>" 
                                                value="J" 
                                                <?php echo $statusJustificada ? 'checked' : ''; ?>
-                                               onchange="abrirJustificativaOficina(<?php echo $id; ?>, <?php echo $idOficina; ?>, '<?php echo $data; ?>')">
+                                               class="workshop-attendance-option" data-atendido-id="<?php echo $id; ?>" data-oficina-id="<?php echo (int)$idOficina; ?>" data-status="J" data-date="<?php echo e($data); ?>">
                                         <label>Justificada</label>
                                     </div>
                                 </div>
@@ -228,7 +228,7 @@
                                 </span>
                             </td>
                             <td style="text-align: center;">
-                                <a href="faltas.php?action=historico&id=<?php echo $id; ?>" class="btn-icon" title="Ver Histórico">
+                                <a href="faltas.php?action=historico&amp;id=<?php echo $id; ?>" class="btn-icon" title="Ver Histórico">
                                     <i class="fas fa-history"></i>
                                 </a>
                             </td>
@@ -246,7 +246,20 @@
 <?php endif; ?>
 
 <script>
-const csrfToken = '<?php echo $csrf_token; ?>';
+const csrfToken = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
+document.querySelectorAll('.workshop-attendance-option').forEach(input => {
+    input.addEventListener('change', () => {
+        const idAtendido = Number.parseInt(input.dataset.atendidoId, 10);
+        const idOficina = Number.parseInt(input.dataset.oficinaId, 10);
+        if (!Number.isSafeInteger(idAtendido) || idAtendido <= 0 || !Number.isSafeInteger(idOficina) || idOficina <= 0) return;
+        if (input.dataset.status === 'J') {
+            abrirJustificativaOficina(idAtendido, idOficina, input.dataset.date);
+        } else {
+            salvarFrequenciaOficina(idAtendido, idOficina, input.dataset.status, input.dataset.date);
+        }
+    });
+});
 
 function salvarFrequenciaOficina(idAtendido, idOficina, status, data) {
     const formData = new FormData();

@@ -123,8 +123,8 @@
 
     <!-- Formulário -->
     <form id="formDesligamento" method="POST" action="desligamento.php?action=salvar">
-        <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token; ?>">
-        <input type="hidden" name="id_atendido" value="<?php echo $atendido['idatendido'] ?? $atendido['id']; ?>">
+        <input type="hidden" name="_csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
+        <input type="hidden" name="id_atendido" value="<?php echo (int)($atendido['idatendido'] ?? $atendido['id'] ?? 0); ?>">
 
         <div class="form-group">
             <label>Tipo de Motivo *</label>

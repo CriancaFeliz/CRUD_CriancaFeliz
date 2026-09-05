@@ -10,7 +10,7 @@
     <?php endif; ?>
     
     <form id="loginForm" action="index.php" method="POST">
-        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+        <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
         
         <div class="input-group">
             <input type="email" id="email" name="email" placeholder="Digite seu email" 

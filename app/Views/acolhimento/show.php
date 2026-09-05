@@ -67,7 +67,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Idade</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['idade'] ?? 'N/A'; ?> anos</div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo e($ficha['idade'] ?? 'N/A'); ?> anos</div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -241,7 +241,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
             <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
                 <span class="status" style="padding:4px 8px; border-radius:12px; font-size:12px; font-weight:500;
                                            <?php echo ($ficha['status'] ?? 'Ativo') === 'Ativo' ? 'background:#e8f6ea; color:#6fb64f;' : 'background:#f8d7da; color:#721c24;'; ?>">
-                    <?php echo $ficha['status'] ?? 'Ativo'; ?>
+                    <?php echo e($ficha['status'] ?? 'Ativo'); ?>
                 </span>
             </div>
         </div>

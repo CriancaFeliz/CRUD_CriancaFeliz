@@ -24,6 +24,13 @@ class CoreFlowsIntegrationTest extends IntegrationTestCase {
         $this->assertNotEmpty($atendidoId);
         $this->assertNotEmpty($fichaId);
         $this->assertEquals(1800.0, $created['renda_familiar']);
+        $this->assertEquals(1500.0, $created['renda_salario']);
+        $this->assertEquals(300.0, $created['renda_bolsa']);
+        $this->assertSame(2, (int) $created['quartos']);
+        $this->assertSame(1, (int) $created['banheiros']);
+        $this->assertSame('Rede Pública', $created['tipo_agua']);
+        $this->assertSame(1, (int) $created['trabalho_clt']);
+        $this->assertSame(0, (int) $created['convenio_medico']);
         $this->assertGreaterThanOrEqual(1, count($created['familia']));
         $this->assertGreaterThanOrEqual(1, count($created['despesas']));
         $this->assertGreaterThanOrEqual(1, (int) $this->fetchValue(

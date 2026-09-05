@@ -106,29 +106,58 @@ document.addEventListener('DOMContentLoaded', function() {
     function showResults(data) {
         defaultView.style.display = 'none';
         searchResults.style.display = 'block';
-        resultsContainer.innerHTML = '';
+        resultsContainer.replaceChildren();
         resultsCount.textContent = `${data.length} resultado(s) encontrado(s)`;
         if (data.length === 0) {
-            resultsContainer.innerHTML = `<div class="card-glass text-center text-muted">Nenhum registro encontrado.</div>`;
+            const emptyState = document.createElement('div');
+            emptyState.className = 'card-glass text-center text-muted';
+            emptyState.textContent = 'Nenhum registro encontrado.';
+            resultsContainer.appendChild(emptyState);
             return;
         }
+
+        const createLabel = (label, value) => {
+            const line = document.createElement('div');
+            const strong = document.createElement('strong');
+            strong.textContent = `${label}: `;
+            line.append(strong, document.createTextNode(String(value ?? '-')));
+            return line;
+        };
+
+        const fragment = document.createDocumentFragment();
         data.forEach(item => {
             const nome = item.nome || item.nome_completo || item.nome_entrevistado || '—';
             const prontuarioUrl = item.cpf ? `prontuarios.php?action=show&cpf=${encodeURIComponent(item.cpf)}` : '#';
-            resultsContainer.innerHTML += `
-                <div class="card-glass mb-3">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                        <div style="font-size:18px; font-weight:600; color:var(--text-primary);">${nome}</div>
-                        <a href="${prontuarioUrl}" class="btn" style="background:#3498db; font-size:12px; padding:8px 12px;">Abrir</a>
-                    </div>
-                    <div style="margin-top:6px; color:var(--text-secondary);">
-                        <strong>CPF:</strong> ${item.cpf ?? '-'} <br>
-                        <strong>Categoria:</strong> ${item.categoria ?? '-'} <br>
-                        <strong>Nascimento:</strong> ${item.data_nascimento ?? '-'}
-                    </div>
-                </div>
-            `;
+
+            const card = document.createElement('div');
+            card.className = 'card-glass mb-3';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:12px;';
+
+            const nameElement = document.createElement('div');
+            nameElement.style.cssText = 'font-size:18px; font-weight:600; color:var(--text-primary);';
+            nameElement.textContent = String(nome);
+
+            const openLink = document.createElement('a');
+            openLink.href = prontuarioUrl;
+            openLink.className = 'btn';
+            openLink.style.cssText = 'background:#3498db; font-size:12px; padding:8px 12px;';
+            openLink.textContent = 'Abrir';
+            header.append(nameElement, openLink);
+
+            const details = document.createElement('div');
+            details.style.cssText = 'margin-top:6px; color:var(--text-secondary);';
+            details.append(
+                createLabel('CPF', item.cpf),
+                createLabel('Categoria', item.categoria),
+                createLabel('Nascimento', item.data_nascimento)
+            );
+
+            card.append(header, details);
+            fragment.appendChild(card);
         });
+        resultsContainer.appendChild(fragment);
     }
 
     searchBtn.addEventListener('click', function(e) {
@@ -156,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(err => {
                 console.error('Erro busca:', err);
-                alert('Erro ao buscar. Verifique o console (F12) para detalhes.');
+                alert('Não foi possível realizar a busca. Tente novamente.');
             })
             .finally(() => {
                 searchBtn.disabled = false;

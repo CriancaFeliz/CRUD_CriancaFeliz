@@ -22,15 +22,21 @@
         <div style="font-weight:700">Alertas Prioritários</div>
         <?php if (!empty($alertas)): ?>
             <?php foreach ($alertas as $alerta): ?>
-                <?php if (!empty($alerta['link'])): ?>
-                    <a href="<?php echo $alerta['link']; ?>" style="text-decoration: none; color: inherit;">
-                        <div class="pill <?php echo $alerta['tipo']; ?>">
-                            <?php echo $alerta['icone']; ?> <?php echo htmlspecialchars($alerta['mensagem']); ?>
+                <?php
+                    $alertType = in_array(($alerta['tipo'] ?? ''), ['success', 'warning', 'error', 'info'], true)
+                        ? $alerta['tipo']
+                        : 'info';
+                    $alertLink = ($alerta['link'] ?? '') === 'desligamento.php' ? 'desligamento.php' : '';
+                ?>
+                <?php if ($alertLink): ?>
+                    <a href="<?php echo e($alertLink); ?>" style="text-decoration: none; color: inherit;">
+                        <div class="pill <?php echo e($alertType); ?>">
+                            <?php echo e($alerta['icone'] ?? ''); ?> <?php echo e($alerta['mensagem'] ?? ''); ?>
                         </div>
                     </a>
                 <?php else: ?>
-                    <div class="pill <?php echo $alerta['tipo']; ?>">
-                        <?php echo $alerta['icone']; ?> <?php echo htmlspecialchars($alerta['mensagem']); ?>
+                    <div class="pill <?php echo e($alertType); ?>">
+                        <?php echo e($alerta['icone'] ?? ''); ?> <?php echo e($alerta['mensagem'] ?? ''); ?>
                     </div>
                 <?php endif; ?>
             <?php endforeach; ?>
@@ -68,10 +74,10 @@
                             <?php echo date('d', strtotime($anotacao['date'])); ?>
                         </div>
                         <div class="note-content">
-                            <div class="note-date"><?php echo $anotacao['formatted_date']; ?></div>
-                            <div class="note-text"><?php echo htmlspecialchars($anotacao['note']); ?></div>
+                            <div class="note-date"><?php echo e($anotacao['formatted_date'] ?? ''); ?></div>
+                            <div class="note-text"><?php echo e($anotacao['note'] ?? ''); ?></div>
                         </div>
-                        <button onclick="deleteNote('<?php echo $anotacao['id']; ?>')" class="delete-note-btn" title="Excluir anotação">&times;</button>
+                        <button onclick="deleteNote(<?php echo (int)($anotacao['id'] ?? 0); ?>)" class="delete-note-btn" title="Excluir anotação">&times;</button>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -90,10 +96,10 @@
                             <?php echo date('d', strtotime($aviso['date'])); ?>
                         </div>
                         <div class="note-content">
-                            <div class="note-date"><?php echo $aviso['formatted_date']; ?></div>
-                            <div class="note-text"><?php echo htmlspecialchars($aviso['note']); ?></div>
+                            <div class="note-date"><?php echo e($aviso['formatted_date'] ?? ''); ?></div>
+                            <div class="note-text"><?php echo e($aviso['note'] ?? ''); ?></div>
                         </div>
-                        <button onclick="deleteNote('<?php echo $aviso['id']; ?>')" class="delete-note-btn" title="Excluir aviso">&times;</button>
+                        <button onclick="deleteNote(<?php echo (int)($aviso['id'] ?? 0); ?>)" class="delete-note-btn" title="Excluir aviso">&times;</button>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -149,12 +155,8 @@
     async function loadNotes() {
         try {
             const monthParam = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
-            console.log('Carregando notas para o mês:', monthParam);
-            
             const response = await fetch('dashboard.php?action=getCalendarNotes&month=' + monthParam);
             const notes = await response.json();
-            
-            console.log('Notas recebidas:', notes);
             
             allNotes = {};
             notes.forEach(note => {
@@ -163,8 +165,6 @@
                 }
                 allNotes[note.date].push(note);
             });
-            
-            console.log('allNotes processado:', allNotes);
             
             generateCalendar();
             updateNotesList();
@@ -273,14 +273,6 @@
                 return;
             }
 
-            console.log('Salvando nota:', {
-                date: selectedDate,
-                note: noteText,
-                type: selectedType,
-                currentMonth: currentDate.getMonth() + 1,
-                currentYear: currentDate.getFullYear()
-            });
-
             try {
                 const formData = new FormData();
                 formData.append('date', selectedDate);
@@ -334,15 +326,60 @@
         }
     }
 
+    function createEmptyNoteState(message) {
+        const emptyState = document.createElement('div');
+        emptyState.style.cssText = 'color:var(--text-muted); font-style:italic;';
+        emptyState.textContent = message;
+        return emptyState;
+    }
+
+    function createNoteCard(note, badgeClass, deleteTitle) {
+        const parts = String(note.date || '').split('-').map(Number);
+        const date = parts.length === 3
+            ? new Date(parts[0], parts[1] - 1, parts[2])
+            : new Date(NaN);
+        const validDate = !Number.isNaN(date.getTime());
+
+        const card = document.createElement('div');
+        card.className = 'note-card-glass';
+
+        const badge = document.createElement('div');
+        badge.className = `note-badge ${badgeClass}`;
+        badge.textContent = validDate ? String(date.getDate()) : '—';
+
+        const content = document.createElement('div');
+        content.className = 'note-content';
+        const dateElement = document.createElement('div');
+        dateElement.className = 'note-date';
+        dateElement.textContent = validDate ? date.toLocaleDateString('pt-BR') : 'Data inválida';
+        const textElement = document.createElement('div');
+        textElement.className = 'note-text';
+        textElement.textContent = String(note.note || '');
+        content.append(dateElement, textElement);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'delete-note-btn';
+        deleteButton.title = deleteTitle;
+        deleteButton.setAttribute('aria-label', deleteTitle);
+        deleteButton.textContent = '×';
+        const noteId = Number.parseInt(note.id, 10);
+        if (Number.isSafeInteger(noteId) && noteId > 0) {
+            deleteButton.addEventListener('click', () => deleteNote(noteId));
+        } else {
+            deleteButton.disabled = true;
+        }
+
+        card.append(badge, content, deleteButton);
+        return card;
+    }
+
     function updateNotesList() {
-        // Atualizar lista de anotações
         const notesList = document.getElementById('notesList');
         const currentMonth = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
-        
         const anotacoes = [];
         const avisos = [];
-        
-        // Filtrar anotações do mês atual
+
         Object.entries(allNotes).forEach(([date, notes]) => {
             if (date.startsWith(currentMonth)) {
                 notes.forEach(note => {
@@ -354,54 +391,21 @@
                 });
             }
         });
-        
-        // Ordenar por data
+
         anotacoes.sort((a, b) => a.date.localeCompare(b.date));
         avisos.sort((a, b) => a.date.localeCompare(b.date));
-        
-        // Atualizar lista de anotações
+
         if (anotacoes.length === 0) {
-            notesList.innerHTML = '<div style="color:var(--text-muted); font-style:italic;">Nenhuma anotação este mês</div>';
+            notesList.replaceChildren(createEmptyNoteState('Nenhuma anotação este mês'));
         } else {
-            notesList.innerHTML = anotacoes.map(anotacao => {
-                const day = new Date(anotacao.date).getDate();
-                const formattedDate = new Date(anotacao.date).toLocaleDateString('pt-BR');
-                return `
-                    <div class="note-card-glass">
-                        <div class="note-badge orange-badge">
-                            ${day}
-                        </div>
-                        <div class="note-content">
-                            <div class="note-date">${formattedDate}</div>
-                            <div class="note-text">${anotacao.note}</div>
-                        </div>
-                        <button onclick="deleteNote('${anotacao.id}')" class="delete-note-btn" title="Excluir anotação">&times;</button>
-                    </div>
-                `;
-            }).join('');
+            notesList.replaceChildren(...anotacoes.map(note => createNoteCard(note, 'orange-badge', 'Excluir anotação')));
         }
-        
-        // Atualizar lista de avisos
+
         const avisosList = document.getElementById('avisosList');
         if (avisos.length === 0) {
-            avisosList.innerHTML = '<div style="color:var(--text-muted); font-style:italic;">Nenhum aviso este mês</div>';
+            avisosList.replaceChildren(createEmptyNoteState('Nenhum aviso este mês'));
         } else {
-            avisosList.innerHTML = avisos.map(aviso => {
-                const day = new Date(aviso.date).getDate();
-                const formattedDate = new Date(aviso.date).toLocaleDateString('pt-BR');
-                return `
-                    <div class="note-card-glass">
-                        <div class="note-badge green-badge">
-                            ${day}
-                        </div>
-                        <div class="note-content">
-                            <div class="note-date">${formattedDate}</div>
-                            <div class="note-text">${aviso.note}</div>
-                        </div>
-                        <button onclick="deleteNote('${aviso.id}')" class="delete-note-btn" title="Excluir aviso">&times;</button>
-                    </div>
-                `;
-            }).join('');
+            avisosList.replaceChildren(...avisos.map(note => createNoteCard(note, 'green-badge', 'Excluir aviso')));
         }
     }
 

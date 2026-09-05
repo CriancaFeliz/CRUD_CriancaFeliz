@@ -64,6 +64,24 @@ class Socioeconomico extends BaseModel {
         
         return $data;
     }
+
+    private function parseMoney($value) {
+        $value = str_replace(['R$', ' '], '', (string) $value);
+        if (strpos($value, ',') !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        }
+
+        return is_numeric($value) ? (float) $value : 0.0;
+    }
+
+    private function booleanFlag($value) {
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'sim', 'yes', 'true', 'on'], true) ? 1 : 0;
+    }
     
     /**
      * Calcular idade
@@ -147,20 +165,11 @@ class Socioeconomico extends BaseModel {
             
             // 2. Criar Ficha Socioeconômica
             // Converter renda_familiar para número (remover R$, pontos de milhar, converter vírgula em ponto)
-            $rendaFamiliar = 0;
-            if (!empty($data['renda_familiar'])) {
-                $renda = $data['renda_familiar'];
-                // Remover R$ e espaços
-                $renda = str_replace(['R$', ' '], '', $renda);
-                // Se tiver vírgula, é formato brasileiro (1.800,00)
-                if (strpos($renda, ',') !== false) {
-                    // Remover pontos de milhar e converter vírgula em ponto
-                    $renda = str_replace('.', '', $renda);
-                    $renda = str_replace(',', '.', $renda);
-                }
-                // Agora converter para float
-                $rendaFamiliar = floatval($renda);
-                debugLog("DEBUG: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
+            $rendaSalario = $this->parseMoney($data['renda_salario'] ?? 0);
+            $rendaBolsa = $this->parseMoney($data['renda_bolsa'] ?? 0);
+            $rendaFamiliar = $this->parseMoney($data['renda_familiar'] ?? 0);
+            if ($rendaFamiliar <= 0) {
+                $rendaFamiliar = $rendaSalario + $rendaBolsa;
             }
             
             // Determinar flags de benefícios a partir dos campos disponíveis
@@ -179,23 +188,38 @@ class Socioeconomico extends BaseModel {
             // Preparar dados da ficha para inserção (mapa coluna => valor)
             $fichaData = [
                 'id_atendido' => $atendidoId,
-                'agua' => isset($data['agua']) ? 1 : 0,
-                'esgoto' => isset($data['esgoto']) ? 1 : 0,
-                'energia' => isset($data['energia']) ? 1 : 0,
+                'agua' => !empty($data['agua']) ? 1 : 0,
+                'esgoto' => !empty($data['esgoto']) ? 1 : 0,
+                'energia' => !empty($data['energia']) ? 1 : 0,
+                'tipo_agua' => $data['agua'] ?? null,
+                'tipo_esgoto' => $data['esgoto'] ?? null,
+                'tipo_energia' => $data['energia'] ?? null,
                 'renda_familiar' => $rendaFamiliar,
+                'renda_salario' => $rendaSalario,
+                'renda_bolsa' => $rendaBolsa,
                 'qtd_pessoas' => $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
                 'cond_residencia' => $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
                 'moradia' => $data['tipo_moradia'] ?? $data['moradia'] ?? null,
+                'residencia' => $data['residencia'] ?? null,
                 'nr_veiculos' => $data['nr_veiculos'] ?? 0,
                 'observacoes' => $data['observacoes'] ?? null,
                 'entrevistado' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
-                'residencia' => $data['residencia'] ?? null,
                 'numero_comodos' => $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
+                'quartos' => $data['quartos'] ?? 0,
+                'banheiros' => $data['banheiro'] ?? $data['banheiros'] ?? 0,
                 'construcao' => $data['construcao'] ?? null,
                 'nome_menor' => $data['nome_menor'] ?? null,
                 'assistente_social' => $data['assistente_social'] ?? null,
                 'cadunico' => $data['cadunico'] ?? null,
-                'renda_per_capita' => isset($data['renda_per_capita']) ? floatval($data['renda_per_capita']) : ( ($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0) ? ($rendaFamiliar / max(1, intval($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0))) : null ),
+                'renda_per_capita' => isset($data['renda_per_capita']) ? $this->parseMoney($data['renda_per_capita']) : ( ($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0) ? ($rendaFamiliar / max(1, intval($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0))) : null ),
+                'veiculos_motocicleta' => $data['veiculos_motocicleta'] ?? 0,
+                'veiculos_automovel' => $data['veiculos_automovel'] ?? 0,
+                'veiculos_caminhonete' => $data['veiculos_caminhonete'] ?? 0,
+                'veiculos_caminhao' => $data['veiculos_caminhao'] ?? 0,
+                'veiculos_outros' => $data['veiculos_outros'] ?? 0,
+                'trabalho_clt' => $this->booleanFlag($data['trabalho_clt'] ?? 0),
+                'trabalho_clt_qual' => $data['trabalho_clt_qual'] ?? null,
+                'convenio_medico' => $this->booleanFlag($data['convenio_medico'] ?? 0),
                 'bolsa_familia' => $bolsa,
                 'auxilio_brasil' => $auxilio,
                 'bpc' => $bpc,
@@ -577,28 +601,22 @@ class Socioeconomico extends BaseModel {
             $atendidoData = [
                 'nome' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
                 'cpf' => $data['cpf'] ?? '',
-                'rg' => $data['rg'] ?? '',
-                'data_nascimento' => $this->convertDate($data['data_nascimento'] ?? '')
+                'rg' => $data['rg'] ?? ''
             ];
+
+            if (!empty($data['data_nascimento'])) {
+                $atendidoData['data_nascimento'] = $this->convertDate($data['data_nascimento']);
+            }
             
             $this->update($id, $atendidoData);
             
             // 2. Atualizar Ficha Socioeconômica
             // Converter renda_familiar para número (remover R$, pontos de milhar, converter vírgula em ponto)
-            $rendaFamiliar = 0;
-            if (!empty($data['renda_familiar'])) {
-                $renda = $data['renda_familiar'];
-                // Remover R$ e espaços
-                $renda = str_replace(['R$', ' '], '', $renda);
-                // Se tiver vírgula, é formato brasileiro (1.800,00)
-                if (strpos($renda, ',') !== false) {
-                    // Remover pontos de milhar e converter vírgula em ponto
-                    $renda = str_replace('.', '', $renda);
-                    $renda = str_replace(',', '.', $renda);
-                }
-                // Agora converter para float
-                $rendaFamiliar = floatval($renda);
-                debugLog("DEBUG UPDATE: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
+            $rendaSalario = $this->parseMoney($data['renda_salario'] ?? 0);
+            $rendaBolsa = $this->parseMoney($data['renda_bolsa'] ?? 0);
+            $rendaFamiliar = $this->parseMoney($data['renda_familiar'] ?? 0);
+            if ($rendaFamiliar <= 0) {
+                $rendaFamiliar = $rendaSalario + $rendaBolsa;
             }
             
             $bolsa = (!empty($data['bolsa_familia'])) ? 1 : 0;
@@ -614,21 +632,37 @@ class Socioeconomico extends BaseModel {
 
             // Preparar dados para UPDATE (mapa coluna => valor)
             $updateData = [
-                'agua' => isset($data['agua']) ? 1 : 0,
-                'esgoto' => isset($data['esgoto']) ? 1 : 0,
-                'energia' => isset($data['energia']) ? 1 : 0,
+                'agua' => !empty($data['agua']) ? 1 : 0,
+                'esgoto' => !empty($data['esgoto']) ? 1 : 0,
+                'energia' => !empty($data['energia']) ? 1 : 0,
+                'tipo_agua' => $data['agua'] ?? null,
+                'tipo_esgoto' => $data['esgoto'] ?? null,
+                'tipo_energia' => $data['energia'] ?? null,
                 'renda_familiar' => $rendaFamiliar,
+                'renda_salario' => $rendaSalario,
+                'renda_bolsa' => $rendaBolsa,
                 'qtd_pessoas' => $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
                 'cond_residencia' => $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
                 'moradia' => $data['tipo_moradia'] ?? $data['moradia'] ?? null,
+                'residencia' => $data['residencia'] ?? null,
                 'nr_veiculos' => $data['nr_veiculos'] ?? 0,
                 'observacoes' => $data['observacoes'] ?? null,
                 'numero_comodos' => $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
+                'quartos' => $data['quartos'] ?? 0,
+                'banheiros' => $data['banheiro'] ?? $data['banheiros'] ?? 0,
                 'construcao' => $data['construcao'] ?? null,
                 'nome_menor' => $data['nome_menor'] ?? null,
                 'assistente_social' => $data['assistente_social'] ?? null,
                 'cadunico' => $data['cadunico'] ?? null,
-                'renda_per_capita' => isset($data['renda_per_capita']) ? floatval($data['renda_per_capita']) : ( ($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0) ? ($rendaFamiliar / max(1, intval($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0))) : null ),
+                'renda_per_capita' => isset($data['renda_per_capita']) ? $this->parseMoney($data['renda_per_capita']) : ( ($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0) ? ($rendaFamiliar / max(1, intval($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0))) : null ),
+                'veiculos_motocicleta' => $data['veiculos_motocicleta'] ?? 0,
+                'veiculos_automovel' => $data['veiculos_automovel'] ?? 0,
+                'veiculos_caminhonete' => $data['veiculos_caminhonete'] ?? 0,
+                'veiculos_caminhao' => $data['veiculos_caminhao'] ?? 0,
+                'veiculos_outros' => $data['veiculos_outros'] ?? 0,
+                'trabalho_clt' => $this->booleanFlag($data['trabalho_clt'] ?? 0),
+                'trabalho_clt_qual' => $data['trabalho_clt_qual'] ?? null,
+                'convenio_medico' => $this->booleanFlag($data['convenio_medico'] ?? 0),
                 'bolsa_familia' => $bolsa,
                 'auxilio_brasil' => $auxilio,
                 'bpc' => $bpc,

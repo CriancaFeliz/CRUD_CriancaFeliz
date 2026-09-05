@@ -26,11 +26,12 @@
                 </thead>
                 <tbody>
                     <?php foreach ($users as $user): ?>
-                        <tr style="border-bottom:1px solid #f0f0f0;" id="user-<?php echo $user['id'] ?? $user['idusuario']; ?>">
+                        <?php $userId = (int)($user['id'] ?? $user['idusuario'] ?? 0); ?>
+                        <tr style="border-bottom:1px solid #f0f0f0;" id="user-<?php echo $userId; ?>">
                             <td style="padding:16px;">
                                 <div style="display:flex; align-items:center; gap:12px;">
                                     <div class="avatar" style="width:40px; height:40px; border-radius:50%; background:#e9ecef; display:flex; align-items:center; justify-content:center; font-weight:600; color:#495057;">
-                                        <?php echo strtoupper(substr($user['name'] ?? $user['nome'] ?? 'U', 0, 1)); ?>
+                                        <?php echo e(strtoupper(substr($user['name'] ?? $user['nome'] ?? 'U', 0, 1))); ?>
                                     </div>
                                     <div>
                                         <div style="font-weight:600; color:#212529;"><?php echo htmlspecialchars($user['name'] ?? $user['nome'] ?? 'Sem nome'); ?></div>
@@ -57,7 +58,7 @@
                                 $roleName = $roleNames[$role] ?? ($user['nivel'] ?? 'Desconhecido');
                                 ?>
                                 <span style="background:<?php echo $roleColor; ?>; color:white; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:600;">
-                                    <?php echo $roleName; ?>
+                                    <?php echo e($roleName); ?>
                                 </span>
                             </td>
                             <td style="padding:16px;">
@@ -74,24 +75,23 @@
                             </td>
                             <td style="padding:16px; text-align:center;">
                                 <div style="display:flex; gap:8px; justify-content:center;">
-                                    <?php $userId = $user['id'] ?? $user['idusuario'] ?? ''; ?>
-                                    <a href="users.php?action=edit&id=<?php echo urlencode($userId); ?>" 
+                                    <a href="users.php?action=edit&amp;id=<?php echo $userId; ?>"
                                        class="btn-action" 
                                        style="background:#f0a36b; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:12px;"
                                        title="Editar">
                                         ✏️
                                     </a>
                                     
-                                    <button onclick="toggleUserStatus('<?php echo $userId; ?>')" 
-                                            class="btn-action" 
+                                    <button type="button" data-action="toggle-status" data-user-id="<?php echo $userId; ?>"
+                                            class="btn-action"
                                             style="background:<?php echo $isActive ? '#ffc107' : '#28a745'; ?>; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12px;"
                                             title="<?php echo $isActive ? 'Desativar' : 'Ativar'; ?>">
                                         <?php echo $isActive ? '⏸️' : '▶️'; ?>
                                     </button>
                                     
-                                    <?php if (($currentUser['id'] ?? $currentUser['idusuario']) !== $userId): ?>
-                                        <button onclick="deleteUser('<?php echo $userId; ?>', '<?php echo htmlspecialchars($user['name'] ?? $user['nome']); ?>')" 
-                                                class="btn-action" 
+                                    <?php if ((int)($currentUser['id'] ?? $currentUser['idusuario'] ?? 0) !== $userId): ?>
+                                        <button type="button" data-action="delete-user" data-user-id="<?php echo $userId; ?>" data-user-name="<?php echo e($user['name'] ?? $user['nome'] ?? 'Usuário'); ?>"
+                                                class="btn-action"
                                                 style="background:#dc3545; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12px;"
                                                 title="Excluir">
                                             🗑️
@@ -108,7 +108,15 @@
 </div>
 
 <script>
-const csrfToken = <?php echo json_encode($csrf_token); ?>;
+const csrfToken = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
+document.querySelectorAll('[data-action="toggle-status"]').forEach(button => {
+    button.addEventListener('click', () => toggleUserStatus(button.dataset.userId));
+});
+
+document.querySelectorAll('[data-action="delete-user"]').forEach(button => {
+    button.addEventListener('click', () => deleteUser(button.dataset.userId, button.dataset.userName));
+});
 
 function toggleUserStatus(userId) {
     if (!confirm('Tem certeza que deseja alterar o status deste usuário?')) {

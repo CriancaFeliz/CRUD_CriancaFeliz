@@ -431,6 +431,16 @@
     box-shadow: none !important;
 }
 
+.content .acolhimento-form .form-section[hidden] {
+    display: none !important;
+}
+
+.content > .acolhimento-stepper .step.completed {
+    border-color: rgba(111, 182, 79, 0.35) !important;
+    background: rgba(111, 182, 79, 0.12) !important;
+    color: #4f8f36 !important;
+}
+
 .content .acolhimento-form .form-section-title {
     margin: 0 0 16px !important;
     padding-bottom: 10px !important;

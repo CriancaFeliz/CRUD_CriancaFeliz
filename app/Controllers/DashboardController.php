@@ -272,7 +272,7 @@ class DashboardController extends BaseController {
             $alertas[] = [
                 'tipo' => 'error',
                 'titulo' => 'Erro no Sistema',
-                'mensagem' => 'Erro ao carregar alertas: ' . $e->getMessage(),
+                'mensagem' => 'Não foi possível carregar os alertas neste momento.',
                 'icone' => '❌'
             ];
         }

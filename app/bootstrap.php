@@ -177,6 +177,15 @@ function sanitizeInput($data) {
     return $data;
 }
 
+/**
+ * Escapa um valor no momento em que ele é exibido em HTML.
+ * Dados vindos do banco ou do usuário nunca devem ser concatenados em HTML
+ * sem passar por esta função.
+ */
+function e($value) {
+    return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
 // Função para validar email
 function validateEmail($email) {
     return filter_var($email, FILTER_VALIDATE_EMAIL);
@@ -326,9 +335,11 @@ function old($key, $default = '') {
     if (isset($_SESSION['old_input'][$key])) {
         $value = $_SESSION['old_input'][$key];
         // Se for array, retornar JSON para campos múltiplos
-        return is_array($value) ? htmlspecialchars(json_encode($value)) : htmlspecialchars($value);
+        return is_array($value)
+            ? e(json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))
+            : e($value);
     }
-    return htmlspecialchars($default);
+    return e($default);
 }
 
 // Criar diretório de dados se não existir

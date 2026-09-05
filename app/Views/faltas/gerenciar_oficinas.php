@@ -187,10 +187,10 @@
                 <?php endif; ?>
                 
                 <div class="oficina-actions">
-                    <button onclick='abrirModalEditar(<?php echo json_encode($oficina); ?>)' class="btn-small btn-edit">
+                    <button type="button" data-action="edit-workshop" data-workshop="<?php echo e(json_encode($oficina, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE)); ?>" class="btn-small btn-edit">
                         <i class="fas fa-edit"></i> Editar
                     </button>
-                    <button onclick="toggleOficina(<?php echo $oficina['id_oficina']; ?>)" class="btn-small btn-toggle">
+                    <button type="button" data-action="toggle-workshop" data-workshop-id="<?php echo (int)($oficina['id_oficina'] ?? 0); ?>" class="btn-small btn-toggle">
                         <i class="fas fa-power-off"></i> <?php echo $oficina['ativo'] ? 'Desativar' : 'Ativar'; ?>
                     </button>
                 </div>
@@ -208,7 +208,7 @@
         </div>
         
         <form id="formOficina" method="POST" action="faltas.php?action=salvarOficinaConfig">
-            <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token; ?>">
+            <input type="hidden" name="_csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
             <input type="hidden" name="id_oficina" id="id_oficina" value="">
             
             <div class="form-group">
@@ -258,6 +258,23 @@
 </div>
 
 <script>
+document.querySelectorAll('[data-action="edit-workshop"]').forEach(button => {
+    button.addEventListener('click', () => {
+        try {
+            abrirModalEditar(JSON.parse(button.dataset.workshop));
+        } catch (error) {
+            alert('Não foi possível carregar os dados da oficina.');
+        }
+    });
+});
+
+document.querySelectorAll('[data-action="toggle-workshop"]').forEach(button => {
+    button.addEventListener('click', () => {
+        const workshopId = Number.parseInt(button.dataset.workshopId, 10);
+        if (Number.isSafeInteger(workshopId) && workshopId > 0) toggleOficina(workshopId);
+    });
+});
+
 function abrirModalNova() {
     document.getElementById('modalTitulo').textContent = 'Nova Oficina';
     document.getElementById('formOficina').reset();

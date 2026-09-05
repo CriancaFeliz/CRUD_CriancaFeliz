@@ -15,7 +15,7 @@
                     <img id="profilePhoto" src="<?php echo htmlspecialchars($userData['photo']); ?>" alt="Foto do perfil" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid var(--border-color);">
                 <?php else: ?>
                     <div id="profilePhoto" style="width: 150px; height: 150px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; border: 4px solid var(--border-color);">
-                        <?php echo strtoupper(substr($userData['name'] ?? 'U', 0, 1)); ?>
+                        <?php echo e(strtoupper(substr($userData['name'] ?? 'U', 0, 1))); ?>
                     </div>
                 <?php endif; ?>
             </div>
@@ -26,7 +26,7 @@
             </div>
             
             <form id="photoForm" enctype="multipart/form-data" style="width: 100%; max-width: 300px;">
-                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token ?? ''; ?>">
+                <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
                 <input type="file" id="photoInput" name="photo" accept="image/*" style="display: none;">
                 <button type="button" onclick="document.getElementById('photoInput').click()" style="width: 100%; background: var(--primary-orange); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
                     📷 Alterar Foto
@@ -40,7 +40,7 @@
             <h3 style="margin: 0 0 20px 0; color: var(--text-primary);">Alterar Senha</h3>
             
             <form method="POST" action="profile.php?action=updatePassword">
-                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token ?? ''; ?>">
+                <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
                 
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">Senha Atual *</label>
@@ -105,7 +105,12 @@
                 if (photoElement.tagName === 'IMG') {
                     photoElement.src = photoUrl;
                 } else {
-                    photoElement.outerHTML = `<img id="profilePhoto" src="${photoUrl}" alt="Foto do perfil" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid var(--border-color);">`;
+                    const image = document.createElement('img');
+                    image.id = 'profilePhoto';
+                    image.src = photoUrl;
+                    image.alt = 'Foto do perfil';
+                    image.style.cssText = 'width:150px; height:150px; border-radius:50%; object-fit:cover; border:4px solid var(--border-color);';
+                    photoElement.replaceWith(image);
                 }
 
                 if (window.notificationSystem) {

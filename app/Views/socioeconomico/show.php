@@ -5,7 +5,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
     <a href="socioeconomico_list.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
     <?php if ($isAdmin): ?>
-    <a href="socioeconomico_form.php?id=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;"><i class="fas fa-edit"></i> Editar</a>
+    <a href="socioeconomico_form.php?id=<?php echo (int)($ficha['id'] ?? 0); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;"><i class="fas fa-edit"></i> Editar</a>
     <?php endif; ?>
 </div>
 
@@ -26,7 +26,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                 if ($cpf && strlen($cpf) == 11) {
                     echo substr($cpf, 0, 3) . '.' . substr($cpf, 3, 3) . '.' . substr($cpf, 6, 3) . '-' . substr($cpf, 9, 2);
                 } else {
-                    echo $cpf ?: 'Não informado';
+                    echo e($cpf ?: 'Não informado');
                 }
             ?></div>
         </div>
@@ -42,7 +42,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                     $rgFormatado = substr($rgNumeros, 0, 2) . '.' . substr($rgNumeros, 2, 3) . '.' . substr($rgNumeros, 5, 3) . '-' . substr($rgNumeros, 8, 2);
                     echo htmlspecialchars($rgFormatado);
                 } else {
-                    echo $rg ?: 'Não informado';
+                    echo e($rg ?: 'Não informado');
                 }
                 ?>
             </div>
@@ -218,7 +218,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Número de Cômodos</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['numero_comodos'] ?? 'Não informado'; ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo e($ficha['numero_comodos'] ?? 'Não informado'); ?></div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -285,7 +285,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
             <span class="status" style="padding:4px 8px; border-radius:12px; font-size:12px; font-weight:500;
                                    <?php echo ($ficha['status'] ?? 'Ativo') === 'Ativo' ? 'background:#e8f6ea; color:#6fb64f;' : 'background:#f8d7da; color:#721c24;'; ?>">
-                <?php echo $ficha['status'] ?? 'Ativo'; ?>
+                <?php echo e($ficha['status'] ?? 'Ativo'); ?>
             </span>
         </div>
     </div>

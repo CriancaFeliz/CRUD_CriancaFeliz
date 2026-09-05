@@ -336,6 +336,89 @@ class HttpSmokeTest extends TestCase {
         }
     }
 
+    public function testSocioeconomicWizardPersistsAllStepsWithoutBrowserStorage() {
+        $client = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
+        $formPage = $client->get('/socioeconomico_form.php');
+        $this->assertSame(200, $formPage['status'], 'Assistente socioeconomico deve abrir');
+        $this->assertSame(5, substr_count($formPage['body'], 'class="form-step'), 'Assistente deve conter cinco etapas no mesmo formulario');
+        $this->assertTrue(strpos($formPage['body'], 'socioeconomico-wizard.js') !== false, 'Assistente deve usar o script seguro');
+
+        $script = $client->get('/js/socioeconomico-wizard.js');
+        $this->assertSame(200, $script['status'], 'Script do assistente deve carregar');
+        $this->assertTrue(strpos($script['body'], 'sessionStorage') === false, 'Script nao deve persistir dados sensiveis no navegador');
+        $this->assertTrue(strpos($script['body'], 'localStorage') === false, 'Script nao deve persistir dados sensiveis localmente');
+        $this->assertTrue(strpos($script['body'], 'console.log') === false, 'Script nao deve imprimir dados sensiveis no console');
+
+        $csrfToken = $this->extractCsrfToken($formPage['body']);
+        $cpf = $this->fakeCpf();
+        $suffix = date('YmdHis') . '_' . bin2hex(random_bytes(3));
+        $response = $client->post('/socioeconomico_form.php', [
+            'csrf_token' => $csrfToken,
+            'nome_entrevistado' => 'Entrevistado HTTP ' . $suffix,
+            'nome_menor' => 'Menor HTTP ' . $suffix,
+            'rg' => (string) random_int(100000000, 999999999),
+            'cpf' => $cpf,
+            'data_acolhimento' => '01/06/2026',
+            'assistente_social' => 'Assistente HTTP',
+            'residencia' => 'Propria',
+            'numero_comodos' => 4,
+            'quartos' => 2,
+            'banheiro' => 1,
+            'agua' => 'Rede Publica',
+            'esgoto' => 'Rede Publica',
+            'energia' => 'Relogio Proprio',
+            'cond_residencia' => 'Boa',
+            'moradia' => 'Propria',
+            'nr_veiculos' => 1,
+            'veiculos_motocicleta' => 1,
+            'renda_salario' => '1600.00',
+            'renda_bolsa' => '200.00',
+            'renda_familiar' => '1800.00',
+            'renda_per_capita' => '900.00',
+            'qtd_pessoas' => 2,
+            'bolsa_familia' => 1,
+            'trabalho_clt' => 'Sim',
+            'trabalho_clt_qual' => 'Auxiliar',
+            'convenio_medico' => 'Nao',
+            'cadunico' => 'Sim',
+            'familia_json' => json_encode([
+                ['nome' => 'Familiar HTTP', 'parentesco' => 'Mae', 'dataNasc' => '01/01/1985', 'formacao' => 'Medio', 'renda' => 1600]
+            ]),
+            'despesas_json' => json_encode([
+                ['tipo' => 'Aluguel', 'valor' => 700, 'renda' => 0]
+            ])
+        ]);
+
+        $this->assertSame(302, $response['status'], 'Cadastro socioeconomico deve redirecionar depois de salvar');
+        $row = $this->fetchRow(
+            'SELECT a.idatendido, f.* FROM atendido a INNER JOIN ficha_socioeconomico f ON f.id_atendido = a.idatendido WHERE a.cpf = ? LIMIT 1',
+            [$cpf]
+        );
+        $this->assertNotEmpty($row, 'Cadastro enviado pelas cinco etapas deve existir');
+        $this->assertSame(2, (int) $row['quartos'], 'Quantidade de quartos deve ser preservada');
+        $this->assertSame(1, (int) $row['banheiros'], 'Quantidade de banheiros deve ser preservada');
+        $this->assertEquals(1600.0, $row['renda_salario'], 'Renda salarial deve ser preservada');
+        $this->assertEquals(200.0, $row['renda_bolsa'], 'Beneficio deve ser preservado');
+        $this->assertSame(1, (int) $row['trabalho_clt'], 'Situacao de trabalho deve ser preservada');
+        $this->assertSame(0, (int) $row['convenio_medico'], 'Situacao de convenio deve ser preservada');
+
+        $this->execute('DELETE FROM atendido WHERE idatendido = ?', [$row['idatendido']]);
+    }
+
+    public function testAcolhimentoWizardKeepsFieldsInOneSafePage() {
+        $client = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
+        $formPage = $client->get('/acolhimento_form.php');
+        $this->assertSame(200, $formPage['status'], 'Assistente de acolhimento deve abrir');
+        $this->assertSame(4, substr_count($formPage['body'], 'class="form-section"'), 'Assistente de acolhimento deve conter quatro etapas');
+        $this->assertTrue(strpos($formPage['body'], 'acolhimento-wizard.js') !== false, 'Acolhimento deve usar o script seguro');
+
+        $script = $client->get('/js/acolhimento-wizard.js');
+        $this->assertSame(200, $script['status'], 'Script de acolhimento deve carregar');
+        $this->assertTrue(strpos($script['body'], 'sessionStorage') === false, 'Acolhimento nao deve persistir dados sensiveis no navegador');
+        $this->assertTrue(strpos($script['body'], 'localStorage') === false, 'Acolhimento nao deve persistir dados sensiveis localmente');
+        $this->assertTrue(strpos($script['body'], 'console.log') === false, 'Acolhimento nao deve imprimir dados sensiveis no console');
+    }
+
     private function newClient() {
         return new HttpSmokeClient($this->baseUrl);
     }

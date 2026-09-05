@@ -9,6 +9,7 @@ class BootstrapHelperTest extends TestCase {
     public function testInputSanitization() {
         $this->assertSame('&lt;script&gt;alert(&#039;x&#039;)&lt;/script&gt;', sanitizeInput("<script>alert('x')</script>"));
         $this->assertSame(['nome' => 'Maria'], sanitizeInput(['nome' => ' Maria ']));
+        $this->assertSame('&lt;script&gt;alert(&#039;x&#039;)&lt;/script&gt;', e("<script>alert('x')</script>"));
     }
 
     public function testDateFormatting() {

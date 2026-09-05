@@ -1,7 +1,7 @@
 <?php
-// Obter etapa atual e ID (se for edição)
-$step = $_GET['step'] ?? 1;
-$step = max(1, min(5, (int)$step)); // Limitar entre 1 e 5
+// O assistente mantém todas as etapas no mesmo formulário. Assim, dados
+// sensíveis não precisam ser persistidos no armazenamento do navegador.
+$step = 1;
 $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
 ?>
 
@@ -83,6 +83,14 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
         padding: 30px;
         margin-bottom: 20px;
         box-shadow: 0 2px 10px rgba(0,0,0,.08);
+    }
+
+    .form-step {
+        display: none;
+    }
+
+    .form-step.active {
+        display: block;
     }
     
     .form-grid {
@@ -232,10 +240,32 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
         cursor: pointer;
         font-size: 12px;
     }
+
+    .empty-family-list {
+        color: #6c757d;
+        font-style: italic;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .additional-expense {
+        margin-bottom: 12px;
+    }
+
+    .additional-expense-fields {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 140px auto;
+        gap: 8px;
+        align-items: center;
+    }
     
     @media (max-width: 768px) {
         .form-grid {
             grid-template-columns: 1fr !important;
+        }
+
+        .additional-expense-fields {
+            grid-template-columns: 1fr;
         }
         
         .step-indicator {
@@ -255,38 +285,37 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
 
 <!-- Indicador de Etapas -->
 <div class="step-indicator">
-    <div class="step-item <?php echo $step >= 1 ? ($step == 1 ? 'active' : 'completed') : ''; ?>">
+    <div class="step-item active" data-step-indicator="1">
         <div class="step-number">1</div>
         <div class="step-title">Dados Iniciais</div>
     </div>
-    <div class="step-item <?php echo $step >= 2 ? ($step == 2 ? 'active' : 'completed') : ''; ?>">
+    <div class="step-item" data-step-indicator="2">
         <div class="step-number">2</div>
         <div class="step-title">Domicílio</div>
     </div>
-    <div class="step-item <?php echo $step >= 3 ? ($step == 3 ? 'active' : 'completed') : ''; ?>">
+    <div class="step-item" data-step-indicator="3">
         <div class="step-number">3</div>
         <div class="step-title">Composição Familiar</div>
     </div>
-    <div class="step-item <?php echo $step >= 4 ? ($step == 4 ? 'active' : 'completed') : ''; ?>">
+    <div class="step-item" data-step-indicator="4">
         <div class="step-number">4</div>
         <div class="step-title">Despesas</div>
     </div>
-    <div class="step-item <?php echo $step >= 5 ? ($step == 5 ? 'active' : 'completed') : ''; ?>">
+    <div class="step-item" data-step-indicator="5">
         <div class="step-number">5</div>
         <div class="step-title">Outras Informações</div>
     </div>
 </div>
 
-<form method="post" id="socioeconomicoForm" enctype="multipart/form-data" novalidate>
-    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-    <input type="hidden" name="step" value="<?php echo $step; ?>">
+<form method="post" id="socioeconomicoForm" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
     <input type="hidden" name="familia_json" id="familia_json" value="">
     <input type="hidden" name="despesas_json" id="despesas_json" value="">
     <?php if ($editId): ?>
         <input type="hidden" name="id" id="edit_id" value="<?php echo htmlspecialchars($editId); ?>">
     <?php endif; ?>
     
-    <?php if ($step == 1): ?>
+    <section class="form-step active" data-step="1">
         <!-- ETAPA 1: Dados Iniciais -->
         <div class="form-section">
             <h3 style="margin-bottom: 20px; color: #2c3e50;">Dados Iniciais</h3>
@@ -333,14 +362,9 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
             </button>
         </div>
         
-        <!-- Debug: Botão para limpar dados salvos (remover em produção) -->
-        <div style="text-align: center; margin-top: 10px;">
-            <button type="button" onclick="sessionStorage.clear(); alert('Dados limpos! Recarregando...'); location.reload();" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                <i class="fas fa-trash"></i> Limpar Dados Salvos (Debug)
-            </button>
-        </div>
-        
-    <?php elseif ($step == 2): ?>
+    </section>
+
+    <section class="form-step" data-step="2">
         <!-- ETAPA 2: Características do Domicílio -->
         <div class="form-section">
             <h3 style="margin-bottom: 20px; color: #2c3e50;">Características do Domicílio</h3>
@@ -476,7 +500,9 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
             <button type="button" onclick="nextStep()" class="btn btn-primary">Próximo →</button>
         </div>
         
-    <?php elseif ($step == 3): ?>
+    </section>
+
+    <section class="form-step" data-step="3">
         <!-- ETAPA 3: Composição Familiar -->
         <div class="form-section">
             <h3 style="margin-bottom: 20px; color: #2c3e50;">Composição Familiar</h3>
@@ -495,7 +521,9 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
             <button type="button" onclick="nextStep()" class="btn btn-primary">Próximo →</button>
         </div>
         
-    <?php elseif ($step == 4): ?>
+    </section>
+
+    <section class="form-step" data-step="4">
         <!-- ETAPA 4: Despesas -->
         <div class="form-section">
             <h3 style="margin-bottom: 20px; color: #2c3e50;">Despesas</h3>
@@ -574,7 +602,9 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
             <button type="button" onclick="nextStep()" class="btn btn-primary">Próximo →</button>
         </div>
         
-    <?php elseif ($step == 5): ?>
+    </section>
+
+    <section class="form-step" data-step="5">
         <!-- ETAPA 5: Outras Informações -->
         <div class="form-section">
             <h3 style="margin-bottom: 20px; color: #2c3e50;">Outras Informações</h3>
@@ -632,7 +662,7 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
                 <?php endif; ?>
             </button>
         </div>
-    <?php endif; ?>
+    </section>
 </form>
 
 <!-- Modal de Composição Familiar -->
@@ -697,4 +727,7 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
     </div>
 </div>
 
-<script src="js/socioeconomico-multistep.js"></script>
+<script type="application/json" id="socioeconomicoInitialData"><?php
+echo json_encode($ficha ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+?></script>
+<script src="js/socioeconomico-wizard.js"></script>

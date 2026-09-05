@@ -63,8 +63,8 @@ $patients = $patients ?? [];
             <tbody>
                 <?php foreach ($patients as $patient):
 
-                    $nome = htmlspecialchars((string)($patient['nome_completo'] ?? 'Não informado'));
-                    $cpf = htmlspecialchars((string)($patient['cpf'] ?? 'Não informado'));
+                    $nome = (string)($patient['nome_completo'] ?? 'Não informado');
+                    $cpf = (string)($patient['cpf'] ?? 'Não informado');
                     $idade = isset($patient['idade']) ? (int)$patient['idade'] : '-';
 
                     $dataNasc = safeDate($patient['data_nascimento'] ?? null);
@@ -72,15 +72,15 @@ $patients = $patients ?? [];
 
                     $lastNote = safeDate($patient['last_note'] ?? null);
 
-                    $responsavel = htmlspecialchars((string)($patient['responsavel'] ?? 'Não informado'));
+                    $responsavel = (string)($patient['responsavel'] ?? 'Não informado');
 
                     $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
                 ?>
 
                 <tr class="patient-row"
                     style="border-bottom:1px solid #f0f0f0;"
-                    data-name="<?= strtolower($nome) ?>"
-                    data-cpf="<?= $cpf ?>"
+                    data-name="<?= e(mb_strtolower($nome, 'UTF-8')) ?>"
+                    data-cpf="<?= e($cpf) ?>"
                     data-age-group="<?php 
                         if ($idade !== '-' && $idade < 12) echo 'crianca';
                         elseif ($idade !== '-' && $idade < 18) echo 'adolescente';
@@ -93,15 +93,15 @@ $patients = $patients ?? [];
                             
                             <div class="avatar" 
                                 style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, #17a2b8, #20c997); display:flex; align-items:center; justify-content:center; font-weight:600; color:white; font-size:18px;">
-                                <?= $avatar ?>
+                                <?= e($avatar) ?>
                             </div>
 
                             <div>
                                 <div style="font-weight:600; color:#212529; margin-bottom:2px;">
-                                    <?= $nome ?>
+                                    <?= e($nome) ?>
                                 </div>
                                 <div style="font-size:12px; color:#6c757d; font-family:monospace;">
-                                    CPF: <?= $cpf ?>
+                                    CPF: <?= e($cpf) ?>
                                 </div>
                             </div>
                         </div>
@@ -117,21 +117,21 @@ $patients = $patients ?? [];
                         </div>
 
                         <div style="font-size:11px; color:#6c757d; margin-top:2px;">
-                            <?= $dataNasc ?>
+                            <?= e($dataNasc) ?>
                         </div>
                     </td>
 
                     <!-- RESPONSAVEL -->
                     <td style="padding:16px;">
                         <div style="font-size:14px; color:#495057;">
-                            <?= $responsavel ?>
+                            <?= e($responsavel) ?>
                         </div>
                     </td>
 
                     <!-- ACOLHIMENTO -->
                     <td style="padding:16px;">
                         <div style="font-size:14px; color:#6c757d;">
-                            <?= $dataAcolh ?>
+                            <?= e($dataAcolh) ?>
                         </div>
                     </td>
 
@@ -139,7 +139,7 @@ $patients = $patients ?? [];
                     <td style="padding:16px;">
                         <?php if ($lastNote !== '-'): ?>
                             <div style="font-size:14px; color:#28a745; font-weight:500;">
-                                <?= $lastNote ?>
+                                <?= e($lastNote) ?>
                             </div>
                         <?php else: ?>
                             <span style="color:#dc3545; font-size:14px; font-weight:500;">Sem anotações</span>
@@ -150,13 +150,13 @@ $patients = $patients ?? [];
                     <td style="padding:16px; text-align:center; white-space:nowrap;">
                         <div style="display:flex; gap:8px; justify-content:center;">
                         
-                            <a href="psychology.php?action=patient&cpf=<?= urlencode($cpf) ?>" 
+                            <a href="psychology.php?action=patient&amp;cpf=<?= rawurlencode($cpf) ?>"
                                 class="btn-action"
                                 style="background:#6c757d; color:#fff; padding:8px 12px; border-radius:6px; text-decoration:none; font-size:12px;">
                                 👤 Ver
                             </a>
 
-                            <a href="psychology.php?action=patient&cpf=<?= urlencode($cpf) ?>#new-note"
+                            <a href="psychology.php?action=patient&amp;cpf=<?= rawurlencode($cpf) ?>#new-note"
                                 class="btn-action"
                                 style="background:#17a2b8; color:white; padding:8px 12px; border-radius:6px; text-decoration:none; font-size:12px;">
                                 🧠 Atender

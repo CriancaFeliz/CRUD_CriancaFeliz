@@ -54,7 +54,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                             if ($cpf && strlen($cpf) == 11) {
                                 echo substr($cpf, 0, 3) . '.' . substr($cpf, 3, 3) . '.' . substr($cpf, 6, 3) . '-' . substr($cpf, 9, 2);
                             } else {
-                                echo $cpf;
+                                echo e($cpf);
                             }
                             ?>
                         </td>
@@ -100,22 +100,23 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                             ?>
                         </td>
                         <td style="padding:12px; color:#212529;">
-                            <span class="status <?php echo strtolower($ficha['status'] ?? 'ativo'); ?>" 
+                            <?php $statusAtivo = ($ficha['status'] ?? 'Ativo') === 'Ativo'; ?>
+                            <span class="status <?php echo $statusAtivo ? 'ativo' : 'inativo'; ?>"
                                   style="padding:4px 8px; border-radius:12px; font-size:11px; font-weight:500; display:inline-block;
-                                         <?php echo ($ficha['status'] ?? 'Ativo') === 'Ativo' ? 'background:#e8f6ea; color:#6fb64f;' : 'background:#f8d7da; color:#721c24;'; ?>">
-                                <?php echo $ficha['status'] ?? 'Ativo'; ?>
+                                         <?php echo $statusAtivo ? 'background:#e8f6ea; color:#6fb64f;' : 'background:#f8d7da; color:#721c24;'; ?>">
+                                <?php echo e($ficha['status'] ?? 'Ativo'); ?>
                             </span>
                         </td>
                         <td style="padding:12px; text-align:center; white-space:nowrap;">
                             <?php 
                             // Tentar obter ID de diferentes fontes
-                            $id = $ficha['id'] ?? $ficha['idatendido'] ?? null;
+                            $id = (int)($ficha['id'] ?? $ficha['idatendido'] ?? 0);
                             // Determinar se pode editar/deletar (apenas admin)
                             $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
                             
                             if (!empty($id)) { 
                                 // Botão Visualizar (todos veem)
-                                echo '<a href="socioeconomico_view.php?id=' . urlencode($id) . '" ';
+                                echo '<a href="socioeconomico_view.php?id=' . $id . '" ';
                                 echo 'class="btn-icon" ';
                                 echo 'title="Visualizar" ';
                                 echo 'style="background:#17a2b8; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
@@ -123,7 +124,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                                 
                                 // Botão Editar (somente admin)
                                 if ($isAdmin) {
-                                    echo '<a href="socioeconomico_form.php?id=' . urlencode($id) . '" ';
+                                    echo '<a href="socioeconomico_form.php?id=' . $id . '" ';
                                     echo 'class="btn-icon" ';
                                     echo 'title="Editar" ';
                                     echo 'style="background:#ffc107; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
@@ -132,8 +133,8 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                                 
                                 // Botão Excluir (somente admin)
                                 if ($isAdmin) {
-                                    echo '<form method="POST" action="socioeconomico_list.php?delete=' . urlencode($id) . '" style="display:inline; margin:0 2px;" onsubmit="return confirm(\'Tem certeza que deseja excluir esta ficha?\')">';
-                                    echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrf_token ?? '') . '">';
+                                    echo '<form method="POST" action="socioeconomico_list.php?delete=' . $id . '" style="display:inline; margin:0 2px;" onsubmit="return confirm(\'Tem certeza que deseja excluir esta ficha?\')">';
+                                    echo '<input type="hidden" name="csrf_token" value="' . e($csrf_token ?? '') . '">';
                                     echo '<button type="submit" class="btn-icon" title="Excluir" style="background:#e74c3c; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:13px; margin:0 2px; display:inline-block;">';
                                     echo '<i class="fas fa-trash"></i></button>';
                                     echo '</form>';

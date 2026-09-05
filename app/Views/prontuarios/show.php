@@ -12,7 +12,7 @@
         </div>
         <div style="display: flex; gap: 10px;">
             <?php if ($acolhimento && $attendanceStats && !$attendanceStats['desligado']): ?>
-                <a href="faltas.php?action=historico&id=<?php echo $acolhimento['id']; ?>"
+                <a href="faltas.php?action=historico&amp;id=<?php echo (int)($acolhimento['id'] ?? 0); ?>"
                    class="btn" style="background: #3498db;">
                     <i class="fas fa-calendar-check"></i> Ver Controle de Faltas
                 </a>
@@ -47,7 +47,7 @@
                         <strong>Motivo:</strong> <?php echo htmlspecialchars($attendanceStats['desligamento']['motivo'] ?? 'Não informado'); ?><br>
                         <strong>Data:</strong> <?php 
                         $date = DateTime::createFromFormat('Y-m-d', $attendanceStats['desligamento']['data_desligamento']);
-                        echo $date ? $date->format('d/m/Y') : $attendanceStats['desligamento']['data_desligamento'];
+                        echo e($date ? $date->format('d/m/Y') : ($attendanceStats['desligamento']['data_desligamento'] ?? 'Não informada'));
                         ?><br>
                         <?php if (!empty($attendanceStats['desligamento']['observacao'])): ?>
                             <strong>Observação:</strong> <?php echo htmlspecialchars($attendanceStats['desligamento']['observacao']); ?>
@@ -62,12 +62,13 @@
     <?php if ($acolhimento && $attendanceStats && !empty($attendanceStats['alertas'])): ?>
         <div class="alertas-section" style="margin-bottom: 20px;">
             <?php foreach ($attendanceStats['alertas'] as $alerta): ?>
-                <div class="alert alert-<?php echo $alerta['nivel']; ?>" 
-                     style="background: <?php echo $alerta['nivel'] === 'critico' ? '#fee' : ($alerta['nivel'] === 'atencao' ? '#fff3cd' : '#d1ecf1'); ?>; 
-                            border-left: 4px solid <?php echo $alerta['nivel'] === 'critico' ? '#e74c3c' : ($alerta['nivel'] === 'atencao' ? '#f39c12' : '#3498db'); ?>; 
+                <?php $alertLevel = in_array(($alerta['nivel'] ?? ''), ['critico', 'atencao', 'info'], true) ? $alerta['nivel'] : 'info'; ?>
+                <div class="alert alert-<?php echo e($alertLevel); ?>"
+                     style="background: <?php echo $alertLevel === 'critico' ? '#fee' : ($alertLevel === 'atencao' ? '#fff3cd' : '#d1ecf1'); ?>;
+                            border-left: 4px solid <?php echo $alertLevel === 'critico' ? '#e74c3c' : ($alertLevel === 'atencao' ? '#f39c12' : '#3498db'); ?>;
                             padding: 15px; border-radius: 8px; margin-bottom: 10px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 24px;"><?php echo $alerta['icone']; ?></span>
+                        <span style="font-size: 24px;"><?php echo e($alerta['icone'] ?? ''); ?></span>
                         <div style="flex: 1;">
                             <div style="font-weight: 600; margin-bottom: 5px;">
                                 <?php echo htmlspecialchars($alerta['mensagem']); ?>
@@ -170,7 +171,7 @@
                                 <?php echo htmlspecialchars($document['data_upload'] ?? 'Data não informada'); ?>
                             </div>
                         </div>
-                        <a class="btn" href="prontuarios.php?action=document&id=<?php echo urlencode($document['iddocumento']); ?>" target="_blank" rel="noopener" style="background: #3498db; font-size: 12px; padding: 8px 12px;">
+                        <a class="btn" href="prontuarios.php?action=document&amp;id=<?php echo (int)($document['iddocumento'] ?? 0); ?>" target="_blank" rel="noopener" style="background: #3498db; font-size: 12px; padding: 8px 12px;">
                             <i class="fas fa-eye"></i> Abrir
                         </a>
                     </div>
@@ -190,7 +191,7 @@
             <div class="ficha-card" style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;"><i class="fas fa-clipboard-list"></i> Ficha de Acolhimento</h2>
-                    <a href="acolhimento_view.php?id=<?php echo $acolhimento['id']; ?>" 
+                    <a href="acolhimento_view.php?id=<?php echo (int)($acolhimento['id'] ?? 0); ?>"
                        class="btn" style="background: #3498db; font-size: 12px; padding: 6px 12px;">
                         Ver Completa
                     </a>
@@ -230,7 +231,7 @@
             <div class="ficha-card" style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;"><i class="fas fa-home"></i> Ficha Socioeconômica</h2>
-                    <a href="socioeconomico_view.php?id=<?php echo $socioeconomico['id']; ?>" 
+                    <a href="socioeconomico_view.php?id=<?php echo (int)($socioeconomico['id'] ?? 0); ?>"
                        class="btn" style="background: #f0a36b; font-size: 12px; padding: 6px 12px;">
                         Ver Completa
                     </a>
@@ -269,7 +270,7 @@ function desligarAtendido() {
         return;
     }
     
-    window.location.href = 'desligamento.php?action=novo&id=<?php echo $acolhimento['id'] ?? ''; ?>';
+    window.location.href = 'desligamento.php?action=novo&id=<?php echo (int)($acolhimento['id'] ?? 0); ?>';
 }
 
 function reativarAtendido() {
@@ -284,12 +285,12 @@ function reativarAtendido() {
     const csrfInput = document.createElement('input');
     csrfInput.type = 'hidden';
     csrfInput.name = 'csrf_token';
-    csrfInput.value = '<?php echo $csrf_token; ?>';
+    csrfInput.value = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     
     const atendidoInput = document.createElement('input');
     atendidoInput.type = 'hidden';
     atendidoInput.name = 'id_atendido';
-    atendidoInput.value = '<?php echo $acolhimento['id'] ?? ''; ?>';
+    atendidoInput.value = <?php echo json_encode((int)($acolhimento['id'] ?? 0)); ?>;
     
     form.appendChild(csrfInput);
     form.appendChild(atendidoInput);

@@ -131,7 +131,7 @@
                 </div>
                 <div class="info-item">
                     <i class="fas fa-times-circle"></i>
-                    <span><strong>Total de Faltas:</strong> <?php echo $atendido['total_faltas']; ?></span>
+                    <span><strong>Total de Faltas:</strong> <?php echo (int)($atendido['total_faltas'] ?? 0); ?></span>
                 </div>
                 <div class="info-item">
                     <i class="fas fa-calendar"></i>
@@ -140,11 +140,11 @@
             </div>
             
             <div class="actions">
-                <a href="faltas.php?action=historico&id=<?php echo $atendido['idatendido']; ?>" class="btn-small btn-primary">
+                <a href="faltas.php?action=historico&amp;id=<?php echo (int)($atendido['idatendido'] ?? 0); ?>" class="btn-small btn-primary">
                     <i class="fas fa-history"></i> Ver Histórico
                 </a>
                 <?php if ($atendido['nivel_alerta'] === 'CRÍTICO'): ?>
-                    <a href="desligamento.php?action=novo&id=<?php echo $atendido['idatendido']; ?>" class="btn-small btn-danger">
+                    <a href="desligamento.php?action=novo&amp;id=<?php echo (int)($atendido['idatendido'] ?? 0); ?>" class="btn-small btn-danger">
                         <i class="fas fa-user-times"></i> Desligar
                     </a>
                 <?php endif; ?>

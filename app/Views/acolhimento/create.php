@@ -23,7 +23,7 @@ if (isset($_SESSION['flash_error'])) {
 <?php endif; ?>
 
 <form method="post" enctype="multipart/form-data" class="acolhimento-form" id="acolhimentoForm">
-    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
     <?php if (!empty($editId)): ?>
         <input type="hidden" name="id" value="<?php echo htmlspecialchars($editId); ?>">
     <?php endif; ?>
@@ -212,7 +212,7 @@ if (isset($_SESSION['flash_error'])) {
                 <small>Envie uma imagem do carimbo ou assinatura (JPG, PNG, GIF - máx. 2MB)</small>
                 <?php if (!empty($ficha['carimbo'])): ?>
                     <div style="margin-top:8px;">
-                        <small>Arquivo atual: <?php echo basename($ficha['carimbo']); ?></small>
+                        <small>Arquivo atual: <?php echo htmlspecialchars(basename($ficha['carimbo']), ENT_QUOTES, 'UTF-8'); ?></small>
                     </div>
                 <?php endif; ?>
             </div>
@@ -231,4 +231,4 @@ if (isset($_SESSION['flash_error'])) {
     </div>
 </form>
 
-<script src="js/acolhimento-multistep.js"></script>
+<script src="js/acolhimento-wizard.js"></script>

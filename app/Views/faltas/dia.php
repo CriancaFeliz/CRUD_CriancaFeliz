@@ -169,7 +169,7 @@
             <?php else: ?>
                 <?php foreach ($atendidos as $atendido): ?>
                     <?php
-                        $id = $atendido['idatendido'] ?? $atendido['id'];
+                        $id = (int)($atendido['idatendido'] ?? $atendido['id'] ?? 0);
                         $frequencia = $atendido['frequencia'];
                         $status = $frequencia['status'] ?? null;
                         $statusPresente = ($status === 'P');
@@ -191,7 +191,7 @@
                                            name="status_<?php echo $id; ?>" 
                                            value="P" 
                                            <?php echo $statusPresente ? 'checked' : ''; ?>
-                                           onchange="salvarFrequencia(<?php echo $id; ?>, 'P', '<?php echo $data; ?>')">
+                                           class="attendance-option" data-atendido-id="<?php echo $id; ?>" data-status="P" data-date="<?php echo e($data); ?>">
                                     <label> Presente</label>
                                 </div>
                                 <div class="checkbox-item">
@@ -199,7 +199,7 @@
                                            name="status_<?php echo $id; ?>" 
                                            value="F" 
                                            <?php echo $statusFalta ? 'checked' : ''; ?>
-                                           onchange="salvarFrequencia(<?php echo $id; ?>, 'F', '<?php echo $data; ?>')">
+                                           class="attendance-option" data-atendido-id="<?php echo $id; ?>" data-status="F" data-date="<?php echo e($data); ?>">
                                     <label> Falta</label>
                                 </div>
                                 <div class="checkbox-item">
@@ -207,7 +207,7 @@
                                            name="status_<?php echo $id; ?>" 
                                            value="J" 
                                            <?php echo $statusJustificada ? 'checked' : ''; ?>
-                                           onchange="abrirJustificativa(<?php echo $id; ?>, '<?php echo $data; ?>')">
+                                           class="attendance-option" data-atendido-id="<?php echo $id; ?>" data-status="J" data-date="<?php echo e($data); ?>">
                                     <label> Justificada</label>
                                 </div>
                             </div>
@@ -218,7 +218,7 @@
                             </span>
                         </td>
                         <td style="text-align: center;">
-                            <a href="faltas.php?action=historico&id=<?php echo $id; ?>" class="btn-icon" title="Ver Histórico">
+                            <a href="faltas.php?action=historico&amp;id=<?php echo $id; ?>" class="btn-icon" title="Ver Histórico">
                                 <i class="fas fa-history"></i>
                             </a>
                         </td>
@@ -230,7 +230,19 @@
 </div>
 
 <script>
-const csrfToken = '<?php echo $csrf_token; ?>';
+const csrfToken = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
+document.querySelectorAll('.attendance-option').forEach(input => {
+    input.addEventListener('change', () => {
+        const id = Number.parseInt(input.dataset.atendidoId, 10);
+        if (!Number.isSafeInteger(id) || id <= 0) return;
+        if (input.dataset.status === 'J') {
+            abrirJustificativa(id, input.dataset.date);
+        } else {
+            salvarFrequencia(id, input.dataset.status, input.dataset.date);
+        }
+    });
+});
 
 function salvarFrequencia(idAtendido, status, data) {
     const formData = new FormData();

@@ -19,7 +19,6 @@ class ThemeManager {
         // Adicionar event listeners
         this.addEventListeners();
         
-        console.log('Theme Manager inicializado - Tema atual:', this.currentTheme);
     }
 
 
@@ -122,7 +121,6 @@ class ThemeManager {
         // Adicionar feedback visual
         this.showThemeChangeNotification();
         
-        console.log('🎨 Tema alterado para:', this.currentTheme);
     }
 
     applyTheme(theme) {

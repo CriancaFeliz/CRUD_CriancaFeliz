@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $title ?? 'Sistema Criança Feliz'; ?></title>
+    <title><?php echo e($title ?? 'Sistema Criança Feliz'); ?></title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -53,21 +53,21 @@
         <main class="content">
             <div class="topbar">
                 <div>
-                    <div class="topbar-title"><?php echo $pageTitle ?? $title ?? 'Sistema Criança Feliz'; ?></div>
+                    <div class="topbar-title"><?php echo e($pageTitle ?? $title ?? 'Sistema Criança Feliz'); ?></div>
                 </div>
                 <div class="user">
                     <a href="profile.php" class="user-profile-link" title="Meu Perfil">
                         <?php if (!empty($currentUser['photo'])): ?>
-                            <img src="<?php echo htmlspecialchars($currentUser['photo']); ?>" class="avatar">
+                            <img src="<?php echo e($currentUser['photo']); ?>" class="avatar" alt="Foto do perfil">
                         <?php else: ?>
                             <div class="avatar avatar-placeholder">
-                                <?php echo strtoupper(substr($currentUser['name'] ?? 'U', 0, 1)); ?>
+                                <?php echo e(strtoupper(substr($currentUser['name'] ?? 'U', 0, 1))); ?>
                             </div>
                         <?php endif; ?>
-                        <div><?php echo $currentUser['email'] ?? 'Usuário'; ?></div>
+                        <div><?php echo e($currentUser['email'] ?? 'Usuário'); ?></div>
                     </a>
                     <form action="logout.php" method="POST" class="logout-form">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
                         <button type="submit" class="btn secondary">Sair</button>
                     </form>
                 </div>
@@ -77,8 +77,9 @@
             <?php if (!empty($messages)): ?>
                 <div class="flash-messages">
                     <?php foreach ($messages as $type => $message): ?>
-                        <div class="flash-message flash-<?php echo $type; ?>">
-                            <?php echo htmlspecialchars($message); ?>
+                        <?php $safeMessageType = in_array($type, ['success', 'error', 'warning', 'info'], true) ? $type : 'info'; ?>
+                        <div class="flash-message flash-<?php echo e($safeMessageType); ?>">
+                            <?php echo e($message); ?>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -108,7 +109,7 @@
     
     <?php if (isset($additionalScripts)): ?>
         <?php foreach ($additionalScripts as $script): ?>
-            <script src="<?php echo $script; ?>"></script>
+            <script src="<?php echo e($script); ?>"></script>
         <?php endforeach; ?>
     <?php endif; ?>
 </body>

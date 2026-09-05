@@ -17,58 +17,116 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
    const tbody = document.getElementById('fichas-body');
   const initialTbodyHTML = tbody ? tbody.innerHTML : '';
    const pagination = document.querySelector('.pagination');
-   const csrfToken = '<?php echo htmlspecialchars($csrf_token ?? ""); ?>';
+   const csrfToken = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
    const isAdmin = <?php echo ((isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin') ? 'true' : 'false'); ?>;
 
-    function formatStatus(status) {
-      const isAtivo = (status || 'Ativo') === 'Ativo';
-      const cls = isAtivo ? 'status-ativo' : 'status-inativo';
-      return `<span class="status ${cls}">${status || 'Ativo'}</span>`;
-    }
-
-    function formatCategoria(cat) {
-      const c = (cat || 'Indefinido').toLowerCase();
-      let cls = 'badge-indefinido';
-      if (c === 'criança' || c === 'crianca') cls = 'badge-crianca';
-      else if (c === 'adolescente') cls = 'badge-adolescente';
-      else if (c === 'adulto') cls = 'badge-adulto';
-      const label = (cat || 'Indefinido');
-      return `<span class="badge ${cls}">${label}</span>`;
+    function appendTextCell(row, value) {
+      const cell = document.createElement('td');
+      cell.textContent = String(value ?? '');
+      row.appendChild(cell);
+      return cell;
     }
 
     function renderRows(items) {
-      if (!Array.isArray(items)) return;
-      tbody.innerHTML = items.map(it => {
-        const id = it.id || '';
-        const nome = it.nome_completo || '';
-        const cpf = it.cpf || '';
+      if (!tbody || !Array.isArray(items)) return;
+      const fragment = document.createDocumentFragment();
+
+      items.forEach(it => {
+        const row = document.createElement('tr');
+        const parsedId = Number.parseInt(it.id, 10);
+        const id = Number.isSafeInteger(parsedId) && parsedId > 0 ? parsedId : null;
         const idade = (it.idade != null && it.idade !== '') ? `${it.idade} anos` : 'N/A anos';
-        const categoria = formatCategoria(it.categoria);
-        const responsavel = it.responsavel || '';
-        const status = formatStatus(it.status);
-        
-        // Botões de ação (somente admin pode editar/deletar)
-        let btns = `<a href="acolhimento_view.php?id=${id}" class="btn-icon view-btn" title="Visualizar"><i class="fas fa-eye"></i></a>`;
-        
-        if (isAdmin) {
-          btns += `
-           <a href="acolhimento_form.php?id=${id}" class="btn-icon edit-btn" title="Editar"><i class="fas fa-edit"></i></a>
-           <form method="POST" action="acolhimento_list.php?delete=${id}" class="inline-form" onsubmit="return confirm('Tem certeza que deseja excluir esta ficha?')">
-             <input type="hidden" name="csrf_token" value="${csrfToken}">
-             <button type="submit" class="btn-icon delete-btn" title="Excluir"><i class="fas fa-trash"></i></button>
-           </form>`;
+
+        appendTextCell(row, it.nome_completo || '');
+        appendTextCell(row, it.cpf || '');
+        appendTextCell(row, idade);
+
+        const categoriaCell = document.createElement('td');
+        const categoria = String(it.categoria || 'Indefinido');
+        const categoriaKey = categoria.toLocaleLowerCase('pt-BR');
+        const categoriaClasses = {
+          'criança': 'badge-crianca',
+          'crianca': 'badge-crianca',
+          'adolescente': 'badge-adolescente',
+          'adulto': 'badge-adulto'
+        };
+        const categoriaBadge = document.createElement('span');
+        categoriaBadge.className = `badge ${categoriaClasses[categoriaKey] || 'badge-indefinido'}`;
+        categoriaBadge.textContent = categoria;
+        categoriaCell.appendChild(categoriaBadge);
+        row.appendChild(categoriaCell);
+
+        appendTextCell(row, it.responsavel || '');
+
+        const statusCell = document.createElement('td');
+        const statusLabel = String(it.status || 'Ativo');
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `status ${statusLabel === 'Ativo' ? 'status-ativo' : 'status-inativo'}`;
+        statusBadge.textContent = statusLabel;
+        statusCell.appendChild(statusBadge);
+        row.appendChild(statusCell);
+
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'actions-cell';
+        if (!id) {
+          const invalidId = document.createElement('span');
+          invalidId.className = 'text-muted-sm';
+          invalidId.textContent = 'ID inválido';
+          actionsCell.appendChild(invalidId);
+        } else {
+          const viewLink = document.createElement('a');
+          viewLink.href = `acolhimento_view.php?id=${id}`;
+          viewLink.className = 'btn-icon view-btn';
+          viewLink.title = 'Visualizar';
+          viewLink.setAttribute('aria-label', 'Visualizar');
+          const viewIcon = document.createElement('i');
+          viewIcon.className = 'fas fa-eye';
+          viewLink.appendChild(viewIcon);
+          actionsCell.appendChild(viewLink);
+
+          if (isAdmin) {
+            const editLink = document.createElement('a');
+            editLink.href = `acolhimento_form.php?id=${id}`;
+            editLink.className = 'btn-icon edit-btn';
+            editLink.title = 'Editar';
+            editLink.setAttribute('aria-label', 'Editar');
+            const editIcon = document.createElement('i');
+            editIcon.className = 'fas fa-edit';
+            editLink.appendChild(editIcon);
+            actionsCell.appendChild(editLink);
+
+            const deleteForm = document.createElement('form');
+            deleteForm.method = 'POST';
+            deleteForm.action = `acolhimento_list.php?delete=${id}`;
+            deleteForm.className = 'inline-form';
+            deleteForm.addEventListener('submit', event => {
+              if (!window.confirm('Tem certeza que deseja excluir esta ficha?')) event.preventDefault();
+            });
+
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = 'csrf_token';
+            tokenInput.value = csrfToken;
+            deleteForm.appendChild(tokenInput);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'submit';
+            deleteButton.className = 'btn-icon delete-btn';
+            deleteButton.title = 'Excluir';
+            deleteButton.setAttribute('aria-label', 'Excluir');
+            const deleteIcon = document.createElement('i');
+            deleteIcon.className = 'fas fa-trash';
+            deleteButton.appendChild(deleteIcon);
+            deleteForm.appendChild(deleteButton);
+            actionsCell.appendChild(deleteForm);
+          }
         }
-        
-        return `<tr>
-                  <td>${nome}</td>
-                  <td>${cpf}</td>
-                  <td>${idade}</td>
-                  <td>${categoria}</td>
-                  <td>${responsavel}</td>
-                  <td>${status}</td>
-                  <td class="actions-cell">${id ? btns : '<span class="text-muted-sm">ID inválido</span>'}</td>
-                </tr>`;
-      }).join('');
+
+        row.appendChild(actionsCell);
+        fragment.appendChild(row);
+      });
+
+      tbody.replaceChildren(fragment);
     }
 
    let timer = null;
@@ -139,14 +197,15 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                     <tr>
                         <td><?php echo htmlspecialchars($ficha['nome_completo'] ?? ''); ?></td>
                         <td><?php echo htmlspecialchars($ficha['cpf'] ?? ''); ?></td>
-                        <td><?php echo $ficha['idade'] ?? 'N/A'; ?> anos</td>
+                        <td><?php echo e($ficha['idade'] ?? 'N/A'); ?> anos</td>
                         <td>
                             <?php 
                             $catClass = strtolower($ficha['categoria'] ?? 'indefinido');
                             if ($catClass === 'criança') $catClass = 'crianca';
                             ?>
-                            <span class="badge badge-<?php echo $catClass; ?>">
-                                <?php echo ucfirst($ficha['categoria'] ?? 'Indefinido'); ?>
+                            <?php $catClass = in_array($catClass, ['crianca', 'adolescente', 'adulto'], true) ? $catClass : 'indefinido'; ?>
+                            <span class="badge badge-<?php echo e($catClass); ?>">
+                                <?php echo e(ucfirst($ficha['categoria'] ?? 'Indefinido')); ?>
                             </span>
                         </td>
                         <td><?php echo htmlspecialchars($ficha['nome_responsavel'] ?? ''); ?></td>
@@ -155,13 +214,13 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                             $statusClass = ($ficha['status'] ?? 'Ativo') === 'Ativo' ? 'ativo' : 'inativo';
                             ?>
                             <span class="status status-<?php echo $statusClass; ?>">
-                                <?php echo $ficha['status'] ?? 'Ativo'; ?>
+                                <?php echo e($ficha['status'] ?? 'Ativo'); ?>
                             </span>
                         </td>
                         <td class="actions-cell">
                             <?php if (isset($ficha['id']) && !empty($ficha['id'])): ?>
                                 <?php 
-                                $id = $ficha['id'];
+                                $id = (int) $ficha['id'];
                                 
                                 // Botão Visualizar (todos veem)
                                 echo '<a href="acolhimento_view.php?id=' . $id . '" ';

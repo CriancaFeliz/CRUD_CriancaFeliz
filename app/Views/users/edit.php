@@ -5,7 +5,7 @@
 </div>
 
 <form method="post" style="max-width: 800px;">
-    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+    <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
     
     <div class="form-section" style="background:#fff; border-radius:12px; padding:24px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
         <h3 style="margin:0 0 20px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">
@@ -130,11 +130,11 @@
             
             <?php if ($currentRole): ?>
                 <div style="font-weight:600; color:<?php echo $currentRole['color']; ?>; margin-bottom:12px; font-size:16px;">
-                    <?php echo $currentRole['name']; ?>
+                    <?php echo e($currentRole['name'] ?? ''); ?>
                 </div>
                 <div style="font-size:14px; color:#6c757d; line-height:1.6;">
                     <?php foreach ($currentRole['permissions'] as $permission): ?>
-                        <?php echo $permission; ?><br>
+                        <?php echo e($permission); ?><br>
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>

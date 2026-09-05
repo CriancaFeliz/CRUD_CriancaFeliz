@@ -31,7 +31,7 @@ $query = http_build_query(array_filter([
         <select name="tipo" style="padding:10px; border:1px solid #ddd; border-radius:8px;">
             <option value="">Todos</option>
             <?php foreach (['consulta' => 'Consulta', 'avaliacao' => 'Avaliação', 'evolucao' => 'Evolução', 'observacao' => 'Observação'] as $value => $label): ?>
-                <option value="<?php echo $value; ?>" <?php echo (($filters['tipo'] ?? '') === $value) ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                <option value="<?php echo e($value); ?>" <?php echo (($filters['tipo'] ?? '') === $value) ? 'selected' : ''; ?>><?php echo e($label); ?></option>
             <?php endforeach; ?>
         </select>
     </label>

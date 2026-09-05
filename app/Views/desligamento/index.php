@@ -198,12 +198,13 @@ if ($_SESSION['user_role'] !== 'admin') {
                 </tr>
             <?php else: ?>
                 <?php foreach ($desligamentos as $desl): ?>
+                    <?php $tipoMotivo = array_key_exists(($desl['tipo_motivo'] ?? ''), ['idade' => true, 'faltas' => true, 'pedido' => true, 'transferencia' => true, 'outros' => true]) ? $desl['tipo_motivo'] : 'outros'; ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($desl['atendido_nome']); ?></strong></td>
                         <td><?php echo htmlspecialchars($desl['cpf'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars($desl['motivo']); ?></td>
                         <td>
-                            <span class="badge badge-<?php echo $desl['tipo_motivo']; ?>">
+                            <span class="badge badge-<?php echo e($tipoMotivo); ?>">
                                 <?php 
                                     $tipos = [
                                         'idade' => 'Idade',
@@ -212,7 +213,7 @@ if ($_SESSION['user_role'] !== 'admin') {
                                         'transferencia' => 'Transferência',
                                         'outros' => 'Outros'
                                     ];
-                                    echo $tipos[$desl['tipo_motivo']] ?? 'N/A';
+                                    echo e($tipos[$tipoMotivo] ?? 'N/A');
                                 ?>
                             </span>
                         </td>
@@ -230,7 +231,7 @@ if ($_SESSION['user_role'] !== 'admin') {
                             }
                             
                             if ($isStillDisconnected && $desl['pode_retornar']): ?>
-                                <button onclick="reativarAtendido(<?php echo $desl['id_atendido']; ?>)" class="btn-reativar">
+                                <button onclick="reativarAtendido(<?php echo (int)($desl['id_atendido'] ?? 0); ?>)" class="btn-reativar">
                                     <i class="fas fa-undo"></i> Reativar
                                 </button>
                             <?php else: ?>
@@ -247,7 +248,7 @@ if ($_SESSION['user_role'] !== 'admin') {
 </div>
 
 <script>
-const csrfToken = '<?php echo $csrf_token ?? ''; ?>';
+const csrfToken = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
 function reativarAtendido(idAtendido) {
     if (!confirm('Deseja realmente reativar este atendido?')) return;

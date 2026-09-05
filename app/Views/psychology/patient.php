@@ -10,14 +10,14 @@ function safeDate($date) {
 $patient = $patient ?? [];
 $notes = $notes ?? [];
 
-// Campos seguros
-$nome = htmlspecialchars((string)($patient['nome_completo'] ?? $patient['nome'] ?? 'Não informado'));
-$cpf = htmlspecialchars((string)($patient['cpf'] ?? 'Não informado'));
+// Dados são mantidos no formato original e escapados apenas na saída HTML.
+$nome = (string)($patient['nome_completo'] ?? $patient['nome'] ?? 'Não informado');
+$cpf = (string)($patient['cpf'] ?? 'Não informado');
 $idade = isset($patient['idade']) ? (int)$patient['idade'] : 0;
-$responsavel = htmlspecialchars((string)($patient['responsavel'] ?? 'Não informado'));
-$contato = htmlspecialchars((string)($patient['contato'] ?? 'Não informado'));
+$responsavel = (string)($patient['responsavel'] ?? 'Não informado');
+$contato = (string)($patient['contato'] ?? 'Não informado');
 $dataAcolh = safeDate($patient['data_acolhimento'] ?? null);
-$queixa = htmlspecialchars((string)($patient['queixa_principal'] ?? ''));
+$queixa = (string)($patient['queixa_principal'] ?? '');
 
 // Avatar inicial
 $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
@@ -38,12 +38,12 @@ $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
     <div style="display: flex; align-items: center; gap: 20px;">
 
         <div class="patient-avatar" style="width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 32px; border: 3px solid rgba(255,255,255,0.3);">
-            <?= $avatar ?>
+            <?= e($avatar) ?>
         </div>
 
         <div style="flex: 1;">
             <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 700;">
-                <?= $nome ?>
+                <?= e($nome) ?>
             </h1>
 
             <div style="font-weight: 600; font-size: 16px;">
@@ -51,15 +51,15 @@ $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
             </div>
 
             <div style="font-weight: 600; font-size: 16px;">
-                <?= $responsavel ?>
+                <?= e($responsavel) ?>
             </div>
 
             <div style="font-weight: 600; font-size: 16px;">
-                <?= $contato ?>
+                <?= e($contato) ?>
             </div>
 
             <div style="font-weight: 600; font-size: 16px;">
-                <?= $dataAcolh ?>
+                <?= e($dataAcolh) ?>
             </div>
         </div>
     </div>
@@ -68,7 +68,7 @@ $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
         <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; margin-top: 20px;">
             <div style="font-weight: 600; margin-bottom: 8px; opacity: 0.9;">🎯 Queixa Principal</div>
             <div style="line-height: 1.5; opacity: 0.9;">
-                <?= $queixa ?>
+                <?= e($queixa) ?>
             </div>
         </div>
     <?php endif; ?>
@@ -98,18 +98,20 @@ $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
         <div class="notes-timeline">
             <?php foreach ($notes as $index => $note): 
 
-                $type = htmlspecialchars((string)($note['note_type'] ?? 'observacao'));
-                $title = htmlspecialchars((string)($note['title'] ?? ''));
-                $content = nl2br(htmlspecialchars((string)($note['content'] ?? '')));
-                $psychologist = htmlspecialchars((string)($note['psychologist_name'] ?? 'Psicólogo'));
+                $allowedTypes = ['consulta', 'avaliacao', 'evolucao', 'observacao'];
+                $type = in_array(($note['note_type'] ?? ''), $allowedTypes, true) ? $note['note_type'] : 'observacao';
+                $title = (string)($note['title'] ?? '');
+                $content = nl2br(e($note['content'] ?? ''));
+                $psychologist = (string)($note['psychologist_name'] ?? 'Psicólogo');
 
                 $created = !empty($note['created_at']) ? date('d/m/Y H:i', strtotime($note['created_at'])) : '-';
 
-                $behavior = nl2br(htmlspecialchars((string)($note['behavior_notes'] ?? '')));
-                $recommend = nl2br(htmlspecialchars((string)($note['recommendations'] ?? '')));
+                $behavior = nl2br(e($note['behavior_notes'] ?? ''));
+                $recommend = nl2br(e($note['recommendations'] ?? ''));
                 $nextSession = !empty($note['next_session']) ? date('d/m/Y H:i', strtotime($note['next_session'])) : null;
 
-                $mood = (int)($note['mood_assessment'] ?? 0);
+                $mood = max(0, min(5, (int)($note['mood_assessment'] ?? 0)));
+                $noteId = (int)($note['id'] ?? 0);
 
                 $icons = [
                     'consulta' => '💬',
@@ -134,13 +136,13 @@ $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
                                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                                     <span style="font-size:20px;"><?= $icon ?></span>
                                     <span class="note-type-text" style="font-weight:600; color:#17a2b8; text-transform:capitalize;">
-                                        <?= $type ?>
+                                        <?= e($type) ?>
                                     </span>
                                 </div>
 
                                 <?php if ($title): ?>
                                     <div class="note-title" style="font-weight:600; color:#212529; margin-bottom:8px;">
-                                        <?= $title ?>
+                                        <?= e($title) ?>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -148,7 +150,7 @@ $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
                             <div class="note-meta"
                                 style="text-align:right; font-size:12px; color:#6c757d;">
                                 <div><?= $created ?></div>
-                                <div style="margin-top:2px;">Por: <?= $psychologist ?></div>
+                                <div style="margin-top:2px;">Por: <?= e($psychologist) ?></div>
                             </div>
                         </div>
 
@@ -207,12 +209,12 @@ $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
                         <?php endif; ?>
 
                         <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
-                            <button onclick="editNote('<?= $note['id'] ?>')" class="btn-sm"
+                            <button onclick="editNote(<?= $noteId ?>)" class="btn-sm"
                                 style="background:#f0a36b; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
                                 ✏️ Editar
                             </button>
 
-                            <button onclick="deleteNote('<?= $note['id'] ?>')" class="btn-sm"
+                            <button onclick="deleteNote(<?= $noteId ?>)" class="btn-sm"
                                 style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
                                 🗑️ Excluir
                             </button>
@@ -244,8 +246,8 @@ $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
         </div>
         
         <form id="noteForm" style="padding:24px;">
-            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-            <input type="hidden" name="patient_cpf" value="<?php echo htmlspecialchars($patient['cpf']); ?>">
+            <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
+            <input type="hidden" name="patient_cpf" value="<?php echo e($patient['cpf'] ?? ''); ?>">
             
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
                 <div>
@@ -345,8 +347,8 @@ function closeNoteModal() {
     document.getElementById('noteForm').reset();
     
     // Resetar título e botão para modo de criação
-    document.querySelector('.modal-header h3').innerHTML = '📝 Nova Anotação Psicológica';
-    document.querySelector('button[type="submit"]').innerHTML = '💾 Salvar Anotação';
+    document.querySelector('.modal-header h3').textContent = '📝 Nova Anotação Psicológica';
+    document.querySelector('button[type="submit"]').textContent = '💾 Salvar Anotação';
     
     // Remover campo hidden de ID se existir
     const hiddenId = document.querySelector('input[name="note_id"]');
@@ -356,8 +358,6 @@ function closeNoteModal() {
 }
 
 function editNote(noteId) {
-    console.log('Editando anotação ID:', noteId);
-    
     if (!noteId) {
         console.error('ID da anotação não foi fornecido!');
         alert('Erro: ID da anotação inválido');
@@ -367,13 +367,10 @@ function editNote(noteId) {
     // Buscar dados da anotação
     fetch(`psychology.php?action=get_note&id=${noteId}`)
         .then(res => {
-            console.log('Status da resposta:', res.status);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             return res.json();
         })
         .then(data => {
-            console.log('Dados recebidos:', data);
-            
             if (data.success) {
                 const note = data.note;
                 
@@ -397,12 +394,10 @@ function editNote(noteId) {
                 hiddenId.value = noteId;
                 
                 // Alterar título do modal
-                document.querySelector('.modal-header h3').innerHTML = '✏️ Editar Anotação Psicológica';
+                document.querySelector('.modal-header h3').textContent = '✏️ Editar Anotação Psicológica';
                 
                 // Alterar texto do botão
-                document.querySelector('button[type="submit"]').innerHTML = '💾 Atualizar Anotação';
-                
-                console.log('Modal sendo aberto...');
+                document.querySelector('button[type="submit"]').textContent = '💾 Atualizar Anotação';
                 // Abrir modal
                 openNewNoteModal();
             } else {
@@ -417,8 +412,6 @@ function editNote(noteId) {
 }
 
 function deleteNote(noteId) {
-    console.log('Deletando anotação ID:', noteId);
-    
     if (!noteId) {
         console.error('ID da anotação não foi fornecido!');
         alert('Erro: ID da anotação inválido');
@@ -431,7 +424,6 @@ function deleteNote(noteId) {
     
     // Obter CSRF token do formulário
     const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
-    console.log('CSRF Token obtido:', csrfToken ? 'Sim' : 'Não');
     
     fetch(`psychology.php?action=delete_note&id=${noteId}`, {
         method: 'POST',
@@ -443,12 +435,8 @@ function deleteNote(noteId) {
             csrf_token: csrfToken
         })
     })
-    .then(response => {
-        console.log('Status da resposta:', response.status);
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Dados recebidos:', data);
         if (data.success) {
             alert('Anotação excluída com sucesso!');
             location.reload();
@@ -508,11 +496,7 @@ function forceDarkModeColors() {
         
         if (isDarkMode) {
             const noteCards = document.querySelectorAll('.psychology-note-card');
-            console.log('Cards encontrados:', noteCards.length);
-            
-            noteCards.forEach((card, index) => {
-                console.log('Processando card', index);
-                
+            noteCards.forEach(card => {
                 // Forçar cores do card principal
                 card.style.setProperty('background', '#2a3441', 'important');
                 card.style.setProperty('background-color', '#2a3441', 'important');
