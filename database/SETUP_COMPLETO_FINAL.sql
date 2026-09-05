@@ -472,7 +472,37 @@ END$$
 DELIMITER ;
 
 -- =====================================================
--- PARTE 4: ÍNDICES
+-- PARTE 4: VIEW DE ALERTAS DE FALTAS
+-- =====================================================
+
+DROP VIEW IF EXISTS `atendidos_com_alerta`;
+
+CREATE VIEW `atendidos_com_alerta` AS
+SELECT
+    a.idatendido,
+    a.nome,
+    a.cpf,
+    COUNT(CASE WHEN fd.status = 'F' THEN 1 END) AS total_faltas,
+    MAX(CASE WHEN fd.status = 'F' THEN fd.data END) AS ultima_falta,
+    CASE
+        WHEN COUNT(CASE WHEN fd.status = 'F' THEN 1 END) >= 3 THEN 'CRITICO'
+        WHEN COUNT(CASE WHEN fd.status = 'F' THEN 1 END) = 2 THEN 'ALERTA'
+        ELSE 'NORMAL'
+    END AS nivel_alerta
+FROM `atendido` a
+LEFT JOIN `frequencia_dia` fd ON fd.id_atendido = a.idatendido
+WHERE a.status = 'Ativo'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM `desligamento` d
+      WHERE d.id_atendido = a.idatendido
+      LIMIT 1
+  )
+GROUP BY a.idatendido, a.nome, a.cpf
+HAVING COUNT(CASE WHEN fd.status = 'F' THEN 1 END) >= 2;
+
+-- =====================================================
+-- PARTE 5: ÍNDICES
 -- =====================================================
 
 ALTER TABLE `agenda` ADD PRIMARY KEY (`id_notificacao`);
@@ -495,7 +525,7 @@ ALTER TABLE `sessao` ADD PRIMARY KEY (`id_sessao`), ADD UNIQUE KEY `uk_sessao_da
 ALTER TABLE `usuario` ADD PRIMARY KEY (`idusuario`);
 
 -- =====================================================
--- PARTE 4: AUTO_INCREMENT
+-- PARTE 6: AUTO_INCREMENT
 -- =====================================================
 
 ALTER TABLE `agenda` MODIFY `id_notificacao` int(11) NOT NULL AUTO_INCREMENT;
@@ -518,7 +548,7 @@ ALTER TABLE `sessao` MODIFY `id_sessao` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `usuario` MODIFY `idusuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 -- =====================================================
--- PARTE 5: FOREIGN KEYS
+-- PARTE 7: FOREIGN KEYS
 -- =====================================================
 
 ALTER TABLE `atendido` ADD CONSTRAINT `atendido_ibfk_1` FOREIGN KEY (`id_responsavel`) REFERENCES `responsavel` (`idresponsavel`) ON DELETE SET NULL ON UPDATE CASCADE;
@@ -536,7 +566,7 @@ ALTER TABLE `presenca` ADD CONSTRAINT `fk_presenca_atendido` FOREIGN KEY (`id_at
 ALTER TABLE `sessao` ADD CONSTRAINT `fk_sessao_usuario` FOREIGN KEY (`criado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- =====================================================
--- PARTE 6: DADOS INICIAIS
+-- PARTE 8: DADOS INICIAIS
 -- =====================================================
 
 INSERT IGNORE INTO `usuario` (`idusuario`, `nome`, `email`, `Senha`, `nivel`, `status`) VALUES

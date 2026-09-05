@@ -37,7 +37,6 @@ services:
     volumes:
       - db_test_data:/var/lib/mysql
       - ./docker/mysql/01-init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
-      - ./docker/mysql/02-missing-views.sql:/docker-entrypoint-initdb.d/02-missing-views.sql:ro
       - ./database/SETUP_COMPLETO_FINAL.sql:/docker-init/SETUP_COMPLETO_FINAL.sql:ro
       - ./tests/backup_restore_check.sh:/backup_restore_check.sh:ro
     healthcheck:
