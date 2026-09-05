@@ -286,6 +286,7 @@
                 formData.append('date', selectedDate);
                 formData.append('note', noteText);
                 formData.append('type', selectedType);
+                formData.append('csrf_token', <?php echo json_encode($csrf_token); ?>);
 
                 const response = await fetch('dashboard.php?action=saveCalendarNote', {
                     method: 'POST',
@@ -314,6 +315,7 @@
         try {
             const formData = new FormData();
             formData.append('id', id);
+            formData.append('csrf_token', <?php echo json_encode($csrf_token); ?>);
 
             const response = await fetch('dashboard.php?action=deleteCalendarNote', {
                 method: 'POST',

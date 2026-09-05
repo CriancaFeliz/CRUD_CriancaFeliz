@@ -146,10 +146,11 @@ class ProfileController extends BaseController {
         $this->requireAuth();
         
         if (!$this->isPost()) {
-            $this->redirect('profile.php');
+            redirect('profile.php');
         }
         
         try {
+            $this->validateCSRF();
             $userId = $_SESSION['user_id'] ?? null;
             
             if (!$userId) {

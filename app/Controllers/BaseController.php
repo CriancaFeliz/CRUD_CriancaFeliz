@@ -18,6 +18,7 @@ class BaseController {
         $data['currentUser'] = $this->authService->getCurrentUser();
         $data['isLoggedIn'] = $this->authService->isLoggedIn();
         $data['old_input'] = $_SESSION['old_input'] ?? [];
+        $data['csrf_token'] = $data['csrf_token'] ?? $this->generateCSRF();
         
         view($view, $data);
     }
@@ -30,6 +31,7 @@ class BaseController {
         $data['currentUser'] = $this->authService->getCurrentUser();
         $data['isLoggedIn'] = $this->authService->isLoggedIn();
         $data['old_input'] = $_SESSION['old_input'] ?? [];
+        $data['csrf_token'] = $data['csrf_token'] ?? $this->generateCSRF();
         
         // Limpar old_input após usar (para não aparecer em próximas páginas)
         if (isset($_SESSION['old_input'])) {
@@ -241,12 +243,15 @@ class BaseController {
      * Trata exceções
      */
     protected function handleException(Exception $e) {
-        error_log("Erro no controller: " . $e->getMessage());
+        $errorId = reportException($e, static::class);
+        $message = appDebugEnabled()
+            ? $e->getMessage()
+            : 'Não foi possível concluir a operação. Código: ' . $errorId;
         
         if ($this->isAjaxRequest()) {
-            $this->json(['error' => $e->getMessage()], 500);
+            $this->json(['error' => $message], 500);
         } else {
-            $this->redirectWithError($_SERVER['HTTP_REFERER'] ?? 'index.php', $e->getMessage());
+            $this->redirectWithError($_SERVER['HTTP_REFERER'] ?? 'index.php', $message);
         }
     }
     

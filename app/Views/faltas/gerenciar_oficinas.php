@@ -291,7 +291,10 @@ function toggleOficina(id) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: 'id_oficina=' + id
+        body: new URLSearchParams({
+            id_oficina: id,
+            csrf_token: <?php echo json_encode($csrf_token); ?>
+        })
     })
     .then(response => response.json())
     .then(data => {

@@ -163,34 +163,6 @@ class Socioeconomico extends BaseModel {
                 debugLog("DEBUG: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
             }
             
-            // Garantir que colunas de benefícios existam na tabela (compatibilidade)
-            try {
-                $colsStmt = $this->query("SHOW COLUMNS FROM ficha_socioeconomico");
-                $colsArr = array_column($colsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
-            } catch (Exception $e) {
-                $colsArr = [];
-            }
-
-            $benefitCols = [
-                'bolsa_familia' => "TINYINT(1) DEFAULT 0",
-                'auxilio_brasil' => "TINYINT(1) DEFAULT 0",
-                'bpc' => "TINYINT(1) DEFAULT 0",
-                'auxilio_emergencial' => "TINYINT(1) DEFAULT 0",
-                'seguro_desemprego' => "TINYINT(1) DEFAULT 0",
-                'aposentadoria' => "TINYINT(1) DEFAULT 0"
-            ];
-
-            foreach ($benefitCols as $col => $ddl) {
-                if (!in_array($col, $colsArr)) {
-                    try {
-                        $this->query("ALTER TABLE ficha_socioeconomico ADD COLUMN {$col} {$ddl}");
-                        debugLog("Coluna adicionada: {$col}");
-                    } catch (Exception $e) {
-                        error_log("Falha ao adicionar coluna {$col}: " . $e->getMessage());
-                    }
-                }
-            }
-
             // Determinar flags de benefícios a partir dos campos disponíveis
             $bolsa = (!empty($data['bolsa_familia'])) ? 1 : 0;
             $auxilio = (!empty($data['auxilio_brasil'])) ? 1 : 0;
@@ -232,43 +204,19 @@ class Socioeconomico extends BaseModel {
                 'aposentadoria' => $aposentadoria
             ];
 
-            // Filtrar apenas colunas que existem na tabela (para evitar erro de coluna desconhecida)
-            // $colsArr já foi obtido acima (SHOW COLUMNS)
-            $insertCols = [];
-            $insertVals = [];
-            foreach ($fichaData as $col => $val) {
-                if (in_array($col, $colsArr)) {
-                    $insertCols[] = $col;
-                    // converter booleanos/flags para 0/1
-                    if (is_bool($val)) $val = $val ? 1 : 0;
-                    $insertVals[] = $val;
-                }
-            }
-
-            if (empty($insertCols)) {
-                throw new Exception('Nenhuma coluna válida encontrada em ficha_socioeconomico para inserir. Verifique o schema.');
-            }
+            $insertCols = array_keys($fichaData);
+            $insertVals = array_values($fichaData);
 
             $placeholders = implode(', ', array_fill(0, count($insertCols), '?'));
             $colsList = implode(', ', $insertCols);
             $sql = "INSERT INTO ficha_socioeconomico ({$colsList}) VALUES ({$placeholders})";
 
             try {
-                $logEntry = [
-                    'time' => date('c'),
-                    'action' => 'insert_ficha_socioeconomico',
-                    'sql' => $sql,
-                    'params' => $insertVals
-                ];
-                debugFileLog('debug_sql.log', $logEntry);
-
                 $this->query($sql, $insertVals);
                 $fichaId = (int)Database::lastInsertId();
                 debugLog('Ficha criada com idficha: ' . $fichaId);
-                debugFileLog('debug_sql.log', ['time'=>date('c'),'result'=>'ok','idficha'=>$fichaId]);
             } catch (Exception $e) {
-                error_log('ERRO ao inserir ficha_socioeconomico: ' . $e->getMessage());
-                debugFileLog('debug_sql.log', ['time'=>date('c'),'error'=>$e->getMessage()]);
+                reportException($e, 'socioeconomico:create');
                 throw $e;
             }
             
@@ -653,34 +601,6 @@ class Socioeconomico extends BaseModel {
                 debugLog("DEBUG UPDATE: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
             }
             
-            // Garantir colunas de benefícios (caso não existam ainda)
-            try {
-                $colsStmt = $this->query("SHOW COLUMNS FROM ficha_socioeconomico");
-                $colsArr = array_column($colsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
-            } catch (Exception $e) {
-                $colsArr = [];
-            }
-
-            $benefitCols = [
-                'bolsa_familia' => "TINYINT(1) DEFAULT 0",
-                'auxilio_brasil' => "TINYINT(1) DEFAULT 0",
-                'bpc' => "TINYINT(1) DEFAULT 0",
-                'auxilio_emergencial' => "TINYINT(1) DEFAULT 0",
-                'seguro_desemprego' => "TINYINT(1) DEFAULT 0",
-                'aposentadoria' => "TINYINT(1) DEFAULT 0"
-            ];
-
-            foreach ($benefitCols as $col => $ddl) {
-                if (!in_array($col, $colsArr)) {
-                    try {
-                        $this->query("ALTER TABLE ficha_socioeconomico ADD COLUMN {$col} {$ddl}");
-                        debugLog("Coluna adicionada (update): {$col}");
-                    } catch (Exception $e) {
-                        error_log("Falha ao adicionar coluna {$col} no update: " . $e->getMessage());
-                    }
-                }
-            }
-
             $bolsa = (!empty($data['bolsa_familia'])) ? 1 : 0;
             $auxilio = (!empty($data['auxilio_brasil'])) ? 1 : 0;
             $bpc = (!empty($data['bpc'])) ? 1 : 0;
@@ -717,45 +637,21 @@ class Socioeconomico extends BaseModel {
                 'aposentadoria' => $aposentadoria
             ];
 
-            // Garantir colunas existentes antes de atualizar
-            try {
-                $colsStmt = $this->query("SHOW COLUMNS FROM ficha_socioeconomico");
-                $colsArr = array_column($colsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
-            } catch (Exception $e) {
-                $colsArr = [];
-            }
-
             $setParts = [];
             $values = [];
             foreach ($updateData as $col => $val) {
-                if (in_array($col, $colsArr)) {
-                    $setParts[] = "$col = ?";
-                    if (is_bool($val)) $val = $val ? 1 : 0;
-                    $values[] = $val;
-                }
+                $setParts[] = "$col = ?";
+                if (is_bool($val)) $val = $val ? 1 : 0;
+                $values[] = $val;
             }
 
-            if (!empty($setParts)) {
-                $sql = "UPDATE ficha_socioeconomico SET " . implode(', ', $setParts) . " WHERE id_atendido = ?";
-                $values[] = $id;
-                try {
-                    $logEntry = [
-                        'time' => date('c'),
-                        'action' => 'update_ficha_socioeconomico',
-                        'sql' => $sql,
-                        'params' => $values
-                    ];
-                    debugFileLog('debug_sql.log', $logEntry);
-
-                    $this->query($sql, $values);
-                    debugFileLog('debug_sql.log', ['time'=>date('c'),'result'=>'ok','id_atendido'=>$id]);
-                } catch (Exception $e) {
-                    error_log('ERRO ao atualizar ficha_socioeconomico: ' . $e->getMessage());
-                    debugFileLog('debug_sql.log', ['time'=>date('c'),'error'=>$e->getMessage()]);
-                    throw $e;
-                }
-            } else {
-                error_log('Nenhuma coluna válida para atualizar em ficha_socioeconomico (schema possivelmente incompleto)');
+            $sql = "UPDATE ficha_socioeconomico SET " . implode(', ', $setParts) . " WHERE id_atendido = ?";
+            $values[] = $id;
+            try {
+                $this->query($sql, $values);
+            } catch (Exception $e) {
+                reportException($e, 'socioeconomico:update');
+                throw $e;
             }
             
             // 3. Atualizar Família e despesas (deletar existentes e recriar)

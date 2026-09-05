@@ -328,6 +328,7 @@ class SocioeconomicoController extends BaseController {
      */
     public function export() {
         $this->requireAuth();
+        $this->requirePermission('view_reports');
         
         try {
             $filters = $this->getGetData();
@@ -365,6 +366,7 @@ class SocioeconomicoController extends BaseController {
      */
     public function report() {
         $this->requireAuth();
+        $this->requirePermission('view_reports');
         
         try {
             $filters = $this->getGetData();

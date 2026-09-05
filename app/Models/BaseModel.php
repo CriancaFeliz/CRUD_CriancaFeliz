@@ -68,9 +68,15 @@ private function getTableColumns()
 
 public function create($data)
 {
-    // 1) manter apenas colunas existentes na tabela
+    // Rejeitar divergências de schema em vez de perder dados silenciosamente.
     $columns = $this->getTableColumns();
-    $data = array_intersect_key($data, array_flip($columns));
+    $unknownColumns = array_values(array_diff(array_keys($data), $columns));
+
+    if (!empty($unknownColumns)) {
+        throw new InvalidArgumentException(
+            'Campos não suportados pelo banco: ' . implode(', ', $unknownColumns)
+        );
+    }
 
     if (empty($data)) {
         throw new Exception("Nenhum dado válido para inserir em {$this->table}");
@@ -101,9 +107,15 @@ public function create($data)
      * Atualizar registro
      */
     public function update($id, $data) {
-        // Filtrar apenas colunas que existem na tabela
+        // Rejeitar divergências de schema em vez de ignorar alterações.
         $columns = $this->getTableColumns();
-        $data = array_intersect_key($data, array_flip($columns));
+        $unknownColumns = array_values(array_diff(array_keys($data), $columns));
+
+        if (!empty($unknownColumns)) {
+            throw new InvalidArgumentException(
+                'Campos não suportados pelo banco: ' . implode(', ', $unknownColumns)
+            );
+        }
         
         if (empty($data)) {
             // Nada para atualizar, retornar registro atual
@@ -139,6 +151,7 @@ public function create($data)
      * Buscar por campo
      */
     public function findBy($field, $value) {
+        $this->assertKnownColumn($field);
         $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE $field = ?");
         $stmt->execute([$value]);
         return $stmt->fetch();
@@ -148,6 +161,7 @@ public function create($data)
      * Buscar múltiplos por campo
      */
     public function findAllBy($field, $value) {
+        $this->assertKnownColumn($field);
         $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE $field = ?");
         $stmt->execute([$value]);
         return $stmt->fetchAll();
@@ -172,6 +186,8 @@ public function create($data)
      * Paginação
      */
     public function paginate($page = 1, $perPage = 10, $where = null, $params = []) {
+        $page = max(1, (int) $page);
+        $perPage = max(1, min(100, (int) $perPage));
         $offset = ($page - 1) * $perPage;
         
         $sql = "SELECT * FROM {$this->table}";
@@ -211,6 +227,7 @@ public function create($data)
         $params = [];
         
         foreach ($fields as $field) {
+            $this->assertKnownColumn($field);
             $conditions[] = "$field LIKE ?";
             $params[] = "%$query%";
         }
@@ -230,5 +247,11 @@ public function create($data)
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt;
+    }
+
+    private function assertKnownColumn($field) {
+        if (!is_string($field) || !in_array($field, $this->getTableColumns(), true)) {
+            throw new InvalidArgumentException('Campo de consulta inválido.');
+        }
     }
 }

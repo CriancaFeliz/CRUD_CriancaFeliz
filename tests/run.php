@@ -1,6 +1,11 @@
 <?php
 
 $root = dirname(__DIR__);
+$sessionPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'criancafeliz_php_sessions';
+if (!is_dir($sessionPath)) {
+    mkdir($sessionPath, 0700, true);
+}
+ini_set('session.save_path', $sessionPath);
 require_once $root . '/app/bootstrap.php';
 require_once __DIR__ . '/automated/TestCase.php';
 

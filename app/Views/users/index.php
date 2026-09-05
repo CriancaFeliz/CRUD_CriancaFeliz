@@ -108,6 +108,8 @@
 </div>
 
 <script>
+const csrfToken = <?php echo json_encode($csrf_token); ?>;
+
 function toggleUserStatus(userId) {
     if (!confirm('Tem certeza que deseja alterar o status deste usuário?')) {
         return;
@@ -116,8 +118,9 @@ function toggleUserStatus(userId) {
     fetch('users.php?action=toggle_status&id=' + userId, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-        }
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ csrf_token: csrfToken })
     })
     .then(response => response.json())
     .then(data => {
@@ -141,8 +144,9 @@ function deleteUser(userId, userName) {
     fetch('users.php?action=delete&id=' + userId, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-        }
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ csrf_token: csrfToken })
     })
     .then(response => response.json())
     .then(data => {

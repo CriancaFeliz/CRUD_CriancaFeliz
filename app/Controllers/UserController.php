@@ -204,6 +204,7 @@ class UserController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
             $currentUser = $this->authService->getCurrentUser();
             
             // Não permitir que admin exclua a si mesmo
@@ -232,6 +233,7 @@ class UserController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
             $currentUser = $this->authService->getCurrentUser();
             
             // Não permitir que admin desative a si mesmo

@@ -54,6 +54,26 @@ CREATE TABLE IF NOT EXISTS `atendido` (
   `cpf` varchar(14) DEFAULT NULL,
   `rg` varchar(20) DEFAULT NULL,
   `endereco` varchar(255) DEFAULT NULL,
+  `numero` varchar(20) DEFAULT NULL,
+  `complemento` varchar(100) DEFAULT NULL,
+  `bairro` varchar(100) DEFAULT NULL,
+  `cidade` varchar(100) DEFAULT NULL,
+  `estado` char(2) DEFAULT NULL,
+  `cep` varchar(8) DEFAULT NULL,
+  `telefone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `faixa_etaria` int(11) DEFAULT NULL,
+  `encaminha_por` varchar(100) DEFAULT NULL,
+  `queixa_principal` text DEFAULT NULL,
+  `escola` varchar(100) DEFAULT NULL,
+  `periodo` varchar(50) DEFAULT NULL,
+  `ponto_referencia` varchar(200) DEFAULT NULL,
+  `cras` varchar(100) DEFAULT NULL,
+  `ubs` varchar(100) DEFAULT NULL,
+  `cad_unico` varchar(50) DEFAULT NULL,
+  `acolhimento_responsavel` varchar(100) DEFAULT NULL,
+  `acolhimento_funcao` varchar(100) DEFAULT NULL,
+  `carimbo` text DEFAULT NULL,
   `foto` varchar(255) DEFAULT NULL,
   `id_responsavel` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -251,6 +271,19 @@ CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
   UNIQUE KEY `token_hash` (`token_hash`),
   KEY `email` (`email`),
   KEY `expires_at` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `auth_rate_limits` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `action` varchar(50) NOT NULL,
+  `identifier_hash` char(64) NOT NULL,
+  `attempts` int(11) NOT NULL DEFAULT 0,
+  `window_started_at` datetime NOT NULL,
+  `blocked_until` datetime DEFAULT NULL,
+  `last_attempt_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_auth_rate_limit` (`action`,`identifier_hash`),
+  KEY `idx_auth_rate_limit_cleanup` (`last_attempt_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =====================================================
@@ -530,22 +563,22 @@ ALTER TABLE `usuario` ADD PRIMARY KEY (`idusuario`);
 
 ALTER TABLE `agenda` MODIFY `id_notificacao` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `anotacao_psicologica` MODIFY `id_anotacao` int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE `atendido` MODIFY `idatendido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-ALTER TABLE `desligamento` MODIFY `id_desligamento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `atendido` MODIFY `idatendido` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `desligamento` MODIFY `id_desligamento` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `despesas` MODIFY `id_despesa` int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE `dias_atendimento` MODIFY `id_dia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+ALTER TABLE `dias_atendimento` MODIFY `id_dia` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `documento` MODIFY `iddocumento` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `encontro` MODIFY `id_encontro` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `familia` MODIFY `id_familia` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `ficha_socioeconomico` MODIFY `idficha` int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE `frequencia_dia` MODIFY `id_frequencia_dia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
-ALTER TABLE `frequencia_oficina` MODIFY `id_frequencia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
-ALTER TABLE `log` MODIFY `id_log` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-ALTER TABLE `oficina` MODIFY `id_oficina` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+ALTER TABLE `frequencia_dia` MODIFY `id_frequencia_dia` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `frequencia_oficina` MODIFY `id_frequencia` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `log` MODIFY `id_log` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `oficina` MODIFY `id_oficina` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `presenca` MODIFY `id_presenca` int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE `responsavel` MODIFY `idresponsavel` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `responsavel` MODIFY `idresponsavel` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `sessao` MODIFY `id_sessao` int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE `usuario` MODIFY `idusuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `usuario` MODIFY `idusuario` int(11) NOT NULL AUTO_INCREMENT;
 
 -- =====================================================
 -- PARTE 7: FOREIGN KEYS
@@ -561,25 +594,17 @@ ALTER TABLE `familia` ADD CONSTRAINT `familia_ibfk_1` FOREIGN KEY (`id_ficha`) R
 ALTER TABLE `ficha_socioeconomico` ADD CONSTRAINT `ficha_socioeconomico_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `frequencia_dia` ADD CONSTRAINT `frequencia_dia_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `frequencia_dia_ibfk_2` FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE `frequencia_oficina` ADD CONSTRAINT `frequencia_oficina_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `frequencia_oficina_ibfk_2` FOREIGN KEY (`id_oficina`) REFERENCES `oficina` (`id_oficina`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `frequencia_oficina_ibfk_3` FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE `log` ADD CONSTRAINT `log_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`idusuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `log` ADD CONSTRAINT `log_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE `presenca` ADD CONSTRAINT `fk_presenca_atendido` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `fk_presenca_sessao` FOREIGN KEY (`id_sessao`) REFERENCES `sessao` (`id_sessao`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `fk_presenca_usuario` FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE `sessao` ADD CONSTRAINT `fk_sessao_usuario` FOREIGN KEY (`criado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- =====================================================
--- PARTE 8: DADOS INICIAIS
+-- PARTE 8: CONFIGURAÇÃO INICIAL
 -- =====================================================
 
-INSERT IGNORE INTO `usuario` (`idusuario`, `nome`, `email`, `Senha`, `nivel`, `status`) VALUES
-(1, 'Administrador', 'admin@criancafeliz.org', '$2y$12$GZIwUJ/.t.yQ7DICaT137OQgjAv.OsOx8BAp6eah81iSXcejwxwz6', 'admin', 'Ativo');
-
-INSERT IGNORE INTO `responsavel` (`idresponsavel`, `nome`, `cpf`, `telefone`, `email`, `parentesco`) VALUES
-(1, 'Maria Souza', '123.456.789-00', '(11) 91234-5678', 'maria.souza@example.com', 'Mãe'),
-(2, 'João Pereira', '987.654.321-00', '(11) 99876-5432', 'joao.pereira@example.com', 'Pai');
-
-INSERT IGNORE INTO `atendido` (`idatendido`, `status`, `data_cadastro`, `data_acolhimento`, `nome`, `data_nascimento`, `cpf`, `id_responsavel`) VALUES
-(1, 'Ativo', '2025-10-18', '2025-10-18', 'Ana Beatriz Silva', '2012-05-14', '111.222.333-44', 1),
-(2, 'Ativo', '2025-10-18', '2025-10-18', 'Carlos Eduardo Santos', '2010-09-02', NULL, 2),
-(3, 'Ativo', '2025-10-18', '2025-10-18', 'Luiza Ferreira', '2013-03-28', NULL, NULL);
+-- O primeiro administrador deve ser criado pelo utilitário de linha de comando
+-- tools/maintenance/create_admin.php. O setup não distribui senha conhecida e
+-- não inclui dados de crianças ou responsáveis.
 
 INSERT IGNORE INTO `oficina` (`id_oficina`, `nome`, `descricao`, `dia_semana`, `horario_inicio`, `horario_fim`, `ativo`) VALUES
 (1, 'Reforço Escolar', 'Aulas de reforço para crianças', 'Terça', '14:00:00', '16:00:00', 1),
@@ -608,5 +633,5 @@ COMMIT;
 -- ✅ Triggers para logs da ficha socioeconômica
 -- ✅ Índices para performance
 -- ✅ Foreign keys para integridade
--- ✅ Dados iniciais (usuário admin, responsáveis, atendidos, oficinas)
+-- ✅ Oficinas iniciais sem dados pessoais
 -- =====================================================

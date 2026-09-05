@@ -14,7 +14,7 @@
     </FilesMatch>
 
     # Block direct web access to internal/runtime folders.
-    RewriteRule ^(tools|database|data|var|docker)(/|$) - [F,L]
+    RewriteRule ^(tools|tests|database|data|var|docker|docs|\.github|assets/samples)(/|$) - [F,L]
 
     # Forward all requests for non-existent files or directories to index.php
     RewriteCond %{REQUEST_FILENAME} !-f

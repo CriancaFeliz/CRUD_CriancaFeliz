@@ -7,25 +7,6 @@ class User extends BaseModel {
     
     public function __construct() {
         parent::__construct('usuario', 'idusuario');
-        $this->createDefaultUser();
-    }
-    
-    /**
-     * Cria usuário padrão se não existir
-     */
-    private function createDefaultUser() {
-        try {
-            $count = $this->count();
-            if ($count == 0) {
-                $defaultPassword = getenv('INITIAL_ADMIN_PASSWORD') ?: 'AlterarEstaSenha!2026';
-                $this->query(
-                    "INSERT INTO usuario (nome, email, Senha, nivel, status) VALUES (?, ?, ?, ?, ?)",
-                    ['Administrador', 'admin@criancafeliz.org', PasswordHelper::hash($defaultPassword), 'admin', 'Ativo']
-                );
-            }
-        } catch (Exception $e) {
-            // Usuário já existe ou erro - ignorar
-        }
     }
     
     /**

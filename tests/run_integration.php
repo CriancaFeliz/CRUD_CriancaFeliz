@@ -1,6 +1,11 @@
 <?php
 
 $root = dirname(__DIR__);
+$sessionPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'criancafeliz_php_sessions';
+if (!is_dir($sessionPath)) {
+    mkdir($sessionPath, 0700, true);
+}
+ini_set('session.save_path', $sessionPath);
 
 if (!extension_loaded('pdo_mysql')) {
     echo "ERRO: a extensao pdo_mysql nao esta habilitada. Rode pelo Docker de teste: docker compose -f docker-compose.test.yml exec -T app php tests/run_integration.php" . PHP_EOL;
@@ -12,6 +17,16 @@ require_once __DIR__ . '/automated/TestCase.php';
 require_once __DIR__ . '/integration/IntegrationTestCase.php';
 
 $testFiles = glob(__DIR__ . '/integration/*Test.php') ?: [];
+usort($testFiles, function ($left, $right) {
+    $leftIsSchema = basename($left) === 'DatabaseSchemaTest.php';
+    $rightIsSchema = basename($right) === 'DatabaseSchemaTest.php';
+
+    if ($leftIsSchema === $rightIsSchema) {
+        return strcmp($left, $right);
+    }
+
+    return $leftIsSchema ? -1 : 1;
+});
 $failures = [];
 $totalTests = 0;
 $totalAssertions = 0;

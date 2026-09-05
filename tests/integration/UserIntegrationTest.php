@@ -45,15 +45,32 @@ class UserIntegrationTest extends IntegrationTestCase {
 
     public function testDuplicateEmailIsRejected() {
         $userModel = new User();
+        $email = $this->unique('duplicate') . '@example.test';
+        $createdId = null;
 
-        $this->assertThrows(function () use ($userModel) {
-            $userModel->createUser([
-                'name' => 'Admin Duplicado',
-                'email' => 'admin@criancafeliz.org',
+        try {
+            $created = $userModel->createUser([
+                'name' => 'Usuário Original',
+                'email' => $email,
                 'password' => 'SenhaForteTeste!2026',
-                'role' => 'admin',
+                'role' => 'funcionario',
                 'status' => 'Ativo'
             ]);
-        }, Exception::class);
+            $createdId = $created['idusuario'] ?? $created['id'] ?? null;
+
+            $this->assertThrows(function () use ($userModel, $email) {
+                $userModel->createUser([
+                    'name' => 'Usuário Duplicado',
+                    'email' => $email,
+                    'password' => 'OutraSenhaForte!2026',
+                    'role' => 'admin',
+                    'status' => 'Ativo'
+                ]);
+            }, Exception::class);
+        } finally {
+            if ($createdId) {
+                $userModel->delete($createdId);
+            }
+        }
     }
 }

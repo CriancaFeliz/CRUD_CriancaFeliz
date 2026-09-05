@@ -311,6 +311,8 @@ class LogController extends BaseController {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             redirect('logs.php');
         }
+
+        $this->validateCSRF();
         
         $days = (int)($_POST['days'] ?? 90);
         

@@ -1,6 +1,29 @@
 <?php
 
 abstract class IntegrationTestCase extends TestCase {
+    protected const TEST_ADMIN_EMAIL = 'integration_admin@example.test';
+    protected const TEST_ADMIN_PASSWORD = 'IntegrationAdmin!2026';
+
+    public function setUp() {
+        $users = new User();
+        $user = $users->findByEmail(self::TEST_ADMIN_EMAIL);
+
+        if (!$user) {
+            $user = $users->createUser([
+                'name' => 'Administrador de Integração',
+                'email' => self::TEST_ADMIN_EMAIL,
+                'password' => self::TEST_ADMIN_PASSWORD,
+                'role' => 'admin',
+                'status' => 'Ativo'
+            ]);
+        }
+
+        $userId = $user['idusuario'] ?? $user['id'] ?? null;
+        $_SESSION['user_id'] = $userId;
+        $this->pdo()->exec('SET @usuario_id = ' . (int) $userId);
+        $this->pdo()->exec("SET @ip_usuario = '127.0.0.1'");
+    }
+
     protected function pdo() {
         return Database::getConnection();
     }

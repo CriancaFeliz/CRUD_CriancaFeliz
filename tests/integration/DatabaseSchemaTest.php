@@ -1,6 +1,10 @@
 <?php
 
 class DatabaseSchemaTest extends IntegrationTestCase {
+    public function setUp() {
+        // Estes testes validam o estado imediatamente após o setup limpo.
+    }
+
     public function testDatabaseConnectionWorks() {
         $this->assertSame('1', (string) $this->fetchValue('SELECT 1'));
         $this->assertNotEmpty($this->fetchValue('SELECT DATABASE()'));
@@ -21,6 +25,7 @@ class DatabaseSchemaTest extends IntegrationTestCase {
             'documento',
             'anotacao_psicologica',
             'password_reset_tokens',
+            'auth_rate_limits',
             'log',
             'atendidos_com_alerta'
         ];
@@ -30,13 +35,10 @@ class DatabaseSchemaTest extends IntegrationTestCase {
         }
     }
 
-    public function testInitialAdminAndSampleDataExist() {
-        $admin = $this->fetchRow('SELECT * FROM usuario WHERE email = ? LIMIT 1', ['admin@criancafeliz.org']);
-
-        $this->assertNotEmpty($admin, 'Usuario admin inicial nao encontrado');
-        $this->assertSame('admin', $admin['nivel']);
-        $this->assertTrue(PasswordHelper::verify('AlterarEstaSenha!2026', $admin['Senha']));
-        $this->assertGreaterThanOrEqual(3, (int) $this->fetchValue('SELECT COUNT(*) FROM atendido'));
+    public function testFreshSetupDoesNotExposeDefaultCredentialsOrPersonalData() {
+        $this->assertSame(0, (int) $this->fetchValue('SELECT COUNT(*) FROM usuario'));
+        $this->assertSame(0, (int) $this->fetchValue('SELECT COUNT(*) FROM atendido'));
+        $this->assertSame(0, (int) $this->fetchValue('SELECT COUNT(*) FROM responsavel'));
         $this->assertGreaterThanOrEqual(1, (int) $this->fetchValue('SELECT COUNT(*) FROM oficina WHERE ativo = 1'));
     }
 }

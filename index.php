@@ -490,8 +490,10 @@ try {
             break;
     }
 } catch (Exception $e) {
-    // Tratamento genérico de exceções nas rotas
-    error_log("Erro de Rota [{$route}]: " . $e->getMessage());
+    $errorId = reportException($e, 'route:' . $route);
+    $publicMessage = appDebugEnabled()
+        ? $e->getMessage()
+        : 'Não foi possível processar a solicitação. Código: ' . $errorId;
     
     // Resposta baseada no tipo de requisição (AJAX vs Normal)
     $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
@@ -499,15 +501,15 @@ try {
     if ($isAjax) {
         header('Content-Type: application/json; charset=utf-8');
         http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'error' => $publicMessage]);
     } else {
-        $_SESSION['flash_error'] = 'Ocorreu um erro ao processar sua requisição: ' . $e->getMessage();
+        $_SESSION['flash_error'] = $publicMessage;
         
         // Evitar loop infinito se falhar na própria página de erro / dashboard
         if ($route !== 'dashboard' && $route !== 'dashboard.php') {
             redirect('dashboard.php');
         } else {
-            echo "<h1>Erro Crítico</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
+            echo "<h1>Não foi possível carregar o painel</h1><p>" . htmlspecialchars($publicMessage) . "</p>";
         }
     }
 }

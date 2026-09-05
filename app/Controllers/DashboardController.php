@@ -87,6 +87,7 @@ class DashboardController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
             $date = $this->getParam('date', '');
             $note = $this->getParam('note', '');
             $type = $this->getParam('type', 'anotacao'); // 'anotacao' ou 'aviso'
@@ -124,6 +125,7 @@ class DashboardController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
             $id = $this->getParam('id', '');
             
             if (empty($id)) {

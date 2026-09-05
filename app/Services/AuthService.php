@@ -45,7 +45,7 @@ class AuthService {
         // Verificar se está ativo
         $status = strtolower($userExists['status'] ?? 'inativo');
         if ($status !== 'ativo' && $status !== 'active') {
-            throw new Exception('Usuário inativo');
+            throw new Exception('Email ou senha incorretos');
         }
         
         // Tentar autenticar
@@ -58,7 +58,7 @@ class AuthService {
         // Verificar status (aceita 'Ativo' ou 'active')
         $status = strtolower($user['status'] ?? '');
         if ($status !== 'ativo' && $status !== 'active') {
-            throw new Exception('Usuário inativo');
+            throw new Exception('Email ou senha incorretos');
         }
         
         // Criar sessão

@@ -66,7 +66,10 @@
                         <?php endif; ?>
                         <div><?php echo $currentUser['email'] ?? 'Usuário'; ?></div>
                     </a>
-                    <a href="logout.php" class="btn secondary">Sair</a>
+                    <form action="logout.php" method="POST" class="logout-form">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                        <button type="submit" class="btn secondary">Sair</button>
+                    </form>
                 </div>
             </div>
             

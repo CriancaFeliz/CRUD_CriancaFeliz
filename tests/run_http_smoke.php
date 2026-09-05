@@ -1,6 +1,11 @@
 <?php
 
 $root = dirname(__DIR__);
+$sessionPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'criancafeliz_php_sessions';
+if (!is_dir($sessionPath)) {
+    mkdir($sessionPath, 0700, true);
+}
+ini_set('session.save_path', $sessionPath);
 
 require_once $root . '/app/bootstrap.php';
 require_once __DIR__ . '/automated/TestCase.php';
@@ -140,10 +145,14 @@ class HttpSmokeClient {
 }
 
 class HttpSmokeTest extends TestCase {
+    private const ADMIN_EMAIL = 'smoke_admin@example.test';
+    private const ADMIN_PASSWORD = 'SmokeAdmin!2026';
+
     private $baseUrl;
 
     public function __construct($baseUrl) {
         $this->baseUrl = rtrim($baseUrl, '/');
+        $this->ensureAdminFixture();
         $this->prepareAuditContext();
     }
 
@@ -160,7 +169,7 @@ class HttpSmokeTest extends TestCase {
     }
 
     public function testAdminCanLoginAndOpenCriticalPages() {
-        $client = $this->loginAs('admin@criancafeliz.org', 'AlterarEstaSenha!2026');
+        $client = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
 
         $pages = [
             '/dashboard.php',
@@ -181,7 +190,7 @@ class HttpSmokeTest extends TestCase {
     }
 
     public function testRolePermissionsProtectSensitiveAreas() {
-        $admin = $this->loginAs('admin@criancafeliz.org', 'AlterarEstaSenha!2026');
+        $admin = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
         $this->assertSame(200, $admin->get('/users.php')['status'], 'Admin deve acessar usuarios');
         $this->assertRedirectsToDashboard($admin->get('/psychology.php'), 'Admin nao deve acessar area psicologica');
 
@@ -199,19 +208,50 @@ class HttpSmokeTest extends TestCase {
         $this->assertRedirectsToDashboard($employee->get('/psychology.php'), 'Funcionario nao deve acessar area psicologica');
         $this->assertRedirectsToDashboard($employee->get('/users.php'), 'Funcionario nao deve gerenciar usuarios');
         $this->assertRedirectsToDashboard($employee->get('/acolhimento_form.php'), 'Funcionario nao deve cadastrar acolhimento');
+        $this->assertRedirectsToDashboard($employee->get('/acolhimento_list.php?action=export'), 'Funcionario nao deve exportar dados de acolhimento');
+        $this->assertRedirectsToDashboard($employee->get('/socioeconomico_list.php?action=report'), 'Funcionario nao deve abrir relatorio socioeconomico');
+        $this->assertRedirectsToDashboard($employee->get('/socioeconomico_list.php?action=export'), 'Funcionario nao deve exportar dados socioeconomicos');
         $this->assertRedirectsToDashboard(
             $employee->post('/socioeconomico_list.php?delete=1', ['csrf_token' => 'token-invalido']),
             'Funcionario nao deve excluir ficha socioeconomica'
         );
     }
 
+    public function testSecurityHeadersCsrfAndPostLogout() {
+        $public = $this->newClient()->get('/');
+        $this->assertTrue($this->hasHeader($public['headers'], 'X-Content-Type-Options', 'nosniff'), 'Resposta deve impedir MIME sniffing');
+        $this->assertTrue($this->hasHeader($public['headers'], 'X-Frame-Options', 'DENY'), 'Resposta deve impedir carregamento em frame');
+        $this->assertTrue($this->hasHeader($public['headers'], 'Referrer-Policy', 'same-origin'), 'Resposta deve limitar o referrer');
+        $this->assertTrue($this->hasCookieAttribute($public['headers'], 'HttpOnly'), 'Cookie de sessao deve ser HttpOnly');
+        $this->assertTrue($this->hasCookieAttribute($public['headers'], 'SameSite=Lax'), 'Cookie de sessao deve usar SameSite');
+
+        $protectedUser = $this->createUserFixture('funcionario');
+        $admin = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
+        $invalidDelete = $admin->post('/users.php?action=delete&id=' . urlencode($protectedUser['id']), [
+            'csrf_token' => 'token-invalido'
+        ]);
+        $this->assertSame(400, $invalidDelete['status'], 'Exclusao com CSRF invalido deve ser rejeitada');
+        $this->assertSame(1, (int) $this->fetchValue('SELECT COUNT(*) FROM usuario WHERE idusuario = ?', [$protectedUser['id']]), 'CSRF invalido nao pode excluir usuario');
+
+        $getLogout = $admin->get('/logout.php');
+        $this->assertSame(302, $getLogout['status'], 'Logout por GET deve ser rejeitado');
+        $this->assertSame(200, $admin->get('/dashboard.php')['status'], 'Logout por GET nao deve encerrar a sessao');
+
+        $dashboard = $admin->get('/dashboard.php');
+        $csrfToken = $this->extractCsrfToken($dashboard['body']);
+        $logout = $admin->post('/logout.php', ['csrf_token' => $csrfToken]);
+        $this->assertSame(302, $logout['status'], 'Logout seguro deve redirecionar');
+        $this->assertTrue(strpos((string) $logout['location'], 'index.php') !== false, 'Logout seguro deve voltar ao login');
+        $this->assertSame(302, $admin->get('/dashboard.php')['status'], 'Sessao deve ser encerrada depois do logout');
+    }
+
     public function testProfilePhotoUploadAcceptsValidPng() {
-        $client = $this->loginAs('admin@criancafeliz.org', 'AlterarEstaSenha!2026');
+        $client = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
         $profile = $client->get('/profile.php');
         $this->assertSame(200, $profile['status'], 'Perfil deve abrir para usuario autenticado');
 
         $csrfToken = $this->extractCsrfToken($profile['body']);
-        $previousPhoto = $this->fetchValue('SELECT foto_perfil FROM Usuario WHERE email = ?', ['admin@criancafeliz.org']);
+        $previousPhoto = $this->fetchValue('SELECT foto_perfil FROM usuario WHERE email = ?', [self::ADMIN_EMAIL]);
         $publicPath = null;
         $hadHtaccess = file_exists(BASE_PATH . '/uploads/profiles/.htaccess');
 
@@ -236,11 +276,11 @@ class HttpSmokeTest extends TestCase {
             $this->assertTrue(is_file(BASE_PATH . '/' . $publicPath), 'Arquivo de perfil deve existir no disco');
             $this->assertSame(
                 $publicPath,
-                $this->fetchValue('SELECT foto_perfil FROM Usuario WHERE email = ?', ['admin@criancafeliz.org']),
+                $this->fetchValue('SELECT foto_perfil FROM usuario WHERE email = ?', [self::ADMIN_EMAIL]),
                 'Banco deve apontar para a foto enviada'
             );
         } finally {
-            $this->execute('UPDATE Usuario SET foto_perfil = ? WHERE email = ?', [$previousPhoto, 'admin@criancafeliz.org']);
+            $this->execute('UPDATE usuario SET foto_perfil = ? WHERE email = ?', [$previousPhoto, self::ADMIN_EMAIL]);
             if ($publicPath) {
                 $this->cleanupPublicUpload($publicPath);
             }
@@ -250,7 +290,7 @@ class HttpSmokeTest extends TestCase {
 
     public function testAdminCanUploadProntuarioDocumentViaMultipart() {
         $created = $this->createAcolhimentoFixture();
-        $client = $this->loginAs('admin@criancafeliz.org', 'AlterarEstaSenha!2026');
+        $client = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
         $show = $client->get('/prontuarios.php?action=show&cpf=' . urlencode($created['cpf']));
         $this->assertSame(200, $show['status'], 'Prontuario deve abrir antes do upload');
 
@@ -300,6 +340,28 @@ class HttpSmokeTest extends TestCase {
         return new HttpSmokeClient($this->baseUrl);
     }
 
+    private function ensureAdminFixture() {
+        $users = new User();
+        $existing = $users->findByEmail(self::ADMIN_EMAIL);
+
+        if (!$existing) {
+            $users->createUser([
+                'name' => 'Administrador Smoke',
+                'email' => self::ADMIN_EMAIL,
+                'password' => self::ADMIN_PASSWORD,
+                'role' => 'admin',
+                'status' => 'Ativo'
+            ]);
+            return;
+        }
+
+        $users->updateUser($existing['idusuario'], [
+            'password' => self::ADMIN_PASSWORD,
+            'role' => 'admin',
+            'status' => 'Ativo'
+        ]);
+    }
+
     private function loginAs($email, $password) {
         $client = $this->newClient();
         $login = $client->get('/');
@@ -336,6 +398,26 @@ class HttpSmokeTest extends TestCase {
     private function assertRedirectsToDashboard(array $response, $message) {
         $this->assertSame(302, $response['status'], $message);
         $this->assertTrue(strpos((string) $response['location'], 'dashboard.php') !== false, $message . ': destino inesperado');
+    }
+
+    private function hasHeader(array $headers, $name, $expectedValue) {
+        foreach ($headers as $header) {
+            if (stripos($header, $name . ':') === 0) {
+                return strcasecmp(trim(substr($header, strlen($name) + 1)), $expectedValue) === 0;
+            }
+        }
+
+        return false;
+    }
+
+    private function hasCookieAttribute(array $headers, $attribute) {
+        foreach ($headers as $header) {
+            if (stripos($header, 'Set-Cookie:') === 0 && stripos($header, $attribute) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function createUserFixture($role) {

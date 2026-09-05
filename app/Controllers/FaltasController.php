@@ -395,6 +395,7 @@ class FaltasController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
             $id = $this->getParam('id_oficina', '');
             
             if (empty($id)) {

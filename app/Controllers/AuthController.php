@@ -35,24 +35,54 @@ class AuthController extends BaseController {
         if (!$this->isPost()) {
             redirect('index.php');
         }
-        
+
+        $email = '';
+        $rateLimiter = null;
+        $recordFailedAttempt = false;
+
         try {
             $this->validateCSRF();
-            
-            $email = $this->getParam('email', '');
+
+            $email = strtolower(trim((string) $this->getParam('email', '')));
             $password = $this->getParam('password', '');
-            
+
+            $rateLimiter = new RateLimitService();
+            $maxAttempts = $this->configInt('LOGIN_MAX_ATTEMPTS', 5, 2, 20);
+            $windowSeconds = $this->configInt('LOGIN_WINDOW_SECONDS', 900, 60, 86400);
+            $clientIp = getClientIp();
+
+            if (
+                !$rateLimiter->isAllowed('login_email', $email ?: 'empty', $maxAttempts, $windowSeconds)
+                || !$rateLimiter->isAllowed('login_ip', $clientIp, $maxAttempts * 3, $windowSeconds)
+            ) {
+                throw new Exception('Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.');
+            }
+
+            $recordFailedAttempt = true;
             $user = $this->authService->login($email, $password);
-            
+
+            $rateLimiter->clear('login_email', $email);
+
             // Login bem-sucedido
             redirect('dashboard.php');
-            
-        } catch (Exception $e) {
-            
+
+        } catch (Throwable $e) {
+            if ($recordFailedAttempt && $rateLimiter instanceof RateLimitService) {
+                try {
+                    $maxAttempts = $maxAttempts ?? 5;
+                    $windowSeconds = $windowSeconds ?? 900;
+                    $blockSeconds = $this->configInt('LOGIN_BLOCK_SECONDS', 900, 60, 86400);
+                    $rateLimiter->hit('login_email', $email ?: 'empty', $maxAttempts, $windowSeconds, $blockSeconds);
+                    $rateLimiter->hit('login_ip', $clientIp ?? getClientIp(), $maxAttempts * 3, $windowSeconds, $blockSeconds);
+                } catch (Throwable $rateLimitError) {
+                    reportException($rateLimitError, 'login-rate-limit');
+                }
+            }
+
             // Armazenar erro e dados do formulário na sessão
-            $_SESSION['login_errors'] = [$e->getMessage()];
-            $_SESSION['form_data'] = ['email' => $email ?? ''];
-            
+            $_SESSION['login_errors'] = [$this->safeLoginError($e)];
+            $_SESSION['form_data'] = ['email' => $email];
+
             redirect('index.php');
         }
     }
@@ -61,6 +91,11 @@ class AuthController extends BaseController {
      * Processa logout
      */
     public function logout() {
+        if (!$this->isPost()) {
+            $this->redirectWithError('dashboard.php', 'Solicitação de saída inválida.', false);
+        }
+
+        $this->validateCSRF();
         $this->authService->logout();
         redirect('index.php');
     }
@@ -98,9 +133,20 @@ class AuthController extends BaseController {
             if (empty($email) || !validateEmail($email)) {
                 throw new Exception('Email válido é obrigatório');
             }
-            
-            // Simular envio de email (implementar SMTP conforme memória)
-            $this->sendPasswordResetEmail($email);
+            $rateLimiter = new RateLimitService();
+            $windowSeconds = $this->configInt('PASSWORD_RESET_WINDOW_SECONDS', 3600, 300, 86400);
+            $emailMax = $this->configInt('PASSWORD_RESET_EMAIL_MAX_ATTEMPTS', 3, 1, 20);
+            $ipMax = $this->configInt('PASSWORD_RESET_IP_MAX_ATTEMPTS', 10, 2, 100);
+            $clientIp = getClientIp();
+
+            $emailAllowed = $rateLimiter->isAllowed('password_reset_email', strtolower($email), $emailMax, $windowSeconds);
+            $ipAllowed = $rateLimiter->isAllowed('password_reset_ip', $clientIp, $ipMax, $windowSeconds);
+
+            if ($emailAllowed && $ipAllowed) {
+                $rateLimiter->hit('password_reset_email', strtolower($email), $emailMax, $windowSeconds, $windowSeconds);
+                $rateLimiter->hit('password_reset_ip', $clientIp, $ipMax, $windowSeconds, $windowSeconds);
+                $this->sendPasswordResetEmail($email);
+            }
             
             $this->redirectWithSuccess('forgot.php', 'Se o email existir no sistema, você receberá instruções para redefinir sua senha.');
             
@@ -235,16 +281,24 @@ class AuthController extends BaseController {
         $token = bin2hex(random_bytes(32));
         $expiry = time() + 3600; // 1 hora
         
-        // Salvar token (implementar conforme memória)
         $this->saveResetToken($email, $token, $expiry);
-        
-        // Montar URL de reset
-        $basePath = str_replace('\\', '/', dirname($_SERVER['PHP_SELF']));
-        $basePath = rtrim($basePath, '/');
-        $resetUrl = 'http://' . $_SERVER['HTTP_HOST'] . $basePath . '/reset_password.php?token=' . $token;
-        
-        // Enviar email (implementar SMTP conforme memória)
-        $this->sendEmail($email, 'Recuperação de Senha - Criança Feliz', $resetUrl);
+
+        $baseUrl = rtrim((string) (getenv('APP_BASE_URL') ?: ''), '/');
+        $appEnvironment = strtolower((string) (getenv('APP_ENV') ?: 'production'));
+        $isAllowedUrl = filter_var($baseUrl, FILTER_VALIDATE_URL)
+            && ($appEnvironment !== 'production' || strpos($baseUrl, 'https://') === 0);
+
+        if (!$isAllowedUrl) {
+            $this->invalidateResetToken($token);
+            reportException(new RuntimeException('APP_BASE_URL ausente ou insegura.'), 'password-reset');
+            return;
+        }
+
+        $resetUrl = $baseUrl . '/reset_password.php?token=' . rawurlencode($token);
+
+        if (!$this->sendEmail($email, 'Recuperação de Senha - Criança Feliz', $resetUrl)) {
+            $this->invalidateResetToken($token);
+        }
     }
     
     /**
@@ -254,6 +308,11 @@ class AuthController extends BaseController {
         $tokenHash = hash('sha256', $token);
         $resetTokenModel = new PasswordResetToken();
         $resetTokenModel->createToken($email, $tokenHash, date('Y-m-d H:i:s', $expiry));
+    }
+
+    private function invalidateResetToken($token) {
+        $tokenHash = hash('sha256', $token);
+        (new PasswordResetToken())->markUsed($tokenHash);
     }
     
     /**
@@ -294,12 +353,56 @@ class AuthController extends BaseController {
         $resetTokenModel->markUsed($tokenHash);
     }
     
-    /**
-     * Envia email (implementar SMTP conforme memória)
-     */
     private function sendEmail($to, $subject, $resetUrl) {
-        // Implementar conforme sistema SMTP da memória
-        // Por enquanto, apenas log
-        error_log("Email enviado para $to: $subject - URL: $resetUrl");
+        if (!filter_var(getenv('MAIL_ENABLED'), FILTER_VALIDATE_BOOLEAN)) {
+            debugLog('Envio de recuperação desabilitado por configuração.');
+            return false;
+        }
+
+        $from = trim((string) (getenv('MAIL_FROM') ?: ''));
+        if (!validateEmail($from) || !validateEmail($to)) {
+            reportException(new RuntimeException('Configuração de email inválida.'), 'password-reset-mail');
+            return false;
+        }
+
+        $message = "Recebemos uma solicitação para redefinir sua senha.\n\n"
+            . "Use o link abaixo em até uma hora:\n{$resetUrl}\n\n"
+            . "Se você não fez essa solicitação, ignore esta mensagem.";
+        $headers = [
+            'From: ' . $from,
+            'Content-Type: text/plain; charset=UTF-8',
+            'X-Mailer: Criança Feliz'
+        ];
+
+        $sent = @mail($to, $subject, $message, implode("\r\n", $headers));
+        if (!$sent) {
+            reportException(new RuntimeException('O transporte de email recusou a mensagem.'), 'password-reset-mail');
+        }
+
+        return $sent;
+    }
+
+    private function configInt($name, $default, $minimum, $maximum) {
+        $value = getenv($name);
+        $value = $value === false ? $default : (int) $value;
+        return max($minimum, min($maximum, $value));
+    }
+
+    private function safeLoginError(Throwable $exception) {
+        $safeMessages = [
+            'Token CSRF inválido',
+            'Email é obrigatório',
+            'Email inválido',
+            'Senha é obrigatória',
+            'Email ou senha incorretos',
+            'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.'
+        ];
+
+        if (in_array($exception->getMessage(), $safeMessages, true)) {
+            return $exception->getMessage();
+        }
+
+        $errorId = reportException($exception, 'login');
+        return 'Não foi possível entrar agora. Tente novamente. Código: ' . $errorId;
     }
 }

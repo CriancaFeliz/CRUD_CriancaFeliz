@@ -4,14 +4,7 @@
  * Configurações do Banco de Dados
  */
 class Database {
-    
-    // Configurações de conexão
-    private static $host = 'localhost';
-    private static $dbname = 'criancafeliz';
-    private static $username = 'root';
-    private static $password = '';
-    private static $charset = 'utf8mb4';
-    
+
     // Instância PDO (singleton)
     private static $pdo = null;
     
@@ -21,18 +14,38 @@ class Database {
     public static function getConnection() {
         if (self::$pdo === null) {
             try {
-                $host = getenv('DB_HOST') ?: self::$host;
-                $port = getenv('DB_PORT') ?: null;
-                $dbname = getenv('DB_NAME') ?: self::$dbname;
-                $username = getenv('DB_USER') ?: self::$username;
-                $password = getenv('DB_PASS') !== false ? getenv('DB_PASS') : self::$password;
-                $charset = getenv('DB_CHARSET') ?: self::$charset;
+                $host = trim((string) (getenv('DB_HOST') ?: ''));
+                $port = (int) (getenv('DB_PORT') ?: 3306);
+                $dbname = trim((string) (getenv('DB_NAME') ?: ''));
+                $username = trim((string) (getenv('DB_USER') ?: ''));
+                $password = getenv('DB_PASS') !== false ? (string) getenv('DB_PASS') : '';
+                $charset = trim((string) (getenv('DB_CHARSET') ?: 'utf8mb4'));
+
+                if ($host === '' || $dbname === '' || $username === '') {
+                    throw new RuntimeException('Banco de dados não configurado. Defina DB_HOST, DB_NAME e DB_USER.');
+                }
+
+                if (!preg_match('/^[A-Za-z0-9._-]+$/', $host)) {
+                    throw new RuntimeException('DB_HOST inválido.');
+                }
+
+                if (!preg_match('/^[A-Za-z0-9_]+$/', $dbname)) {
+                    throw new RuntimeException('DB_NAME inválido.');
+                }
+
+                if ($port < 1 || $port > 65535) {
+                    throw new RuntimeException('DB_PORT inválido.');
+                }
+
+                if (!in_array($charset, ['utf8mb4', 'utf8'], true)) {
+                    throw new RuntimeException('DB_CHARSET inválido.');
+                }
 
                 if (!extension_loaded('pdo_mysql')) {
                     throw new Exception('A extensao pdo_mysql nao esta habilitada neste PHP.');
                 }
 
-                $dsn = "mysql:host=" . $host . ($port ? ";port=" . $port : "") . ";dbname=" . $dbname . ";charset=" . $charset;
+                $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
                 
                 $options = [
                     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -48,11 +61,12 @@ class Database {
                 
                 self::$pdo = new PDO($dsn, $username, $password, $options);
                 
-                error_log('✅ Conexão com banco de dados estabelecida');
-                
-            } catch (PDOException $e) {
-                error_log('❌ ERRO ao conectar ao banco: ' . $e->getMessage());
-                throw new Exception('Erro ao conectar ao banco de dados: ' . $e->getMessage());
+            } catch (Throwable $e) {
+                debugLog('Falha ao conectar ao banco de dados', [
+                    'exception' => get_class($e),
+                    'code' => (string) $e->getCode()
+                ]);
+                throw new RuntimeException('Não foi possível conectar ao banco de dados. Verifique a configuração do ambiente.');
             }
         }
         
@@ -81,8 +95,10 @@ class Database {
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            error_log('❌ Erro na query: ' . $e->getMessage());
-            throw new Exception('Erro ao executar query: ' . $e->getMessage());
+            debugLog('Falha ao executar consulta no banco de dados', [
+                'code' => (string) $e->getCode()
+            ]);
+            throw new RuntimeException('Não foi possível concluir a operação no banco de dados.');
         }
     }
     
@@ -121,7 +137,9 @@ class Database {
         try {
             self::query("SET @usuario_id = ?", [$userId]);
         } catch (Exception $e) {
-            error_log('⚠️ Erro ao definir usuário logado: ' . $e->getMessage());
+            debugLog('Falha ao preparar o contexto de auditoria', [
+                'exception' => get_class($e)
+            ]);
         }
     }
 }

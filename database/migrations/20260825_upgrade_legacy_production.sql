@@ -81,8 +81,15 @@ DELIMITER ;
 -- A aplicacao atual consolida os dados de acolhimento em `atendido`.
 -- A tabela Ficha_Acolhimento original e mantida como historico.
 ALTER TABLE `atendido`
+    ADD COLUMN IF NOT EXISTS `numero` VARCHAR(20) NULL,
+    ADD COLUMN IF NOT EXISTS `complemento` VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS `bairro` VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS `cidade` VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS `estado` CHAR(2) NULL,
+    ADD COLUMN IF NOT EXISTS `cep` VARCHAR(8) NULL,
     ADD COLUMN IF NOT EXISTS `telefone` VARCHAR(20) NULL,
     ADD COLUMN IF NOT EXISTS `email` VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS `faixa_etaria` INT NULL,
     ADD COLUMN IF NOT EXISTS `encaminha_por` VARCHAR(100) NULL,
     ADD COLUMN IF NOT EXISTS `queixa_principal` TEXT NULL,
     ADD COLUMN IF NOT EXISTS `escola` VARCHAR(100) NULL,
@@ -112,7 +119,13 @@ SET
     a.carimbo = COALESCE(NULLIF(a.carimbo, ''), fa.carimbo);
 
 ALTER TABLE `ficha_socioeconomico`
-    ADD COLUMN IF NOT EXISTS `numero_comodos` INT NULL;
+    ADD COLUMN IF NOT EXISTS `numero_comodos` INT NULL,
+    ADD COLUMN IF NOT EXISTS `bolsa_familia` TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS `auxilio_brasil` TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS `bpc` TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS `auxilio_emergencial` TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS `seguro_desemprego` TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS `aposentadoria` TINYINT(1) NOT NULL DEFAULT 0;
 
 UPDATE `ficha_socioeconomico`
 SET `numero_comodos` = `nr_comodos`
@@ -131,6 +144,32 @@ ALTER TABLE `log`
     ADD COLUMN IF NOT EXISTS `ip_usuario` VARCHAR(45) NULL,
     ADD COLUMN IF NOT EXISTS `dados_completos` LONGTEXT NULL;
 
+-- Registros de auditoria devem sobreviver à exclusão do usuário que realizou a ação.
+-- O nome da chave pode variar em bancos antigos, por isso ela é localizada pelo metadado.
+SET @cf_log_fk_name = (
+    SELECT CONSTRAINT_NAME
+      FROM information_schema.KEY_COLUMN_USAGE
+     WHERE TABLE_SCHEMA = @cf_database
+       AND TABLE_NAME = 'log'
+       AND COLUMN_NAME = 'id_usuario'
+       AND REFERENCED_TABLE_NAME = 'usuario'
+     LIMIT 1
+);
+
+SET @cf_drop_log_fk_sql = IF(
+    @cf_log_fk_name IS NULL,
+    'SELECT 1',
+    CONCAT('ALTER TABLE `log` DROP FOREIGN KEY `', REPLACE(@cf_log_fk_name, '`', '``'), '`')
+);
+PREPARE cf_drop_log_fk_stmt FROM @cf_drop_log_fk_sql;
+EXECUTE cf_drop_log_fk_stmt;
+DEALLOCATE PREPARE cf_drop_log_fk_stmt;
+
+ALTER TABLE `log`
+    ADD CONSTRAINT `log_ibfk_1`
+    FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`idusuario`)
+    ON DELETE SET NULL ON UPDATE CASCADE;
+
 CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `email` VARCHAR(100) NOT NULL,
@@ -142,6 +181,19 @@ CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
     UNIQUE KEY `token_hash` (`token_hash`),
     KEY `email` (`email`),
     KEY `expires_at` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `auth_rate_limits` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `action` VARCHAR(50) NOT NULL,
+    `identifier_hash` CHAR(64) NOT NULL,
+    `attempts` INT NOT NULL DEFAULT 0,
+    `window_started_at` DATETIME NOT NULL,
+    `blocked_until` DATETIME NULL,
+    `last_attempt_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_auth_rate_limit` (`action`, `identifier_hash`),
+    KEY `idx_auth_rate_limit_cleanup` (`last_attempt_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- A versao atual consulta esta view para os alertas de faltas.
