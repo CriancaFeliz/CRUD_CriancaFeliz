@@ -6,7 +6,7 @@
 class FrequenciaOficina extends BaseModel {
     
     public function __construct() {
-        parent::__construct('Frequencia_Oficina', 'id_frequencia');
+        parent::__construct('frequencia_oficina', 'id_frequencia');
     }
     
     /**
@@ -16,7 +16,7 @@ class FrequenciaOficina extends BaseModel {
         $pdo = Database::getConnection();
         $userId = $_SESSION['user_id'] ?? null;
         
-        $sql = "INSERT INTO Frequencia_Oficina (id_atendido, id_oficina, data, status, registrado_por)
+        $sql = "INSERT INTO frequencia_oficina (id_atendido, id_oficina, data, status, registrado_por)
                 VALUES (?, ?, ?, 'P', ?)
                 ON DUPLICATE KEY UPDATE 
                     status = 'P',
@@ -37,7 +37,7 @@ class FrequenciaOficina extends BaseModel {
         $userId = $_SESSION['user_id'] ?? null;
         $status = !empty($justificativa) ? 'J' : 'F';
         
-        $sql = "INSERT INTO Frequencia_Oficina (id_atendido, id_oficina, data, status, justificativa, registrado_por)
+        $sql = "INSERT INTO frequencia_oficina (id_atendido, id_oficina, data, status, justificativa, registrado_por)
                 VALUES (?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE 
                     status = VALUES(status),
@@ -55,9 +55,9 @@ class FrequenciaOficina extends BaseModel {
     public function getByAtendido($idAtendido, $dataInicio = null, $dataFim = null) {
         $pdo = Database::getConnection();
         $sql = "SELECT fo.*, o.nome as oficina_nome, u.nome as registrado_por_nome
-                FROM Frequencia_Oficina fo
-                INNER JOIN Oficina o ON fo.id_oficina = o.id_oficina
-                LEFT JOIN Usuario u ON fo.registrado_por = u.idusuario
+                FROM frequencia_oficina fo
+                INNER JOIN oficina o ON fo.id_oficina = o.id_oficina
+                LEFT JOIN usuario u ON fo.registrado_por = u.idusuario
                 WHERE fo.id_atendido = ?";
         
         $params = [$idAtendido];
@@ -85,8 +85,8 @@ class FrequenciaOficina extends BaseModel {
     public function getByOficinaData($idOficina, $data) {
         $pdo = Database::getConnection();
         $sql = "SELECT fo.*, a.nome as atendido_nome, a.cpf
-                FROM Frequencia_Oficina fo
-                INNER JOIN Atendido a ON fo.id_atendido = a.idatendido
+                FROM frequencia_oficina fo
+                INNER JOIN atendido a ON fo.id_atendido = a.idatendido
                 WHERE fo.id_oficina = ? AND fo.data = ?
                 ORDER BY a.nome";
         
@@ -105,7 +105,7 @@ class FrequenciaOficina extends BaseModel {
                     COUNT(CASE WHEN status = 'F' THEN 1 END) as faltas,
                     COUNT(CASE WHEN status = 'J' THEN 1 END) as justificadas,
                     COUNT(*) as total
-                FROM Frequencia_Oficina
+                FROM frequencia_oficina
                 WHERE id_atendido = ?";
         
         $params = [$idAtendido];
@@ -136,7 +136,7 @@ class FrequenciaOficina extends BaseModel {
      */
     public function remover($id) {
         $pdo = Database::getConnection();
-        $sql = "DELETE FROM Frequencia_Oficina WHERE id_frequencia = ?";
+        $sql = "DELETE FROM frequencia_oficina WHERE id_frequencia = ?";
         $stmt = $pdo->prepare($sql);
         return $stmt->execute([$id]);
     }
@@ -147,7 +147,7 @@ class FrequenciaOficina extends BaseModel {
     public function atualizarJustificativa($id, $justificativa) {
         $pdo = Database::getConnection();
         $status = !empty($justificativa) ? 'J' : 'F';
-        $sql = "UPDATE Frequencia_Oficina 
+        $sql = "UPDATE frequencia_oficina
                 SET justificativa = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
                 WHERE id_frequencia = ?";
         $stmt = $pdo->prepare($sql);

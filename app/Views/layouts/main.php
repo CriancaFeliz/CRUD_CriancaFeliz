@@ -10,33 +10,44 @@
 
 </head>
 <body>
+    <?php
+        $currentUri = $_SERVER['REQUEST_URI'] ?? '';
+        $currentPath = trim(parse_url($currentUri, PHP_URL_PATH) ?: '', '/');
+        $currentBase = basename($currentPath ?: ($_SERVER['PHP_SELF'] ?? ''));
+        $currentAction = $_GET['action'] ?? null;
+        $routeContains = static function ($needle) use ($currentPath, $currentBase) {
+            return strpos($currentPath, $needle) !== false || strpos($currentBase, $needle) !== false;
+        };
+        $isRoute = static function (array $routes) use ($currentBase) {
+            return in_array($currentBase, $routes, true);
+        };
+    ?>
     <div class="app">
         <aside class="sidebar">
             <img src="img/logo.png" class="logo" alt="logo">
-            <a class="nav-icon <?php echo (basename($_SERVER['PHP_SELF']) === 'dashboard.php') ? 'active' : ''; ?>" href="dashboard.php" title="Início"><i class="fas fa-home"></i></a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'prontuarios') !== false) ? 'active' : ''; ?>" href="prontuarios.php" title="Prontuários"><i class="fas fa-users"></i></a>
+            <a class="nav-icon <?php echo $isRoute(['dashboard', 'dashboard.php']) ? 'active' : ''; ?>" href="dashboard.php" title="Início"><i class="fas fa-home"></i></a>
+            <a class="nav-icon <?php echo $routeContains('prontuarios') ? 'active' : ''; ?>" href="prontuarios.php" title="Prontuários"><i class="fas fa-users"></i></a>
             
             <!-- Sistema de Faltas Novo -->
             <?php if ($currentUser['role'] !== 'psicologo'): ?>
-                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && (!isset($_GET['action']) || $_GET['action']==='index')) ? 'active' : ''; ?>" href="faltas.php" title="Faltas - Por Dia"><i class="fas fa-calendar-day"></i></a>
-                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && isset($_GET['action']) && $_GET['action'] === 'oficina') ? 'active' : ''; ?>" href="faltas.php?action=oficina" title="Faltas - Por Oficina"><i class="fas fa-chalkboard-teacher"></i></a>
-                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && isset($_GET['action']) && $_GET['action'] === 'alertas') ? 'active' : ''; ?>" href="faltas.php?action=alertas" title="Alertas de Faltas"><i class="fas fa-exclamation-triangle"></i></a>
+                <a class="nav-icon <?php echo ($routeContains('faltas') && (!$currentAction || $currentAction === 'index')) ? 'active' : ''; ?>" href="faltas.php" title="Faltas - Por Dia"><i class="fas fa-calendar-day"></i></a>
+                <a class="nav-icon <?php echo ($routeContains('faltas') && $currentAction === 'oficina') ? 'active' : ''; ?>" href="faltas.php?action=oficina" title="Faltas - Por Oficina"><i class="fas fa-chalkboard-teacher"></i></a>
+                <a class="nav-icon <?php echo ($routeContains('faltas') && $currentAction === 'alertas') ? 'active' : ''; ?>" href="faltas.php?action=alertas" title="Alertas de Faltas"><i class="fas fa-exclamation-triangle"></i></a>
 
-                <!-- AGORA SOMENTE ADMIN VÊ O DESLIGAMENTO -->
                 <?php if ($currentUser['role'] === 'admin'): ?>
-                    <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'desligamento') !== false) ? 'active' : ''; ?>" href="desligamento.php" title="Desligamentos"><i class="fas fa-user-times"></i></a>
+                    <a class="nav-icon <?php echo $routeContains('desligamento') ? 'active' : ''; ?>" href="desligamento.php" title="Desligamentos"><i class="fas fa-user-times"></i></a>
                 <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($currentUser['role'] === 'psicologo'): ?>
-                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'psychology') !== false) ? 'active' : ''; ?>" href="psychology.php" title="Área Psicológica"><i class="fas fa-brain"></i></a>
+                <a class="nav-icon <?php echo $routeContains('psychology') ? 'active' : ''; ?>" href="psychology.php" title="Área Psicológica"><i class="fas fa-brain"></i></a>
             <?php endif; ?>
             <?php if ($currentUser['role'] === 'admin'): ?>
-                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'users') !== false) ? 'active' : ''; ?>" href="users.php" title="Gerenciar Usuários"><i class="fas fa-user-cog"></i></a>
-                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'logs') !== false) ? 'active' : ''; ?>" href="logs.php" title="Sistema de Logs"><i class="fas fa-history"></i></a>
-                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && isset($_GET['action']) && $_GET['action'] === 'gerenciarOficinas') ? 'active' : ''; ?>" href="faltas.php?action=gerenciarOficinas" title="Gerenciar Oficinas"><i class="fas fa-cogs"></i></a>
+                <a class="nav-icon <?php echo $routeContains('users') ? 'active' : ''; ?>" href="users.php" title="Gerenciar Usuários"><i class="fas fa-user-cog"></i></a>
+                <a class="nav-icon <?php echo $routeContains('logs') ? 'active' : ''; ?>" href="logs.php" title="Sistema de Logs"><i class="fas fa-history"></i></a>
+                <a class="nav-icon <?php echo ($routeContains('faltas') && $currentAction === 'gerenciarOficinas') ? 'active' : ''; ?>" href="faltas.php?action=gerenciarOficinas" title="Gerenciar Oficinas"><i class="fas fa-cogs"></i></a>
             <?php endif; ?>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'profile') !== false) ? 'active' : ''; ?>" href="profile.php" title="Meu Perfil"><i class="fas fa-cog"></i></a>
+            <a class="nav-icon <?php echo $routeContains('profile') ? 'active' : ''; ?>" href="profile.php" title="Meu Perfil"><i class="fas fa-cog"></i></a>
         </aside>
         
         <main class="content">

@@ -17,7 +17,7 @@ $acoes = $acoes ?? ['INSERT' => 0, 'UPDATE' => 0, 'DELETE' => 0];
                 <i class="fas fa-arrow-left"></i>
                 Dashboard
             </a>
-            <button type="button" class="btn secondary" id="toggleFiltersBtn" onclick="toggleLogFilters()" aria-expanded="false">
+            <button type="button" class="btn secondary" id="toggleFiltersBtn" onclick="toggleLogFilters()" aria-expanded="true">
                 <i class="fas fa-filter"></i>
                 Filtros
             </button>
@@ -28,7 +28,7 @@ $acoes = $acoes ?? ['INSERT' => 0, 'UPDATE' => 0, 'DELETE' => 0];
         </div>
     </div>
 
-    <div id="logsFilters" class="logs-filter-panel card-glass" hidden>
+    <div id="logsFilters" class="logs-filter-panel card-glass">
         <form method="GET" action="logs.php" class="logs-filter-grid">
             <input type="hidden" name="action" value="search">
 

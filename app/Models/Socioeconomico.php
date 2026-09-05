@@ -6,7 +6,7 @@
 class Socioeconomico extends BaseModel {
     
     public function __construct() {
-        parent::__construct('Atendido', 'idatendido');
+        parent::__construct('atendido', 'idatendido');
     }
     
     /**
@@ -124,7 +124,7 @@ class Socioeconomico extends BaseModel {
             // Normalizar dados
             $data = $this->normalizeData($data);
             
-            // 1. Criar Atendido (se não existir)
+            // 1. Criar atendido (se não existir)
             $atendidoData = [
                 'nome' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
                 'cpf' => $data['cpf'] ?? '',
@@ -165,7 +165,7 @@ class Socioeconomico extends BaseModel {
             
             // Garantir que colunas de benefícios existam na tabela (compatibilidade)
             try {
-                $colsStmt = $this->query("SHOW COLUMNS FROM Ficha_Socioeconomico");
+                $colsStmt = $this->query("SHOW COLUMNS FROM ficha_socioeconomico");
                 $colsArr = array_column($colsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
             } catch (Exception $e) {
                 $colsArr = [];
@@ -183,7 +183,7 @@ class Socioeconomico extends BaseModel {
             foreach ($benefitCols as $col => $ddl) {
                 if (!in_array($col, $colsArr)) {
                     try {
-                        $this->query("ALTER TABLE Ficha_Socioeconomico ADD COLUMN {$col} {$ddl}");
+                        $this->query("ALTER TABLE ficha_socioeconomico ADD COLUMN {$col} {$ddl}");
                         debugLog("Coluna adicionada: {$col}");
                     } catch (Exception $e) {
                         error_log("Falha ao adicionar coluna {$col}: " . $e->getMessage());
@@ -246,12 +246,12 @@ class Socioeconomico extends BaseModel {
             }
 
             if (empty($insertCols)) {
-                throw new Exception('Nenhuma coluna válida encontrada em Ficha_Socioeconomico para inserir. Verifique o schema.');
+                throw new Exception('Nenhuma coluna válida encontrada em ficha_socioeconomico para inserir. Verifique o schema.');
             }
 
             $placeholders = implode(', ', array_fill(0, count($insertCols), '?'));
             $colsList = implode(', ', $insertCols);
-            $sql = "INSERT INTO Ficha_Socioeconomico ({$colsList}) VALUES ({$placeholders})";
+            $sql = "INSERT INTO ficha_socioeconomico ({$colsList}) VALUES ({$placeholders})";
 
             try {
                 $logEntry = [
@@ -267,7 +267,7 @@ class Socioeconomico extends BaseModel {
                 debugLog('Ficha criada com idficha: ' . $fichaId);
                 debugFileLog('debug_sql.log', ['time'=>date('c'),'result'=>'ok','idficha'=>$fichaId]);
             } catch (Exception $e) {
-                error_log('ERRO ao inserir Ficha_Socioeconomico: ' . $e->getMessage());
+                error_log('ERRO ao inserir ficha_socioeconomico: ' . $e->getMessage());
                 debugFileLog('debug_sql.log', ['time'=>date('c'),'error'=>$e->getMessage()]);
                 throw $e;
             }
@@ -297,7 +297,7 @@ class Socioeconomico extends BaseModel {
             }
             
             if (!empty($familia) && is_array($familia)) {
-                debugLog('Inserindo ' . count($familia) . ' membros da família na tabela Familia com id_ficha = ' . $fichaId);
+                debugLog('Inserindo ' . count($familia) . ' membros da família na tabela familia com id_ficha = ' . $fichaId);
                 $familiaInseridos = 0;
                 foreach ($familia as $idx => $membro) {
                     debugLog("Processando membro {$idx}", ['fields' => array_keys($membro)]);
@@ -316,7 +316,7 @@ class Socioeconomico extends BaseModel {
                     
                     try {
                         $this->query(
-                            "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                            "INSERT INTO familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
                             [
                                 $fichaId, // id_ficha (FK) recebe idficha (PK)
                                 trim($membro['nome'] ?? ''),
@@ -338,7 +338,7 @@ class Socioeconomico extends BaseModel {
                 debugLog('Nenhum membro da família para inserir (array vazio ou inválido)');
             }
             
-            // 4. Salvar Despesas (se houver)
+            // 4. Salvar despesas (se houver)
             // Aceitar tanto despesas_json quanto despesas array
             debugLog('=== INICIANDO SALVAMENTO DE DESPESAS ===');
             debugLog('despesas_json presente: ' . (isset($data['despesas_json']) ? 'SIM' : 'NÃO'));
@@ -363,7 +363,7 @@ class Socioeconomico extends BaseModel {
             }
             
             if (!empty($despesas) && is_array($despesas)) {
-                debugLog('Inserindo ' . count($despesas) . ' despesas na tabela Despesas com id_ficha = ' . $fichaId);
+                debugLog('Inserindo ' . count($despesas) . ' despesas na tabela despesas com id_ficha = ' . $fichaId);
                 $despesasInseridas = 0;
                 foreach ($despesas as $idx => $despesa) {
                     debugLog("Processando despesa {$idx}", ['fields' => array_keys($despesa)]);
@@ -395,7 +395,7 @@ class Socioeconomico extends BaseModel {
                     if ($valor > 0 || !empty($tipo)) {
                         try {
                             $this->query(
-                                "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                                "INSERT INTO despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
                                 [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
                             );
                             $despesasInseridas++;
@@ -408,7 +408,7 @@ class Socioeconomico extends BaseModel {
                         debugLog("Despesa #{$idx} ignorada (sem valor e sem tipo)");
                     }
                 }
-                debugLog("Despesas: {$despesasInseridas} itens inseridos com sucesso");
+                debugLog("despesas: {$despesasInseridas} itens inseridos com sucesso");
             } else {
                 debugLog('Nenhuma despesa para inserir (array vazio ou inválido)');
             }
@@ -432,8 +432,8 @@ class Socioeconomico extends BaseModel {
             SELECT 
                 a.*,
                 f.*
-            FROM Atendido a
-            LEFT JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+            FROM atendido a
+            LEFT JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
             WHERE a.idatendido = ?
         ", [$id]);
         
@@ -453,11 +453,11 @@ class Socioeconomico extends BaseModel {
             
             // Buscar família se ficha existe
             if ($fichaId) {
-                $stmt = $this->query("SELECT * FROM Familia WHERE id_ficha = ?", [$fichaId]);
+                $stmt = $this->query("SELECT * FROM familia WHERE id_ficha = ?", [$fichaId]);
                 $ficha['familia'] = $stmt->fetchAll();
                 
                 // Buscar despesas
-                $stmt = $this->query("SELECT * FROM Despesas WHERE id_ficha = ?", [$fichaId]);
+                $stmt = $this->query("SELECT * FROM despesas WHERE id_ficha = ?", [$fichaId]);
                 $ficha['despesas'] = $stmt->fetchAll();
             } else {
                 $ficha['familia'] = [];
@@ -512,8 +512,8 @@ class Socioeconomico extends BaseModel {
         // Contar total
         $countStmt = $this->query("
             SELECT COUNT(*) as total 
-            FROM Atendido a
-            INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+            FROM atendido a
+            INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
         ");
         $countResult = $countStmt->fetch();
         
@@ -540,8 +540,8 @@ class Socioeconomico extends BaseModel {
                     COALESCE(f.auxilio_emergencial, 0) as auxilio_emergencial,
                     COALESCE(f.seguro_desemprego, 0) as seguro_desemprego,
                     COALESCE(f.aposentadoria, 0) as aposentadoria
-                FROM Atendido a
-                INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
                 ORDER BY a.data_cadastro DESC
                 LIMIT ? OFFSET ?
             ", [$perPage, $offset]);
@@ -561,8 +561,8 @@ class Socioeconomico extends BaseModel {
                     a.status,
                     f.renda_familiar,
                     f.qtd_pessoas
-                FROM Atendido a
-                INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
                 ORDER BY a.data_cadastro DESC
                 LIMIT ? OFFSET ?
             ", [$perPage, $offset]);
@@ -596,8 +596,8 @@ class Socioeconomico extends BaseModel {
         // Contar total
         $stmt = $this->query("
             SELECT COUNT(*) as total 
-            FROM Atendido a
-            INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+            FROM atendido a
+            INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
         ");
         $result = $stmt->fetch();
         $total = $result['total'];
@@ -625,7 +625,7 @@ class Socioeconomico extends BaseModel {
             // Normalizar dados
             $data = $this->normalizeData($data);
             
-            // 1. Atualizar Atendido
+            // 1. Atualizar atendido
             $atendidoData = [
                 'nome' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
                 'cpf' => $data['cpf'] ?? '',
@@ -655,7 +655,7 @@ class Socioeconomico extends BaseModel {
             
             // Garantir colunas de benefícios (caso não existam ainda)
             try {
-                $colsStmt = $this->query("SHOW COLUMNS FROM Ficha_Socioeconomico");
+                $colsStmt = $this->query("SHOW COLUMNS FROM ficha_socioeconomico");
                 $colsArr = array_column($colsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
             } catch (Exception $e) {
                 $colsArr = [];
@@ -673,7 +673,7 @@ class Socioeconomico extends BaseModel {
             foreach ($benefitCols as $col => $ddl) {
                 if (!in_array($col, $colsArr)) {
                     try {
-                        $this->query("ALTER TABLE Ficha_Socioeconomico ADD COLUMN {$col} {$ddl}");
+                        $this->query("ALTER TABLE ficha_socioeconomico ADD COLUMN {$col} {$ddl}");
                         debugLog("Coluna adicionada (update): {$col}");
                     } catch (Exception $e) {
                         error_log("Falha ao adicionar coluna {$col} no update: " . $e->getMessage());
@@ -719,7 +719,7 @@ class Socioeconomico extends BaseModel {
 
             // Garantir colunas existentes antes de atualizar
             try {
-                $colsStmt = $this->query("SHOW COLUMNS FROM Ficha_Socioeconomico");
+                $colsStmt = $this->query("SHOW COLUMNS FROM ficha_socioeconomico");
                 $colsArr = array_column($colsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
             } catch (Exception $e) {
                 $colsArr = [];
@@ -736,7 +736,7 @@ class Socioeconomico extends BaseModel {
             }
 
             if (!empty($setParts)) {
-                $sql = "UPDATE Ficha_Socioeconomico SET " . implode(', ', $setParts) . " WHERE id_atendido = ?";
+                $sql = "UPDATE ficha_socioeconomico SET " . implode(', ', $setParts) . " WHERE id_atendido = ?";
                 $values[] = $id;
                 try {
                     $logEntry = [
@@ -750,17 +750,17 @@ class Socioeconomico extends BaseModel {
                     $this->query($sql, $values);
                     debugFileLog('debug_sql.log', ['time'=>date('c'),'result'=>'ok','id_atendido'=>$id]);
                 } catch (Exception $e) {
-                    error_log('ERRO ao atualizar Ficha_Socioeconomico: ' . $e->getMessage());
+                    error_log('ERRO ao atualizar ficha_socioeconomico: ' . $e->getMessage());
                     debugFileLog('debug_sql.log', ['time'=>date('c'),'error'=>$e->getMessage()]);
                     throw $e;
                 }
             } else {
-                error_log('Nenhuma coluna válida para atualizar em Ficha_Socioeconomico (schema possivelmente incompleto)');
+                error_log('Nenhuma coluna válida para atualizar em ficha_socioeconomico (schema possivelmente incompleto)');
             }
             
-            // 3. Atualizar Família e Despesas (deletar existentes e recriar)
+            // 3. Atualizar Família e despesas (deletar existentes e recriar)
             // Buscar fichaId primeiro (PK é idficha)
-            $fichaIdStmt = $this->query("SELECT idficha FROM Ficha_Socioeconomico WHERE id_atendido = ?", [$id]);
+            $fichaIdStmt = $this->query("SELECT idficha FROM ficha_socioeconomico WHERE id_atendido = ?", [$id]);
             $fichaExistente = $fichaIdStmt->fetch();
             $fichaId = $fichaExistente['idficha'] ?? null;
             
@@ -768,8 +768,8 @@ class Socioeconomico extends BaseModel {
                 debugLog('Atualizando família e despesas para ficha idficha: ' . $fichaId);
                 
                 // Deletar família e despesas existentes
-                $this->query("DELETE FROM Familia WHERE id_ficha = ?", [$fichaId]);
-                $this->query("DELETE FROM Despesas WHERE id_ficha = ?", [$fichaId]);
+                $this->query("DELETE FROM familia WHERE id_ficha = ?", [$fichaId]);
+                $this->query("DELETE FROM despesas WHERE id_ficha = ?", [$fichaId]);
                 
                 // Salvar nova família (se houver)
                 debugLog('=== UPDATE: INICIANDO SALVAMENTO DE FAMÍLIA ===');
@@ -811,7 +811,7 @@ class Socioeconomico extends BaseModel {
                         
                         try {
                             $this->query(
-                                "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                                "INSERT INTO familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
                                 [
                                     $fichaId, // id_ficha (FK) recebe idficha (PK)
                                     trim($membro['nome'] ?? ''),
@@ -886,7 +886,7 @@ class Socioeconomico extends BaseModel {
                         if ($valor > 0 || !empty($tipo)) {
                             try {
                                 $this->query(
-                                    "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                                    "INSERT INTO despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
                                     [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
                                 );
                                 $despesasInseridas++;
@@ -896,7 +896,7 @@ class Socioeconomico extends BaseModel {
                             }
                         }
                     }
-                    debugLog("Update - Despesas: {$despesasInseridas} itens inseridos com sucesso");
+                    debugLog("Update - despesas: {$despesasInseridas} itens inseridos com sucesso");
                 } else {
                     debugLog('Update - Nenhuma despesa para inserir');
                 }
@@ -959,8 +959,8 @@ class Socioeconomico extends BaseModel {
                 a.status,
                 f.renda_familiar,
                 f.qtd_pessoas as numero_membros
-            FROM Atendido a
-            INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+            FROM atendido a
+            INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
             WHERE 
                 a.nome LIKE ? OR
                 a.cpf LIKE ? OR
@@ -989,8 +989,8 @@ class Socioeconomico extends BaseModel {
             // Total de fichas
             $stmt = $this->query("
                 SELECT COUNT(*) as total 
-                FROM Atendido a
-                INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
             ");
             $total = $stmt->fetch()['total'];
             
@@ -1003,8 +1003,8 @@ class Socioeconomico extends BaseModel {
                         ELSE 'Adulto'
                     END as categoria,
                     COUNT(*) as total
-                FROM Atendido a
-                INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
                 GROUP BY categoria
             ");
             $porCategoria = $stmt->fetchAll();
@@ -1014,8 +1014,8 @@ class Socioeconomico extends BaseModel {
                 SELECT 
                     a.status,
                     COUNT(*) as total
-                FROM Atendido a
-                INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
                 GROUP BY a.status
             ");
             $porStatus = $stmt->fetchAll();

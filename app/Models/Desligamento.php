@@ -6,7 +6,7 @@
 class Desligamento extends BaseModel {
     
     public function __construct() {
-        parent::__construct('Desligamento', 'id_desligamento');
+        parent::__construct('desligamento', 'id_desligamento');
     }
     
     /**
@@ -16,7 +16,7 @@ class Desligamento extends BaseModel {
         $pdo = Database::getConnection();
         $userId = $_SESSION['user_id'] ?? null;
         
-        $sql = "INSERT INTO Desligamento 
+        $sql = "INSERT INTO desligamento
                 (id_atendido, motivo, tipo_motivo, data_desligamento, observacao, automatico, pode_retornar, desligado_por)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -43,7 +43,7 @@ class Desligamento extends BaseModel {
      */
     public function isDesligado($idAtendido) {
         $pdo = Database::getConnection();
-        $sql = "SELECT COUNT(*) FROM Desligamento WHERE id_atendido = ?";
+        $sql = "SELECT COUNT(*) FROM desligamento WHERE id_atendido = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$idAtendido]);
         return $stmt->fetchColumn() > 0;
@@ -55,9 +55,9 @@ class Desligamento extends BaseModel {
     public function getByAtendido($idAtendido) {
         $pdo = Database::getConnection();
         $sql = "SELECT d.*, a.nome as atendido_nome, u.nome as desligado_por_nome
-                FROM Desligamento d
-                INNER JOIN Atendido a ON d.id_atendido = a.idatendido
-                LEFT JOIN Usuario u ON d.desligado_por = u.idusuario
+                FROM desligamento d
+                INNER JOIN atendido a ON d.id_atendido = a.idatendido
+                LEFT JOIN usuario u ON d.desligado_por = u.idusuario
                 WHERE d.id_atendido = ?";
         
         $stmt = $pdo->prepare($sql);
@@ -71,9 +71,9 @@ class Desligamento extends BaseModel {
     public function listar($filtros = []) {
         $pdo = Database::getConnection();
         $sql = "SELECT d.*, a.nome as atendido_nome, a.cpf, u.nome as desligado_por_nome
-                FROM Desligamento d
-                INNER JOIN Atendido a ON d.id_atendido = a.idatendido
-                LEFT JOIN Usuario u ON d.desligado_por = u.idusuario
+                FROM desligamento d
+                INNER JOIN atendido a ON d.id_atendido = a.idatendido
+                LEFT JOIN usuario u ON d.desligado_por = u.idusuario
                 WHERE 1=1";
         
         $params = [];
@@ -112,7 +112,7 @@ class Desligamento extends BaseModel {
         $pdo = Database::getConnection();
         
         // Remover desligamento
-        $sql = "DELETE FROM Desligamento WHERE id_atendido = ?";
+        $sql = "DELETE FROM desligamento WHERE id_atendido = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$idAtendido]);
         
@@ -133,10 +133,10 @@ class Desligamento extends BaseModel {
                     a.idatendido,
                     a.nome,
                     COUNT(CASE WHEN fd.status = 'F' THEN 1 END) as total_faltas
-                FROM Atendido a
-                LEFT JOIN Frequencia_Dia fd ON a.idatendido = fd.id_atendido
+                FROM atendido a
+                LEFT JOIN frequencia_dia fd ON a.idatendido = fd.id_atendido
                 WHERE a.status = 'Ativo'
-                    AND NOT EXISTS (SELECT 1 FROM Desligamento d WHERE d.id_atendido = a.idatendido)
+                    AND NOT EXISTS (SELECT 1 FROM desligamento d WHERE d.id_atendido = a.idatendido)
                 GROUP BY a.idatendido, a.nome
                 HAVING COUNT(CASE WHEN fd.status = 'F' THEN 1 END) >= 3";
         
@@ -170,7 +170,7 @@ class Desligamento extends BaseModel {
                     COUNT(CASE WHEN tipo_motivo = 'transferencia' THEN 1 END) as por_transferencia,
                     COUNT(CASE WHEN tipo_motivo = 'outros' THEN 1 END) as outros,
                     COUNT(CASE WHEN automatico = 1 THEN 1 END) as automaticos
-                FROM Desligamento";
+                FROM desligamento";
         
         $stmt = $pdo->query($sql);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -181,7 +181,7 @@ class Desligamento extends BaseModel {
      */
     private function atualizarStatusAtendido($idAtendido, $status) {
         $pdo = Database::getConnection();
-        $sql = "UPDATE Atendido SET status = ? WHERE idatendido = ?";
+        $sql = "UPDATE atendido SET status = ? WHERE idatendido = ?";
         $stmt = $pdo->prepare($sql);
         return $stmt->execute([$status, $idAtendido]);
     }

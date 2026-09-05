@@ -4,6 +4,15 @@
     # Prevent directory browsing
     Options -Indexes
 
+    # Never expose local configuration, backups, logs or documentation.
+    <FilesMatch "^\\.">
+        Require all denied
+    </FilesMatch>
+
+    <FilesMatch "\\.(?:env|ini|log|sql|sh|md|zip|tar|gz|bak)$">
+        Require all denied
+    </FilesMatch>
+
     # Block direct web access to internal/runtime folders.
     RewriteRule ^(tools|database|data|var|docker)(/|$) - [F,L]
 

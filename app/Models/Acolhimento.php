@@ -6,7 +6,7 @@
 class Acolhimento extends BaseModel {
     
     public function __construct() {
-        parent::__construct('Atendido', 'idatendido');
+        parent::__construct('atendido', 'idatendido');
     }
     
     /**
@@ -15,7 +15,7 @@ class Acolhimento extends BaseModel {
     private function createOrGetResponsavel($data) {
         // Verificar se responsável já existe pelo CPF
         $stmt = $this->query(
-            "SELECT idresponsavel FROM Responsavel WHERE cpf = ?",
+            "SELECT idresponsavel FROM responsavel WHERE cpf = ?",
             [$data['cpf_responsavel']]
         );
         $responsavel = $stmt->fetch();
@@ -26,7 +26,7 @@ class Acolhimento extends BaseModel {
         
         // Criar novo responsável
         $this->query(
-            "INSERT INTO Responsavel (nome, cpf, rg, telefone, parentesco) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO responsavel (nome, cpf, rg, telefone, parentesco) VALUES (?, ?, ?, ?, ?)",
             [
                 $data['nome_responsavel'],
                 $data['cpf_responsavel'],
@@ -112,7 +112,7 @@ class Acolhimento extends BaseModel {
             // 1. Criar/Buscar Responsável
             $responsavelId = $this->createOrGetResponsavel($data);
             
-            // 2. Criar Atendido com todos os dados
+            // 2. Criar atendido com todos os dados
             $atendidoData = [
                 'nome' => $data['nome_completo'],
                 'cpf' => $data['cpf'],
@@ -178,8 +178,8 @@ class Acolhimento extends BaseModel {
                 r.rg as rg_responsavel,
                 r.telefone as contato_1,
                 r.parentesco as grau_parentesco
-            FROM Atendido a
-            LEFT JOIN Responsavel r ON a.id_responsavel = r.idresponsavel
+            FROM atendido a
+            LEFT JOIN responsavel r ON a.id_responsavel = r.idresponsavel
             WHERE a.idatendido = ?
         ", [$id]);
         
@@ -210,7 +210,7 @@ class Acolhimento extends BaseModel {
 
         $stmt = $this->query("
             SELECT idatendido
-            FROM Atendido
+            FROM atendido
             WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = ?
                OR cpf = ?
             LIMIT 1
@@ -261,8 +261,8 @@ class Acolhimento extends BaseModel {
                 a.data_nascimento,
                 a.status,
                 r.nome as nome_responsavel
-            FROM Atendido a
-            LEFT JOIN Responsavel r ON a.id_responsavel = r.idresponsavel
+            FROM atendido a
+            LEFT JOIN responsavel r ON a.id_responsavel = r.idresponsavel
             ORDER BY a.data_cadastro DESC
             LIMIT ? OFFSET ?
         ", [$perPage, $offset]);
@@ -279,7 +279,7 @@ class Acolhimento extends BaseModel {
         // Contar total
         $stmt = $this->query("
             SELECT COUNT(*) as total 
-            FROM Atendido a
+            FROM atendido a
         ");
         $result = $stmt->fetch();
         $total = $result['total'];
@@ -307,7 +307,7 @@ class Acolhimento extends BaseModel {
             // Normalizar dados
             $data = $this->normalizeData($data);
             
-            // 1. Atualizar Atendido (todos os campos consolidados)
+            // 1. Atualizar atendido (todos os campos consolidados)
             $atendidoData = [
                 'nome' => $data['nome_completo'],
                 'cpf' => $data['cpf'],
@@ -344,7 +344,7 @@ class Acolhimento extends BaseModel {
             $ficha = $this->getFicha($id);
             if ($ficha && isset($ficha['id_responsavel'])) {
                 $this->query(
-                    "UPDATE Responsavel SET nome = ?, cpf = ?, rg = ?, telefone = ?, parentesco = ? WHERE idresponsavel = ?",
+                    "UPDATE responsavel SET nome = ?, cpf = ?, rg = ?, telefone = ?, parentesco = ? WHERE idresponsavel = ?",
                     [
                         $data['nome_responsavel'],
                         $data['cpf_responsavel'],
@@ -426,8 +426,8 @@ class Acolhimento extends BaseModel {
                 a.status,
                 r.nome as nome_responsavel,
                 r.cpf as cpf_responsavel
-            FROM Atendido a
-            LEFT JOIN Responsavel r ON a.id_responsavel = r.idresponsavel
+            FROM atendido a
+            LEFT JOIN responsavel r ON a.id_responsavel = r.idresponsavel
             WHERE $whereClause
             ORDER BY a.data_cadastro DESC
             LIMIT 100
@@ -460,7 +460,7 @@ class Acolhimento extends BaseModel {
             // Total de fichas
             $stmt = $this->query("
                 SELECT COUNT(*) as total 
-                FROM Atendido a
+                FROM atendido a
             ");
             $total = $stmt->fetch()['total'];
             
@@ -473,7 +473,7 @@ class Acolhimento extends BaseModel {
                         ELSE 'Adulto'
                     END as categoria,
                     COUNT(*) as total
-                FROM Atendido a
+                FROM atendido a
                 GROUP BY categoria
             ");
             $porCategoria = $stmt->fetchAll();
@@ -483,7 +483,7 @@ class Acolhimento extends BaseModel {
                 SELECT 
                     a.status,
                     COUNT(*) as total
-                FROM Atendido a
+                FROM atendido a
                 GROUP BY a.status
             ");
             $porStatus = $stmt->fetchAll();

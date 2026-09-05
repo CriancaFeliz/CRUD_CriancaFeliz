@@ -6,7 +6,7 @@
 class FrequenciaDia extends BaseModel {
     
     public function __construct() {
-        parent::__construct('Frequencia_Dia', 'id_frequencia_dia');
+        parent::__construct('frequencia_dia', 'id_frequencia_dia');
     }
     
     /**
@@ -16,7 +16,7 @@ class FrequenciaDia extends BaseModel {
         $pdo = Database::getConnection();
         $userId = $_SESSION['user_id'] ?? null;
         
-        $sql = "INSERT INTO Frequencia_Dia (id_atendido, data, status, observacao, registrado_por)
+        $sql = "INSERT INTO frequencia_dia (id_atendido, data, status, observacao, registrado_por)
                 VALUES (?, ?, 'P', ?, ?)
                 ON DUPLICATE KEY UPDATE 
                     status = 'P',
@@ -37,7 +37,7 @@ class FrequenciaDia extends BaseModel {
         $userId = $_SESSION['user_id'] ?? null;
         $status = !empty($justificativa) ? 'J' : 'F';
         
-        $sql = "INSERT INTO Frequencia_Dia (id_atendido, data, status, justificativa, observacao, registrado_por)
+        $sql = "INSERT INTO frequencia_dia (id_atendido, data, status, justificativa, observacao, registrado_por)
                 VALUES (?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE 
                     status = VALUES(status),
@@ -56,8 +56,8 @@ class FrequenciaDia extends BaseModel {
     public function getByAtendido($idAtendido, $dataInicio = null, $dataFim = null) {
         $pdo = Database::getConnection();
         $sql = "SELECT fd.*, u.nome as registrado_por_nome
-                FROM Frequencia_Dia fd
-                LEFT JOIN Usuario u ON fd.registrado_por = u.idusuario
+                FROM frequencia_dia fd
+                LEFT JOIN usuario u ON fd.registrado_por = u.idusuario
                 WHERE fd.id_atendido = ?";
         
         $params = [$idAtendido];
@@ -85,8 +85,8 @@ class FrequenciaDia extends BaseModel {
     public function getByData($data) {
         $pdo = Database::getConnection();
         $sql = "SELECT fd.*, a.nome as atendido_nome, a.cpf
-                FROM Frequencia_Dia fd
-                INNER JOIN Atendido a ON fd.id_atendido = a.idatendido
+                FROM frequencia_dia fd
+                INNER JOIN atendido a ON fd.id_atendido = a.idatendido
                 WHERE fd.data = ?
                 ORDER BY a.nome";
         
@@ -105,7 +105,7 @@ class FrequenciaDia extends BaseModel {
                     COUNT(CASE WHEN status = 'F' THEN 1 END) as faltas,
                     COUNT(CASE WHEN status = 'J' THEN 1 END) as justificadas,
                     COUNT(*) as total
-                FROM Frequencia_Dia
+                FROM frequencia_dia
                 WHERE id_atendido = ?";
         
         $params = [$idAtendido];
@@ -137,7 +137,7 @@ class FrequenciaDia extends BaseModel {
     public function contarFaltasNaoJustificadas($idAtendido, $dataInicio = null, $dataFim = null) {
         $pdo = Database::getConnection();
         $sql = "SELECT COUNT(*) as total
-                FROM Frequencia_Dia
+                FROM frequencia_dia
                 WHERE id_atendido = ? AND status = 'F'";
         
         $params = [$idAtendido];
@@ -163,7 +163,7 @@ class FrequenciaDia extends BaseModel {
      */
     public function getAtendidosComAlertas() {
         $pdo = Database::getConnection();
-        $sql = "SELECT * FROM Atendidos_Com_Alerta ORDER BY total_faltas DESC, ultima_falta DESC";
+        $sql = "SELECT * FROM atendidos_com_alerta ORDER BY total_faltas DESC, ultima_falta DESC";
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -173,7 +173,7 @@ class FrequenciaDia extends BaseModel {
      */
     public function remover($id) {
         $pdo = Database::getConnection();
-        $sql = "DELETE FROM Frequencia_Dia WHERE id_frequencia_dia = ?";
+        $sql = "DELETE FROM frequencia_dia WHERE id_frequencia_dia = ?";
         $stmt = $pdo->prepare($sql);
         return $stmt->execute([$id]);
     }
@@ -184,7 +184,7 @@ class FrequenciaDia extends BaseModel {
     public function atualizarJustificativa($id, $justificativa) {
         $pdo = Database::getConnection();
         $status = !empty($justificativa) ? 'J' : 'F';
-        $sql = "UPDATE Frequencia_Dia 
+        $sql = "UPDATE frequencia_dia
                 SET justificativa = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
                 WHERE id_frequencia_dia = ?";
         $stmt = $pdo->prepare($sql);

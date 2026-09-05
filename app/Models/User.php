@@ -6,7 +6,7 @@
 class User extends BaseModel {
     
     public function __construct() {
-        parent::__construct('Usuario', 'idusuario');
+        parent::__construct('usuario', 'idusuario');
         $this->createDefaultUser();
     }
     
@@ -19,7 +19,7 @@ class User extends BaseModel {
             if ($count == 0) {
                 $defaultPassword = getenv('INITIAL_ADMIN_PASSWORD') ?: 'AlterarEstaSenha!2026';
                 $this->query(
-                    "INSERT INTO Usuario (nome, email, Senha, nivel, status) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO usuario (nome, email, Senha, nivel, status) VALUES (?, ?, ?, ?, ?)",
                     ['Administrador', 'admin@criancafeliz.org', PasswordHelper::hash($defaultPassword), 'admin', 'Ativo']
                 );
             }
@@ -70,7 +70,7 @@ class User extends BaseModel {
      */
     public function emailExists($email, $excludeId = null) {
         $stmt = $this->query(
-            "SELECT COUNT(*) as total FROM Usuario WHERE email = ? AND idusuario != ?",
+            "SELECT COUNT(*) as total FROM usuario WHERE email = ? AND idusuario != ?",
             [$email, $excludeId ?? 0]
         );
         $result = $stmt->fetch();

@@ -1,12 +1,12 @@
 <?php
 
 /**
- * Model para gerenciar Oficinas - MySQL
+ * Model para gerenciar oficinas - MySQL
  */
 class Oficina extends BaseModel {
     
     public function __construct() {
-        parent::__construct('Oficina', 'id_oficina');
+        parent::__construct('oficina', 'id_oficina');
     }
     
     /**
@@ -14,7 +14,7 @@ class Oficina extends BaseModel {
      */
     public function getAtivas() {
         $pdo = Database::getConnection();
-        $sql = "SELECT * FROM Oficina WHERE ativo = 1 ORDER BY nome";
+        $sql = "SELECT * FROM oficina WHERE ativo = 1 ORDER BY nome";
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -24,7 +24,7 @@ class Oficina extends BaseModel {
      */
     public function getByDiaSemana($diaSemana) {
         $pdo = Database::getConnection();
-        $sql = "SELECT * FROM Oficina WHERE dia_semana = ? AND ativo = 1 ORDER BY horario_inicio";
+        $sql = "SELECT * FROM oficina WHERE dia_semana = ? AND ativo = 1 ORDER BY horario_inicio";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$diaSemana]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -35,7 +35,7 @@ class Oficina extends BaseModel {
      */
     public function toggleAtivo($id) {
         $pdo = Database::getConnection();
-        $sql = "UPDATE Oficina SET ativo = NOT ativo WHERE id_oficina = ?";
+        $sql = "UPDATE oficina SET ativo = NOT ativo WHERE id_oficina = ?";
         $stmt = $pdo->prepare($sql);
         return $stmt->execute([$id]);
     }
@@ -45,7 +45,7 @@ class Oficina extends BaseModel {
      */
     public function createOficina($data) {
         $pdo = Database::getConnection();
-        $sql = "INSERT INTO Oficina (nome, descricao, dia_semana, horario_inicio, horario_fim) 
+        $sql = "INSERT INTO oficina (nome, descricao, dia_semana, horario_inicio, horario_fim)
                 VALUES (?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
@@ -63,7 +63,7 @@ class Oficina extends BaseModel {
      */
     public function updateOficina($id, $data) {
         $pdo = Database::getConnection();
-        $sql = "UPDATE Oficina SET 
+        $sql = "UPDATE oficina SET
                 nome = ?, 
                 descricao = ?, 
                 dia_semana = ?, 
