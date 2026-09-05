@@ -86,7 +86,7 @@ Arquivos auxiliares:
 
 - `database/migration.sql`
 - `database/update_schema.sql`
-- `database/legacy_dumps/`
+- Dumps históricos fora do Git, com dados anonimizados para homologação.
 - `docker/mysql/01-init.sh`
 
 Melhorias realizadas ou documentadas:

@@ -10,7 +10,7 @@ Tabelas e dumps legados devem permanecer apenas como referência histórica ou c
 
 - Não criar novos fluxos usando tabelas legadas sem registrar decisão técnica.
 - Não misturar nomes antigos e novos no mesmo módulo.
-- Manter dumps antigos em `database/legacy_dumps/`.
+- Manter dumps históricos fora do Git, com acesso restrito e, quando usados em testes, anonimizados.
 - Antes de remover uma tabela, validar se não há referência em `app/`, `database/`, `docker/` ou `tools/`.
 - Se uma tabela legada precisar continuar existindo por compatibilidade, documentar quem usa e quando será removida.
 

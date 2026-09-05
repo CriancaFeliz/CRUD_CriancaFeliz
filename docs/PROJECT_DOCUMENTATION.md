@@ -328,7 +328,7 @@ Arquivos principais:
 - `database/SETUP_COMPLETO_FINAL.sql`: setup completo com tabelas, índices, foreign keys, triggers/procedures e dados iniciais.
 - `database/migration.sql`: schema alinhado ao setup, útil como referência de estrutura.
 - `database/update_schema.sql`: migração pontual para remover estruturas obsoletas e recriar triggers.
-- `database/legacy_dumps/`: dumps antigos preservados.
+- Dumps históricos: mantidos fora do Git; homologação usa apenas dados anonimizados.
 - `docker/mysql/01-init.sh`: importação do setup completo no container MySQL.
 
 Tabelas relevantes:

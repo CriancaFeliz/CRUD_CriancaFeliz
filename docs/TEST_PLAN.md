@@ -32,7 +32,6 @@ Lint PHP completo:
 
 ```powershell
 Get-ChildItem -Recurse -Filter *.php |
-  Where-Object { $_.FullName -notmatch '\\database\\legacy_dumps\\' } |
   ForEach-Object { php -l $_.FullName }
 ```
 
