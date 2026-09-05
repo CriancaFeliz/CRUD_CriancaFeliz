@@ -375,6 +375,17 @@ try {
             }
             break;
 
+        case 'reports':
+        case 'reports.php':
+            $reportController = new ReportController();
+            $action = $_GET['action'] ?? 'index';
+            if ($action === 'export') {
+                $reportController->export();
+            } else {
+                $reportController->index();
+            }
+            break;
+
         case 'acolhimento/form':
         case 'acolhimento_form':
         case 'acolhimento_form.php':

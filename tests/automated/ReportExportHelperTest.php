@@ -16,4 +16,12 @@ class ReportExportHelperTest extends TestCase {
         $this->assertTrue(strpos($csv, '"Maria ""Teste"""') !== false);
         $this->assertTrue(strpos($csv, "\"linha 1\nlinha 2\"") !== false);
     }
+
+    public function testCsvNeutralizesSpreadsheetFormulas() {
+        $csv = ReportExportHelper::csv(['valor' => 'Valor'], [
+            ['valor' => '=HYPERLINK("https://example.test")']
+        ]);
+
+        $this->assertTrue(strpos($csv, '"\'=HYPERLINK(""https://example.test"")"') !== false);
+    }
 }

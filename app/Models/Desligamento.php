@@ -27,8 +27,8 @@ class Desligamento extends BaseModel {
             $data['tipo_motivo'] ?? 'outros',
             $data['data_desligamento'] ?? date('Y-m-d'),
             $data['observacao'] ?? null,
-            $data['automatico'] ?? false,
-            $data['pode_retornar'] ?? true,
+            !empty($data['automatico']) ? 1 : 0,
+            array_key_exists('pode_retornar', $data) ? (!empty($data['pode_retornar']) ? 1 : 0) : 1,
             $userId
         ]);
         

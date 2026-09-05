@@ -179,6 +179,7 @@ class HttpSmokeTest extends TestCase {
             '/faltas.php',
             '/users.php',
             '/logs.php',
+            '/reports.php',
             '/profile.php'
         ];
 
@@ -187,6 +188,15 @@ class HttpSmokeTest extends TestCase {
             $this->assertSame(200, $response['status'], "Pagina critica deve abrir: {$page}");
             $this->assertTrue(strlen($response['body']) > 100, "Pagina critica retornou corpo pequeno demais: {$page}");
         }
+
+        $reportPage = $client->get('/reports.php?type=frequencia&data_inicio=2026-01-01&data_fim=2026-12-31');
+        $this->assertTrue(strpos($reportPage['body'], 'Central de Relatórios') !== false, 'Central de relatórios deve renderizar');
+        $this->assertTrue(strpos($reportPage['body'], 'CPF protegido') !== false, 'Relatório deve informar proteção de CPF');
+
+        $csv = $client->get('/reports.php?action=export&type=atendidos');
+        $this->assertSame(200, $csv['status'], 'Exportação CSV de relatório deve funcionar para admin');
+        $this->assertTrue($this->hasHeader($csv['headers'], 'Content-Type', 'text/csv; charset=UTF-8'), 'Exportação deve retornar CSV');
+        $this->assertTrue(strpos($csv['body'], 'CPF protegido') !== false, 'CSV deve conter cabeçalho esperado');
     }
 
     public function testRolePermissionsProtectSensitiveAreas() {
@@ -211,6 +221,7 @@ class HttpSmokeTest extends TestCase {
         $this->assertRedirectsToDashboard($employee->get('/acolhimento_list.php?action=export'), 'Funcionario nao deve exportar dados de acolhimento');
         $this->assertRedirectsToDashboard($employee->get('/socioeconomico_list.php?action=report'), 'Funcionario nao deve abrir relatorio socioeconomico');
         $this->assertRedirectsToDashboard($employee->get('/socioeconomico_list.php?action=export'), 'Funcionario nao deve exportar dados socioeconomicos');
+        $this->assertRedirectsToDashboard($employee->get('/reports.php'), 'Funcionario nao deve acessar a central de relatorios');
         $this->assertRedirectsToDashboard(
             $employee->post('/socioeconomico_list.php?delete=1', ['csrf_token' => 'token-invalido']),
             'Funcionario nao deve excluir ficha socioeconomica'

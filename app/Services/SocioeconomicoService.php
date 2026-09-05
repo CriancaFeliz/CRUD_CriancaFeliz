@@ -65,7 +65,7 @@ class SocioeconomicoService {
      */
     private function categorizeSituacao($rendaFamiliar, $numeroMembros = 1) {
         $rendaPerCapita = $rendaFamiliar / max($numeroMembros, 1);
-        $salarioMinimo = 1320;
+        $salarioMinimo = socialIncomeReference();
         
         if ($rendaPerCapita < $salarioMinimo * 0.5) {
             return 'Extrema Pobreza';

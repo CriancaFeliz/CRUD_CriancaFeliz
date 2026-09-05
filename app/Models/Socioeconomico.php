@@ -114,7 +114,7 @@ class Socioeconomico extends BaseModel {
 
     public function categorizeSituacao($rendaFamiliar, $numeroMembros = 1) {
         $rendaPerCapita = floatval($rendaFamiliar) / max(intval($numeroMembros), 1);
-        $salarioMinimo = 1320;
+        $salarioMinimo = socialIncomeReference();
 
         if ($rendaPerCapita < $salarioMinimo * 0.5) return 'Extrema Pobreza';
         if ($rendaPerCapita < $salarioMinimo) return 'Pobreza';

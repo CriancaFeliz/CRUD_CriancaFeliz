@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <?php if (!empty($additionalStyles) && is_array($additionalStyles)): ?>
+        <?php foreach ($additionalStyles as $style): ?>
+            <link rel="stylesheet" href="<?php echo e($style); ?>">
+        <?php endforeach; ?>
+    <?php endif; ?>
 
 </head>
 <body>
@@ -45,6 +50,7 @@
             <?php if ($currentUser['role'] === 'admin'): ?>
                 <a class="nav-icon <?php echo $routeContains('users') ? 'active' : ''; ?>" href="users.php" title="Gerenciar Usuários"><i class="fas fa-user-cog"></i></a>
                 <a class="nav-icon <?php echo $routeContains('logs') ? 'active' : ''; ?>" href="logs.php" title="Sistema de Logs"><i class="fas fa-history"></i></a>
+                <a class="nav-icon <?php echo $routeContains('reports') ? 'active' : ''; ?>" href="reports.php" title="Relatórios"><i class="fas fa-chart-pie"></i></a>
                 <a class="nav-icon <?php echo ($routeContains('faltas') && $currentAction === 'gerenciarOficinas') ? 'active' : ''; ?>" href="faltas.php?action=gerenciarOficinas" title="Gerenciar Oficinas"><i class="fas fa-cogs"></i></a>
             <?php endif; ?>
             <a class="nav-icon <?php echo $routeContains('profile') ? 'active' : ''; ?>" href="profile.php" title="Meu Perfil"><i class="fas fa-cog"></i></a>

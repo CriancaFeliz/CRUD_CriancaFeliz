@@ -290,6 +290,17 @@ function getFaixaEtaria($idade) {
     return 'Adulto (18+)';
 }
 
+/**
+ * Valor de referência usado apenas nas faixas socioeconômicas.
+ * O padrão corresponde ao salário mínimo nacional de 2026 (Decreto 12.797/2025)
+ * e deve ser atualizado pela configuração quando houver reajuste.
+ */
+function socialIncomeReference() {
+    $configured = getenv('SOCIAL_INCOME_REFERENCE');
+    $value = $configured === false ? 1621.00 : (float)$configured;
+    return $value > 0 ? $value : 1621.00;
+}
+
 // Função para verificar se usuário está logado
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
