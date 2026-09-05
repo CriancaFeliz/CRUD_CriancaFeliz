@@ -262,9 +262,9 @@ class HttpSmokeTest extends TestCase {
         $this->assertSame(200, $profile['status'], 'Perfil deve abrir para usuario autenticado');
 
         $csrfToken = $this->extractCsrfToken($profile['body']);
+        $adminId = (int)$this->fetchValue('SELECT idusuario FROM usuario WHERE email = ?', [self::ADMIN_EMAIL]);
         $previousPhoto = $this->fetchValue('SELECT foto_perfil FROM usuario WHERE email = ?', [self::ADMIN_EMAIL]);
-        $publicPath = null;
-        $hadHtaccess = file_exists(BASE_PATH . '/uploads/profiles/.htaccess');
+        $privatePath = null;
 
         try {
             $response = $client->postMultipart('/profile.php?action=updatePhoto', [
@@ -281,21 +281,34 @@ class HttpSmokeTest extends TestCase {
             $payload = json_decode($response['body'], true);
             $this->assertTrue(is_array($payload), 'Upload de foto deve retornar JSON');
             $this->assertTrue((bool) ($payload['success'] ?? false), 'Upload de foto deve retornar sucesso');
-            $this->assertNotEmpty($payload['photo'] ?? null, 'Upload de foto deve retornar caminho publico');
+            $this->assertNotEmpty($payload['photo'] ?? null, 'Upload de foto deve retornar rota autenticada');
 
-            $publicPath = $payload['photo'];
-            $this->assertTrue(is_file(BASE_PATH . '/' . $publicPath), 'Arquivo de perfil deve existir no disco');
+            $privatePath = $this->fetchValue('SELECT foto_perfil FROM usuario WHERE email = ?', [self::ADMIN_EMAIL]);
+            $this->assertTrue(
+                strpos((string)$privatePath, 'var/private/profiles/') === 0,
+                'Foto deve ficar na area privada'
+            );
+            $this->assertTrue(is_file(BASE_PATH . '/' . $privatePath), 'Arquivo de perfil deve existir no disco');
             $this->assertSame(
-                $publicPath,
-                $this->fetchValue('SELECT foto_perfil FROM usuario WHERE email = ?', [self::ADMIN_EMAIL]),
-                'Banco deve apontar para a foto enviada'
+                'profile.php?action=photo&id=' . $adminId,
+                $payload['photo'],
+                'Resposta deve apontar para a rota autenticada'
+            );
+
+            $direct = $client->get('/' . $privatePath);
+            $this->assertTrue(in_array($direct['status'], [403, 404], true), 'Foto privada nao pode ter URL direta');
+
+            $served = $client->get('/' . $payload['photo']);
+            $this->assertSame(200, $served['status'], 'Foto deve abrir para o proprio usuario autenticado');
+            $this->assertTrue(
+                stripos(implode("\n", $served['headers']), 'Cache-Control: private, no-store') !== false,
+                'Foto privada nao deve ficar em cache compartilhado'
             );
         } finally {
             $this->execute('UPDATE usuario SET foto_perfil = ? WHERE email = ?', [$previousPhoto, self::ADMIN_EMAIL]);
-            if ($publicPath) {
-                $this->cleanupPublicUpload($publicPath);
+            if ($privatePath) {
+                $this->cleanupPrivateUpload($privatePath, 'profiles');
             }
-            $this->cleanupUploadSubdir('profiles', $hadHtaccess);
         }
     }
 
@@ -353,7 +366,7 @@ class HttpSmokeTest extends TestCase {
             );
         } finally {
             if ($privatePath) {
-                $this->cleanupPrivateDocument($privatePath);
+                $this->cleanupPrivateUpload($privatePath, 'documents');
             }
         }
     }
@@ -439,6 +452,97 @@ class HttpSmokeTest extends TestCase {
         $this->assertTrue(strpos($script['body'], 'sessionStorage') === false, 'Acolhimento nao deve persistir dados sensiveis no navegador');
         $this->assertTrue(strpos($script['body'], 'localStorage') === false, 'Acolhimento nao deve persistir dados sensiveis localmente');
         $this->assertTrue(strpos($script['body'], 'console.log') === false, 'Acolhimento nao deve imprimir dados sensiveis no console');
+    }
+
+    public function testAcolhimentoPhotoUploadIsPrivateAndSurvivesEdit() {
+        $client = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
+        $formPage = $client->get('/acolhimento_form.php');
+        $this->assertSame(200, $formPage['status'], 'Formulario de acolhimento deve abrir antes do upload');
+
+        $csrfToken = $this->extractCsrfToken($formPage['body']);
+        $suffix = date('YmdHis') . '_' . bin2hex(random_bytes(3));
+        $cpf = $this->fakeCpf();
+        $fields = [
+            'csrf_token' => $csrfToken,
+            'nome_completo' => 'Crianca Foto HTTP ' . $suffix,
+            'rg' => (string) random_int(10000000, 99999999),
+            'cpf' => $cpf,
+            'data_nascimento' => '10/05/2015',
+            'data_acolhimento' => '01/06/2026',
+            'encaminha_por' => 'Teste automatizado',
+            'queixa_principal' => 'Teste seguro de foto',
+            'endereco' => 'Rua Smoke',
+            'numero' => '123',
+            'cep' => '07000000',
+            'bairro' => 'Centro',
+            'cidade' => 'Guarulhos',
+            'estado' => 'SP',
+            'nome_responsavel' => 'Responsavel Foto ' . $suffix,
+            'rg_responsavel' => (string) random_int(10000000, 99999999),
+            'cpf_responsavel' => $this->fakeCpf(),
+            'grau_parentesco' => 'Mae',
+            'contato_1' => '11999990000'
+        ];
+        $createdId = null;
+        $privatePath = null;
+
+        try {
+            $response = $client->postMultipart('/acolhimento_form.php', $fields, [
+                'foto' => [
+                    'filename' => 'foto-smoke.php.png',
+                    'content_type' => 'image/png',
+                    'content' => $this->tinyPng()
+                ]
+            ]);
+
+            $this->assertSame(302, $response['status'], 'Cadastro com foto deve redirecionar depois de salvar');
+            $this->assertTrue(
+                strpos((string)$response['location'], 'acolhimento_list.php') !== false,
+                'Cadastro com foto deve voltar para a listagem'
+            );
+
+            $row = $this->fetchRow('SELECT idatendido, foto FROM atendido WHERE cpf = ? LIMIT 1', [$cpf]);
+            $this->assertNotEmpty($row, 'Cadastro com foto deve existir no banco');
+            $createdId = (int)$row['idatendido'];
+            $privatePath = (string)$row['foto'];
+
+            $this->assertTrue(
+                strpos($privatePath, 'var/private/children/') === 0,
+                'Foto da crianca deve ficar na area privada'
+            );
+            $this->assertTrue(substr($privatePath, -4) === '.png', 'Extensao deve vir do conteudo real da imagem');
+            $this->assertTrue(is_file(BASE_PATH . '/' . $privatePath), 'Foto da crianca deve existir no disco');
+
+            $direct = $client->get('/' . $privatePath);
+            $this->assertTrue(in_array($direct['status'], [403, 404], true), 'Foto privada nao pode ter URL direta');
+
+            $served = $client->get('/acolhimento_view.php?action=photo&id=' . $createdId);
+            $this->assertSame(200, $served['status'], 'Foto deve abrir pela rota autenticada');
+            $this->assertTrue(
+                stripos(implode("\n", $served['headers']), 'Cache-Control: private, no-store') !== false,
+                'Foto da crianca nao deve ficar em cache compartilhado'
+            );
+
+            $anonymous = $this->newClient()->get('/acolhimento_view.php?action=photo&id=' . $createdId);
+            $this->assertSame(302, $anonymous['status'], 'Foto da crianca deve exigir autenticacao');
+
+            $fields['id'] = $createdId;
+            $edit = $client->post('/acolhimento_form.php', $fields);
+            $this->assertSame(302, $edit['status'], 'Edicao sem nova foto deve concluir normalmente');
+            $this->assertSame(
+                $privatePath,
+                (string)$this->fetchValue('SELECT foto FROM atendido WHERE idatendido = ?', [$createdId]),
+                'Edicao sem novo upload deve preservar a foto existente'
+            );
+            $this->assertTrue(is_file(BASE_PATH . '/' . $privatePath), 'Edicao sem upload nao pode apagar a foto');
+        } finally {
+            if ($createdId) {
+                $this->execute('DELETE FROM atendido WHERE idatendido = ?', [$createdId]);
+            }
+            if ($privatePath) {
+                $this->cleanupPrivateUpload($privatePath, 'children');
+            }
+        }
     }
 
     private function newClient() {
@@ -620,13 +724,18 @@ class HttpSmokeTest extends TestCase {
         }
     }
 
-    private function cleanupPrivateDocument($privatePath) {
-        $privateRoot = realpath(BASE_PATH . '/var/private/documents');
+    private function cleanupPrivateUpload($privatePath, $subdir) {
+        $privateRoot = realpath(BASE_PATH . '/var/private/' . $subdir);
         $filePath = realpath(BASE_PATH . '/' . ltrim($privatePath, '/\\'));
 
         if ($privateRoot && $filePath && is_file($filePath)
             && strpos($filePath, $privateRoot . DIRECTORY_SEPARATOR) === 0) {
-            @unlink($filePath);
+            for ($attempt = 0; $attempt < 5 && is_file($filePath); $attempt++) {
+                @unlink($filePath);
+                if (is_file($filePath)) {
+                    usleep(50000);
+                }
+            }
         }
     }
 

@@ -237,7 +237,7 @@ class DashboardController extends BaseController {
                     ];
                 }
             } catch (Exception $e) {
-                error_log("Erro ao buscar alertas de faltas: " . $e->getMessage());
+                reportException($e, 'DashboardController::alertas');
             }
             
             if ($fichasIncompletas > 0) {
@@ -347,7 +347,7 @@ class DashboardController extends BaseController {
             
             return ['anotacoes' => $anotacoes, 'avisos' => $avisos];
         } catch (Exception $e) {
-            error_log("Erro ao buscar anotações do calendário: " . $e->getMessage());
+            reportException($e, 'DashboardController::anotacoes');
             return ['anotacoes' => [], 'avisos' => []];
         }
     }
@@ -367,7 +367,7 @@ class DashboardController extends BaseController {
             $stmt->execute([$month . '%']);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
-            error_log("Erro ao buscar anotações por mês: " . $e->getMessage());
+            reportException($e, 'DashboardController::anotacoesMes');
             return [];
         }
     }

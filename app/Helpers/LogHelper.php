@@ -32,7 +32,7 @@ class LogHelper {
             
         } catch (Exception $e) {
             // Log silencioso - não interrompe a execução
-            error_log("LogHelper: Erro ao preparar variáveis de log: " . $e->getMessage());
+            reportException($e, 'LogHelper::context');
         }
     }
 

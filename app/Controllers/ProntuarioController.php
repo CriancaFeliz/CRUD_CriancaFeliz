@@ -80,7 +80,7 @@ class ProntuarioController extends BaseController {
                     $documentModel = new Document();
                     $documents = $documentModel->findByAtendido($atendidoId);
                 } catch (Exception $e) {
-                    error_log("Erro ao buscar documentos do prontuário: " . $e->getMessage());
+                    reportException($e, 'ProntuarioController::documentos');
                 }
             }
             
@@ -122,7 +122,7 @@ class ProntuarioController extends BaseController {
                         'percentual_presenca' => $dbStats['percentual_presenca'] ?? 100
                     ];
                 } catch (Exception $e) {
-                    error_log("Erro ao buscar estatísticas de faltas: " . $e->getMessage());
+                    reportException($e, 'ProntuarioController::frequencia');
                 }
             }
             

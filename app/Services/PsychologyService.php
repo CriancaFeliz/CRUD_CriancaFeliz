@@ -184,7 +184,7 @@ class PsychologyService
             ];
 
         } catch (Exception $e) {
-            error_log("saveNote error: ".$e->getMessage());
+            reportException($e, 'PsychologyService::saveNote');
             return ['success'=>false,'message'=>$e->getMessage()];
         }
     }

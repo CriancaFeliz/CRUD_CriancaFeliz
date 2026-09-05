@@ -306,9 +306,55 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
+/**
+ * Aceita somente destinos relativos ou URLs absolutas do próprio host.
+ * URLs absolutas válidas são reduzidas a caminho local antes do redirecionamento.
+ */
+function safeLocalRedirectTarget($candidate, $fallback = 'index.php') {
+    $candidate = trim((string)$candidate);
+    if ($candidate === '' || preg_match('/[\x00-\x1F\x7F\\\\]/', $candidate)) {
+        return $fallback;
+    }
+
+    $parts = parse_url($candidate);
+    if ($parts === false || isset($parts['user']) || isset($parts['pass'])) {
+        return $fallback;
+    }
+
+    if (isset($parts['scheme']) || isset($parts['host'])) {
+        if (!isset($parts['scheme'], $parts['host'])
+            || !in_array(strtolower($parts['scheme']), ['http', 'https'], true)) {
+            return $fallback;
+        }
+
+        $currentHost = parse_url('http://' . (string)($_SERVER['HTTP_HOST'] ?? ''));
+        if (!$currentHost || empty($currentHost['host'])
+            || strcasecmp((string)$parts['host'], (string)$currentHost['host']) !== 0) {
+            return $fallback;
+        }
+
+        if (isset($parts['port'], $currentHost['port'])
+            && (int)$parts['port'] !== (int)$currentHost['port']) {
+            return $fallback;
+        }
+
+        $target = (string)($parts['path'] ?? '/');
+        if (isset($parts['query'])) {
+            $target .= '?' . $parts['query'];
+        }
+        return $target;
+    }
+
+    if (strpos($candidate, '//') === 0) {
+        return $fallback;
+    }
+
+    return $candidate;
+}
+
 // Função para redirecionar
 function redirect($url) {
-    header("Location: $url");
+    header('Location: ' . safeLocalRedirectTarget($url));
     exit();
 }
 

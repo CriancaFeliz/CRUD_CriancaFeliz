@@ -14,7 +14,7 @@ class App {
             Database::getConnection();
             return true;
         } catch (Exception $e) {
-            error_log('⚠️ Banco de dados não disponível: ' . $e->getMessage());
+            reportException($e, 'App::database');
             return false;
         }
     }

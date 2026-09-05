@@ -161,7 +161,7 @@ class Acolhimento extends BaseModel {
             
         } catch (Exception $e) {
             Database::rollback();
-            error_log('Erro ao criar ficha: ' . $e->getMessage());
+            reportException($e, 'Acolhimento::create');
             throw $e;
         }
     }
@@ -337,6 +337,11 @@ class Acolhimento extends BaseModel {
                 'acolhimento_funcao' => $data['acolhimento_funcao'] ?? null,
                 'carimbo' => $data['carimbo'] ?? null
             ];
+
+            // Uma edição sem novo upload deve preservar a foto atual.
+            if (array_key_exists('foto', $data)) {
+                $atendidoData['foto'] = $data['foto'];
+            }
             
             $this->update($id, $atendidoData);
             
@@ -363,7 +368,7 @@ class Acolhimento extends BaseModel {
             
         } catch (Exception $e) {
             Database::rollback();
-            error_log('Erro ao atualizar ficha: ' . $e->getMessage());
+            reportException($e, 'Acolhimento::update');
             throw $e;
         }
     }
@@ -505,7 +510,7 @@ class Acolhimento extends BaseModel {
             ];
             
         } catch (Exception $e) {
-            error_log('Erro ao obter estatísticas: ' . $e->getMessage());
+            reportException($e, 'Acolhimento::statistics');
             return [
                 'total' => 0,
                 'ativas' => 0,

@@ -369,6 +369,9 @@ try {
                 case 'updatePassword':
                     $profileController->updatePassword();
                     break;
+                case 'photo':
+                    $profileController->viewPhoto();
+                    break;
                 default:
                     $profileController->index();
                     break;
@@ -437,7 +440,11 @@ try {
             if (empty($id)) {
                 redirect('acolhimento_list.php');
             }
-            $acolhimentoController->show($id);
+            if (($_GET['action'] ?? '') === 'photo') {
+                $acolhimentoController->viewPhoto($id);
+            } else {
+                $acolhimentoController->show($id);
+            }
             break;
 
         case 'socioeconomico/form':

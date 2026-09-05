@@ -60,7 +60,7 @@ class BaseController {
         
         // Redirecionar
         if (!headers_sent()) {
-            header('Location: ' . $url, true, 302);
+            header('Location: ' . safeLocalRedirectTarget($url), true, 302);
         }
         exit;
     }
@@ -83,7 +83,7 @@ class BaseController {
         
         // Redirecionar
         if (!headers_sent()) {
-            header('Location: ' . $url, true, 302);
+            header('Location: ' . safeLocalRedirectTarget($url), true, 302);
         }
         exit;
     }
@@ -251,8 +251,12 @@ class BaseController {
         if ($this->isAjaxRequest()) {
             $this->json(['error' => $message], 500);
         } else {
-            $this->redirectWithError($_SERVER['HTTP_REFERER'] ?? 'index.php', $message);
+            $this->redirectWithError($this->safeReferrer('index.php'), $message);
         }
+    }
+
+    protected function safeReferrer($fallback = 'index.php') {
+        return safeLocalRedirectTarget($_SERVER['HTTP_REFERER'] ?? '', $fallback);
     }
     
     /**
@@ -278,24 +282,38 @@ class BaseController {
             throw new Exception('Arquivo muito grande. Máximo: ' . ($maxSize / 1024 / 1024) . 'MB');
         }
         
-        // Verificar tipo
-        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($extension, $allowedTypes)) {
+        $mimeMap = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp'
+        ];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo ? finfo_file($finfo, $file['tmp_name']) : '';
+        if ($finfo) {
+            finfo_close($finfo);
+        }
+
+        $extension = $mimeMap[$mimeType] ?? '';
+        $normalizedAllowedTypes = array_map('strtolower', $allowedTypes);
+        if ($extension === '' || !in_array($extension, $normalizedAllowedTypes, true)) {
             throw new Exception('Tipo de arquivo não permitido. Permitidos: ' . implode(', ', $allowedTypes));
         }
         
         // Gerar nome único
-        $fileName = uniqid() . '.' . $extension;
-        $uploadDir = BASE_PATH . '/uploads/';
+        $fileName = bin2hex(random_bytes(16)) . '.' . $extension;
+        $uploadDir = BASE_PATH . '/var/private/children';
         
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
+            if (!mkdir($uploadDir, 0750, true) && !is_dir($uploadDir)) {
+                throw new Exception('Não foi possível preparar a área segura de fotos');
+            }
         }
         
-        $uploadPath = $uploadDir . $fileName;
+        $uploadPath = $uploadDir . DIRECTORY_SEPARATOR . $fileName;
         
         if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
-            return 'uploads/' . $fileName;
+            return 'var/private/children/' . $fileName;
         }
         
         throw new Exception('Erro ao fazer upload do arquivo');

@@ -15,6 +15,8 @@
 
     # Block direct web access to internal/runtime folders.
     RewriteRule ^(app|tools|tests|database|data|var|docker|docs|\.git|\.github|assets/samples)(/|$) - [F,L]
+    RewriteRule ^uploads/(documents|profiles)(/|$) - [F,L]
+    RewriteRule ^uploads/[^/]+\.(?:jpe?g|png|gif|webp)$ - [F,L,NC]
 
     # Forward all requests for non-existent files or directories to index.php
     RewriteCond %{REQUEST_FILENAME} !-f

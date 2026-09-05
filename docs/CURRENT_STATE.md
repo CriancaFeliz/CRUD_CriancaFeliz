@@ -54,7 +54,7 @@ nessa matriz depende de validação formal da ONG.
 - cookies de sessão `HttpOnly`, `SameSite=Lax` e `Secure` configurável;
 - escape de saída e remoção de construções inseguras de HTML nos fluxos revisados;
 - CSV protegido contra fórmulas e CPF mascarado nos relatórios;
-- documentos novos em `var/private/documents`, fora da área pública;
+- documentos, fotos de perfil e fotos de acolhimento novos em `var/private`, fora da área pública;
 - bloqueio HTTP para código, banco, logs, ferramentas, testes e documentação;
 - modo de depuração desativado por padrão no Docker.
 
@@ -62,9 +62,9 @@ nessa matriz depende de validação formal da ONG.
 
 Última execução local aprovada:
 
-- 11 testes rápidos, 29 asserções;
+- 12 testes rápidos, 33 asserções;
 - 15 testes de integração, 94 asserções;
-- 8 fluxos HTTP, 131 asserções;
+- 9 fluxos HTTP, 152 asserções;
 - importação integral do schema em MariaDB isolado;
 - inspeção visual dos quatro relatórios no navegador.
 

@@ -100,7 +100,8 @@
                     throw new Error(data.error || 'Erro ao salvar foto');
                 }
 
-                const photoUrl = `${data.photo}?v=${Date.now()}`;
+                const separator = data.photo.includes('?') ? '&' : '?';
+                const photoUrl = data.photo + separator + 'v=' + Date.now();
                 const photoElement = document.getElementById('profilePhoto');
                 if (photoElement.tagName === 'IMG') {
                     photoElement.src = photoUrl;

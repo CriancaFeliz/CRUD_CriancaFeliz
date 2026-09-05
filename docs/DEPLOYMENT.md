@@ -71,7 +71,8 @@ O processo do PHP precisa escrever somente em:
 
 - `var/logs`;
 - `var/private/documents`;
-- `uploads/profiles`;
+- `var/private/profiles`;
+- `var/private/children`;
 - `data` enquanto os recursos locais ainda forem usados.
 
 As demais pastas devem ficar somente para leitura. Confirme que
@@ -88,9 +89,10 @@ As demais pastas devem ficar somente para leitura. Confirme que
 6. confira contagens de usuários, atendidos, fichas, frequência e documentos;
 7. só então repita a operação no servidor real.
 
-O código mantém leitura de `uploads/documents` para anexos antigos. Novos
-arquivos são gravados em `var/private/documents`. A migração física dos
-antigos pode ser feita depois, com inventário e backup.
+O código mantém leitura de `uploads/documents`, `uploads/profiles` e das fotos
+de acolhimento antigas na raiz de `uploads` por rotas autenticadas. Novos
+arquivos são gravados nas respectivas pastas de `var/private`. A migração
+física dos antigos pode ser feita depois, com inventário e backup.
 
 ## 7. Backup e restauração
 
@@ -98,8 +100,11 @@ Inclua no backup:
 
 - banco completo com triggers, procedures e views;
 - `var/private/documents`;
+- `var/private/profiles`;
+- `var/private/children`;
 - anexos legados em `uploads/documents`, se existirem;
-- fotos em `uploads/profiles`;
+- fotos legadas em `uploads/profiles`, se existirem;
+- fotos de acolhimento legadas na raiz de `uploads`, se existirem;
 - configuração segura guardada separadamente.
 
 Criptografe o backup, limite o acesso e mantenha uma cópia fora do servidor.
@@ -112,7 +117,7 @@ garantia de recuperação.
 - `APP_DEBUG=false`;
 - login e logout;
 - matriz de perfis confirmada;
-- documentos inacessíveis por URL direta;
+- documentos e fotos privadas inacessíveis por URL direta;
 - geração dos quatro relatórios;
 - backup e restauração testados;
 - SMTP configurado ou recuperação de senha formalmente desabilitada;

@@ -315,6 +315,10 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 - A área psicológica usa a tabela `anotacao_psicologica`, criada pelo setup atual. Em bancos antigos, execute `database/update_schema.sql`.
 - A foto de perfil persiste em `usuario.foto_perfil`; em bancos antigos, execute `database/update_schema.sql`.
 - Novos documentos de prontuário ficam em `var/private/documents/` e só abrem por rota autenticada. A leitura de caminhos legados em `uploads/documents/` foi mantida para migração.
+- Novas fotos de perfil ficam em `var/private/profiles/` e são entregues
+  pela rota autenticada `profile.php?action=photo`.
+- Novas fotos de acolhimento ficam em `var/private/children/`; fotos antigas
+  continuam disponíveis apenas pela rota autenticada de compatibilidade.
 - Testes rápidos rodam com `php tests/run.php`; a suíte completa roda com `powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run_all.ps1` e cobre banco, integração, smoke HTTP, perfis, relatórios, uploads privados e backup/restauração.
 - A imagem de login em `img/84ee2f859c98cde210228f9cf472d03b4932ff8c.jpg` foi otimizada para reduzir clone/carregamento mantendo o mesmo caminho.
 

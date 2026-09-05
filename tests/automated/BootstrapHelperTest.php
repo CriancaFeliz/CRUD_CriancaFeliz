@@ -17,4 +17,13 @@ class BootstrapHelperTest extends TestCase {
         $this->assertSame('01/06/2026', formatDateToBr('2026-06-01'));
         $this->assertSame('', formatDateToBr(''));
     }
+
+    public function testRedirectTargetStaysLocal() {
+        $_SERVER['HTTP_HOST'] = 'localhost:8090';
+
+        $this->assertSame('dashboard.php', safeLocalRedirectTarget('dashboard.php'));
+        $this->assertSame('/psychology.php?action=patients', safeLocalRedirectTarget('http://localhost:8090/psychology.php?action=patients'));
+        $this->assertSame('index.php', safeLocalRedirectTarget('https://evil.example/phishing'));
+        $this->assertSame('index.php', safeLocalRedirectTarget('//evil.example/phishing'));
+    }
 }

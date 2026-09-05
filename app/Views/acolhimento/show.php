@@ -16,8 +16,8 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
     <div class="fields-grid" style="display:grid; grid-template-columns: 120px 1fr 1fr 1fr; gap:16px; align-items:start;">
         <!-- Foto -->
         <div class="photo-container" style="grid-row: span 3;">
-            <?php if (!empty($ficha['foto']) && file_exists($ficha['foto'])): ?>
-                <img src="<?php echo htmlspecialchars($ficha['foto']); ?>" alt="Foto 3x4" 
+            <?php if (!empty($ficha['photo_url'])): ?>
+                <img src="<?php echo e($ficha['photo_url']); ?>" alt="Foto 3x4"
                      style="width:120px; height:160px; object-fit:cover; border-radius:8px; border:2px solid #f0a36b;">
             <?php else: ?>
                 <div style="width:120px; height:160px; background:#f8f9fa; border:2px dashed #dee2e6; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#6c757d; font-size:12px; text-align:center;">

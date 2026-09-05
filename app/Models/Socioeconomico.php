@@ -301,7 +301,7 @@ class Socioeconomico extends BaseModel {
                         $familiaInseridos++;
                         debugLog("Membro #{$idx} inserido com sucesso");
                     } catch (Exception $e) {
-                        error_log("ERRO ao inserir membro #{$idx}: " . $e->getMessage());
+                        reportException($e, 'Socioeconomico::createFamilyMember');
                         throw $e;
                     }
                 }
@@ -373,7 +373,7 @@ class Socioeconomico extends BaseModel {
                             $despesasInseridas++;
                             debugLog("Despesa #{$idx} inserida com sucesso");
                         } catch (Exception $e) {
-                            error_log("ERRO ao inserir despesa #{$idx}: " . $e->getMessage());
+                            reportException($e, 'Socioeconomico::createExpense');
                             throw $e;
                         }
                     } else {
@@ -391,7 +391,7 @@ class Socioeconomico extends BaseModel {
             
         } catch (Exception $e) {
             Database::rollback();
-            error_log('Erro ao criar ficha socioeconômica: ' . $e->getMessage());
+            reportException($e, 'Socioeconomico::create');
             throw $e;
         }
     }
@@ -519,7 +519,7 @@ class Socioeconomico extends BaseModel {
             ", [$perPage, $offset]);
         } catch (Exception $e) {
             // Fallback: Select only columns that definitely exist
-            error_log("Error with benefit columns in listFichas, using fallback: " . $e->getMessage());
+            reportException($e, 'Socioeconomico::listFichasFallback');
             $stmt = $this->query("
                 SELECT 
                     a.idatendido as id,
@@ -753,7 +753,7 @@ class Socioeconomico extends BaseModel {
                             );
                             $familiaInseridos++;
                         } catch (Exception $e) {
-                            error_log("ERRO ao inserir membro #{$idx} no update: " . $e->getMessage());
+                            reportException($e, 'Socioeconomico::updateFamilyMember');
                             throw $e;
                         }
                     }
@@ -821,7 +821,7 @@ class Socioeconomico extends BaseModel {
                                 );
                                 $despesasInseridas++;
                             } catch (Exception $e) {
-                                error_log("ERRO ao inserir despesa #{$idx} no update: " . $e->getMessage());
+                                reportException($e, 'Socioeconomico::updateExpense');
                                 throw $e;
                             }
                         }
@@ -831,7 +831,7 @@ class Socioeconomico extends BaseModel {
                     debugLog('Update - Nenhuma despesa para inserir');
                 }
             } else {
-                error_log('ATENÇÃO: Ficha não encontrada para id_atendido: ' . $id);
+                debugLog('Ficha socioeconômica não encontrada para atualização', ['id_atendido' => (int)$id]);
             }
             
             Database::commit();
@@ -840,7 +840,7 @@ class Socioeconomico extends BaseModel {
             
         } catch (Exception $e) {
             Database::rollback();
-            error_log('Erro ao atualizar ficha: ' . $e->getMessage());
+            reportException($e, 'Socioeconomico::update');
             throw $e;
         }
     }
@@ -967,7 +967,7 @@ class Socioeconomico extends BaseModel {
             ];
             
         } catch (Exception $e) {
-            error_log('Erro ao obter estatísticas: ' . $e->getMessage());
+            reportException($e, 'Socioeconomico::statistics');
             return [
                 'total' => 0,
                 'ativas' => 0,

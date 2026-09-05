@@ -120,12 +120,16 @@ class AuthService {
             return null;
         }
         
+        $hasPhoto = !empty($_SESSION['user_photo']);
+
         return [
             'id' => $_SESSION['user_id'],
             'email' => $_SESSION['user_email'],
             'name' => $_SESSION['user_name'],
             'role' => $_SESSION['user_role'],
-            'photo' => $_SESSION['user_photo'] ?? ''
+            'photo' => $hasPhoto
+                ? 'profile.php?action=photo&id=' . (int)$_SESSION['user_id']
+                : ''
         ];
     }
     

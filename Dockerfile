@@ -18,5 +18,5 @@ WORKDIR /var/www/html
 
 COPY . /var/www/html/
 
-RUN mkdir -p /var/www/html/data /var/www/html/var/logs /var/www/html/var/private/documents /var/www/html/uploads/profiles \
+RUN mkdir -p /var/www/html/data /var/www/html/var/logs /var/www/html/var/private/documents /var/www/html/var/private/profiles /var/www/html/var/private/children /var/www/html/uploads/profiles \
     && chown -R www-data:www-data /var/www/html/data /var/www/html/var /var/www/html/uploads

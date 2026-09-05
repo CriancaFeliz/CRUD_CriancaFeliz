@@ -309,7 +309,7 @@ DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_insert`;
 DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_update`;
 DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_delete`;
 
-CREATE TRIGGER `log_ficha_socioeconomico_insert` AFTER INSERT ON `Ficha_Socioeconomico` FOR EACH ROW
+CREATE TRIGGER `log_ficha_socioeconomico_insert` AFTER INSERT ON `ficha_socioeconomico` FOR EACH ROW
 INSERT INTO `log` (
     `data_alteracao`,
     `registro_alt`,
@@ -358,7 +358,7 @@ INSERT INTO `log` (
     @ip_usuario
 );
 
-CREATE TRIGGER `log_ficha_socioeconomico_update` AFTER UPDATE ON `Ficha_Socioeconomico` FOR EACH ROW
+CREATE TRIGGER `log_ficha_socioeconomico_update` AFTER UPDATE ON `ficha_socioeconomico` FOR EACH ROW
 INSERT INTO `log` (
     `data_alteracao`,
     `registro_alt`,
@@ -432,7 +432,7 @@ INSERT INTO `log` (
     @ip_usuario
 );
 
-CREATE TRIGGER `log_ficha_socioeconomico_delete` AFTER DELETE ON `Ficha_Socioeconomico` FOR EACH ROW
+CREATE TRIGGER `log_ficha_socioeconomico_delete` AFTER DELETE ON `ficha_socioeconomico` FOR EACH ROW
 INSERT INTO `log` (
     `data_alteracao`,
     `registro_alt`,
@@ -482,7 +482,7 @@ DROP PROCEDURE IF EXISTS `RegistrarFaltaAutomatica`$$
 
 CREATE PROCEDURE `RegistrarFaltaAutomatica` (IN `p_id_atendido` INT, IN `p_data` DATE)
 BEGIN
-    INSERT INTO Frequencia_Dia (id_atendido, data, status)
+    INSERT INTO `frequencia_dia` (id_atendido, data, status)
     VALUES (p_id_atendido, p_data, 'F')
     ON DUPLICATE KEY UPDATE 
         status = IF(status = 'P', status, 'F');
@@ -492,7 +492,7 @@ DROP PROCEDURE IF EXISTS `DesligarPorExcessoFaltas`$$
 
 CREATE PROCEDURE `DesligarPorExcessoFaltas` ()
 BEGIN
-    INSERT INTO Desligamento (id_atendido, motivo, tipo_motivo, data_desligamento, automatico)
+    INSERT INTO `desligamento` (id_atendido, motivo, tipo_motivo, data_desligamento, automatico)
     SELECT 
         a.idatendido,
         'Desligamento automático por excesso de faltas',
@@ -500,19 +500,19 @@ BEGIN
         CURDATE(),
         TRUE
     FROM 
-        Atendido a
+        `atendido` a
     LEFT JOIN 
-        Frequencia_Dia fd ON a.idatendido = fd.id_atendido
+        `frequencia_dia` fd ON a.idatendido = fd.id_atendido
     WHERE 
         a.status = 'Ativo'
-        AND NOT EXISTS (SELECT 1 FROM Desligamento d WHERE d.id_atendido = a.idatendido)
+        AND NOT EXISTS (SELECT 1 FROM `desligamento` d WHERE d.id_atendido = a.idatendido)
     GROUP BY 
         a.idatendido
     HAVING 
         COUNT(CASE WHEN fd.status = 'F' THEN 1 END) >= 3;
 
-    UPDATE Atendido a
-    INNER JOIN Desligamento d ON a.idatendido = d.id_atendido
+    UPDATE `atendido` a
+    INNER JOIN `desligamento` d ON a.idatendido = d.id_atendido
     SET a.status = 'Desligado'
     WHERE d.automatico = TRUE;
 END$$

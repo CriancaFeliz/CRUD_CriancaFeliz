@@ -177,7 +177,7 @@ class SocioeconomicoController extends BaseController {
             }
             
         } catch (Exception $e) {
-            error_log('ERRO: ' . $e->getMessage());
+            reportException($e, 'SocioeconomicoController::store');
             $this->redirectWithError('socioeconomico_form.php', $e->getMessage());
         }
     }

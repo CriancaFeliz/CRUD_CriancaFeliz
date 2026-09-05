@@ -126,12 +126,11 @@ class PsychologyController extends BaseController
 
             if ($result['success']) {
                 $_SESSION['flash_success'] = 'Anotação salva com sucesso';
-                header('Location: psychology.php?action=patient&cpf=' . $post['patient_cpf']);
+                redirect('psychology.php?action=patient&cpf=' . urlencode((string)$post['patient_cpf']));
             } else {
                 $_SESSION['flash_error'] = $result['message'];
-                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'psychology.php'));
+                redirect($this->safeReferrer('psychology.php'));
             }
-            exit;
         } catch (Exception $e) {
             if ($isAjax) {
                 header('Content-Type: application/json');
@@ -139,8 +138,7 @@ class PsychologyController extends BaseController
                 exit;
             }
             $_SESSION['flash_error'] = $e->getMessage();
-            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'psychology.php'));
-            exit;
+            redirect($this->safeReferrer('psychology.php'));
         }
     }
 
@@ -223,8 +221,7 @@ class PsychologyController extends BaseController
             } else {
                 $_SESSION['flash_error'] = $result['message'];
             }
-            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'psychology.php'));
-            exit;
+            redirect($this->safeReferrer('psychology.php'));
         } catch (Exception $e) {
             if ($isAjax) {
                 header('Content-Type: application/json');
@@ -232,8 +229,7 @@ class PsychologyController extends BaseController
                 exit;
             }
             $_SESSION['flash_error'] = $e->getMessage();
-            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'psychology.php'));
-            exit;
+            redirect($this->safeReferrer('psychology.php'));
         }
     }
 
