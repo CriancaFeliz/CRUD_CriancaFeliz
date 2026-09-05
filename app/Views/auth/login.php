@@ -2,7 +2,7 @@
     <h2 class="login-title">LOGIN</h2>
     
     <?php if (!empty($errors)): ?>
-        <div class="error-messages">
+        <div class="error-messages" role="alert" aria-live="assertive">
             <?php foreach ($errors as $error): ?>
                 <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
             <?php endforeach; ?>
@@ -13,12 +13,14 @@
         <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
         
         <div class="input-group">
+            <label class="sr-only" for="email">E-mail</label>
             <input type="email" id="email" name="email" placeholder="Digite seu email" 
                    autocomplete="email" 
                    value="<?php echo htmlspecialchars($formData['email'] ?? ''); ?>" required>
         </div>
         
         <div class="input-group">
+            <label class="sr-only" for="password">Senha</label>
             <input type="password" id="password" name="password" placeholder="Digite sua senha" 
                    autocomplete="current-password" required>
         </div>
