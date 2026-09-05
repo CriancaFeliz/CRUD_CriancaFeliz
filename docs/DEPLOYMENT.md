@@ -21,8 +21,8 @@ database/SETUP_COMPLETO_FINAL.sql
 ```
 
 O setup não cria usuários nem dados de crianças. Ele inclui apenas oficinas
-iniciais de apoio. Nunca importe os dumps de `database/legacy_dumps` em um
-ambiente público.
+iniciais de apoio. Dumps com dados reais não fazem parte deste repositório e
+nunca devem ser importados em um ambiente público.
 
 ## 3. Configuração
 

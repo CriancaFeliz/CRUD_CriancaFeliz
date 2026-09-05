@@ -156,7 +156,6 @@ Essas variáveis são preparadas em `LogHelper` e também em algumas rotas admin
 | --- | --- |
 | `migration.sql` | Schema alinhado ao setup, útil como base de comparação. |
 | `update_schema.sql` | Migração pontual para remover estruturas obsoletas e recriar triggers. |
-| `legacy_dumps/` | Dumps antigos para consulta histórica. |
 | `../docker/mysql/01-init.sh` | Script de importação usado pelo MySQL no Docker. |
 
 ## 9. Configuração da Aplicação
@@ -188,6 +187,7 @@ No Docker Compose, a aplicação usa `DB_HOST=db`,
 - O MySQL do Docker Compose usa `lower_case_table_names=1` para reduzir conflitos locais de caixa, mas isso não substitui a normalização do schema.
 - O schema principal ainda preserva algumas tabelas legadas, como `sessao` e `presenca`, mas o módulo atual de frequência usa `faltas.php`, `Frequencia_Dia` e `Frequencia_Oficina`.
 - A tabela `anotacao_psicologica` já está oficializada no setup; em bancos antigos, execute `database/update_schema.sql` antes de usar a área psicológica.
+- Dumps com dados reais devem permanecer fora do repositório e fora do diretório público; use apenas uma base anonimizada para homologação.
 
 ## 11. Troubleshooting
 
