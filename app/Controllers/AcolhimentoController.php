@@ -20,8 +20,12 @@ class AcolhimentoController extends BaseController {
         try {
             $page = intval($this->getParam('page', 1));
             $perPage = 10;
+            $filters = [
+                'q' => trim($this->getParam('q', '')),
+                'cpf' => trim($this->getParam('cpf', ''))
+            ];
             
-            $result = $this->acolhimentoService->listFichas($page, $perPage);
+            $result = $this->acolhimentoService->listFichas($page, $perPage, $filters);
             
             // Adicionar dados calculados
             foreach ($result['data'] as &$ficha) {
@@ -180,6 +184,9 @@ class AcolhimentoController extends BaseController {
         
         try {
             $ficha = $this->acolhimentoService->getFicha($id);
+            $ficha['photo_url'] = !empty($ficha['foto'])
+                ? 'acolhimento_view.php?action=photo&id=' . (int)$id
+                : '';
             
             $data = [
                 'title' => 'Editar Ficha de Acolhimento',
@@ -355,10 +362,12 @@ class AcolhimentoController extends BaseController {
         $this->requireAuth();
         
         try {
-            $query = $this->getParam('q', '');
+            $query = trim($this->getParam('q', ''));
             $filters = $this->getGetData();
+            $cpf = trim($filters['cpf'] ?? $this->getParam('cpf', ''));
+            $filters['cpf'] = $cpf;
             
-            if (empty($query)) {
+            if (empty($query) && empty($cpf)) {
                 $this->json([]);
                 return;
             }

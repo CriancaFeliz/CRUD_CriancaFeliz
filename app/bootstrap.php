@@ -44,7 +44,7 @@ function loadEnvironmentFile($path) {
 
         $name = trim(substr($line, 0, $separator));
         $value = trim(substr($line, $separator + 1));
-        if (!preg_match('/^[A-Z][A-Z0-9_]*$/', $name) || getenv($name) !== false) {
+        if (!preg_match('/^[A-Z][A-Z0-9_]*$/', $name)) {
             continue;
         }
 
@@ -52,12 +52,23 @@ function loadEnvironmentFile($path) {
             $value = substr($value, 1, -1);
         }
 
-        putenv($name . '=' . $value);
-        $_ENV[$name] = $value;
+        if (getenv($name) === false) {
+            putenv($name . '=' . $value);
+        }
+        if (!isset($_ENV[$name])) {
+            $_ENV[$name] = $value;
+        }
+        if (!isset($_SERVER[$name])) {
+            $_SERVER[$name] = $value;
+        }
     }
 }
 
 loadEnvironmentFile(BASE_PATH . '/.env');
+
+// Configurar fuso horário padrão da aplicação (America/Sao_Paulo)
+$appTimezone = $_ENV['APP_TIMEZONE'] ?? $_SERVER['APP_TIMEZONE'] ?? getenv('APP_TIMEZONE') ?: 'America/Sao_Paulo';
+date_default_timezone_set($appTimezone);
 
 /**
  * Detecta HTTPS sem confiar em cabeçalhos de proxy enviados diretamente pelo

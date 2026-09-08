@@ -130,7 +130,7 @@ $acoes = $acoes ?? ['INSERT' => 0, 'UPDATE' => 0, 'DELETE' => 0];
         </div>
     </div>
 
-    <div class="card-glass logs-table-card p-0 overflow-hidden">
+    <div class="card-glass logs-table-card table-responsive p-0">
         <table class="table-glass logs-table">
             <thead>
                 <tr>

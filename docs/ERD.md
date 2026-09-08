@@ -159,3 +159,41 @@ erDiagram
 `sessao` e `presenca` são estruturas legadas mantidas por compatibilidade.
 Os fluxos atuais usam principalmente `frequencia_dia` e
 `frequencia_oficina`.
+
+## Cobertura, cardinalidades e integridade referencial
+
+O DER acima representa todas as 20 tabelas e a view presentes no schema atual.
+As tabelas de infraestrutura sem chave estrangeira (`agenda`,
+`auth_rate_limits`, `dias_atendimento` e `password_reset_tokens`) foram
+listadas na seção anterior para não poluir a leitura do diagrama principal.
+
+| Relação | Cardinalidade | Regra ao excluir o registro pai |
+| --- | --- | --- |
+| `responsavel` → `atendido` | 1 : 0..N | `SET NULL` no responsável do atendido |
+| `atendido` → `ficha_socioeconomico` | 1 : 0..1 | `CASCADE` |
+| `ficha_socioeconomico` → `familia` | 1 : 0..N | `CASCADE` |
+| `ficha_socioeconomico` → `despesas` | 1 : 0..N | `CASCADE` |
+| `atendido` → `documento`, `encontro`, `frequencia_dia`, `frequencia_oficina`, `anotacao_psicologica`, `desligamento` | 1 : 0..N; desligamento é 0..1 | `CASCADE` |
+| `oficina` → `frequencia_oficina` | 1 : 0..N | `CASCADE` |
+| `sessao` → `presenca` | 1 : 0..N | `CASCADE` |
+| `atendido` → `presenca` | 1 : 0..N | `CASCADE` |
+| `usuario` → registros operacionais | 1 : 0..N | `SET NULL` para preservar o histórico quando aplicável; anotações psicológicas usam `CASCADE` |
+
+### Restrições relevantes
+
+- PKs: cada tabela possui a chave primária indicada no diagrama.
+- Unicidade: `ficha_socioeconomico.id_atendido`, `desligamento.id_atendido`,
+  `sessao.data_sessao` e `password_reset_tokens.token_hash` são únicos.
+- Segurança: `usuario.Senha` armazena hash; `password_reset_tokens` armazena
+  somente hash de token, nunca a senha ou o token aberto.
+- A view `atendidos_com_alerta` é derivada de `atendido` e
+  `frequencia_dia`; ela não armazena dados próprios.
+- Campos como `status`, `tipo_motivo`, `tipo` e frequência usam `ENUM` ou
+  valores controlados pelo sistema para reduzir registros inválidos.
+
+> Fonte de verdade: `database/SETUP_COMPLETO_FINAL.sql`, conferida também na
+> base local `criancafeliz_test` em 08/09/2026.
+
+A versão profissional para entrega, em notação Crow's Foot e com dicionário
+físico de todos os campos, tipos, restrições e a matriz das 21 chaves
+estrangeiras, está em `output/pdf/Diagramas_DER_UML_Crianca_Feliz.pdf`.

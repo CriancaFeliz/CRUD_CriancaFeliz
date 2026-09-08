@@ -5,9 +5,12 @@
  */
 class UserService {
     private $userModel;
+    private $logModel;
     
     public function __construct() {
         $this->userModel = new User();
+        require_once APP_PATH . '/Models/Log.php';
+        $this->logModel = new Log();
     }
     
     /**
@@ -61,7 +64,14 @@ class UserService {
             'status' => 'Ativo' // Usar status em português conforme banco
         ];
         
-        return $this->userModel->createUser($userData);
+        $result = $this->userModel->createUser($userData);
+        if ($result) {
+            $newId = $result['id'] ?? null;
+            $logData = $userData;
+            unset($logData['password']);
+            $this->logModel->logAction('INSERT', 'usuario', "Usuário criado: {$userData['name']}", null, json_encode($logData, JSON_UNESCAPED_UNICODE), $newId);
+        }
+        return $result;
     }
     
     /**
@@ -103,7 +113,21 @@ class UserService {
             $userData['status'] = $data['status'];
         }
         
-        return $this->userModel->updateUser($id, $userData);
+        $result = $this->userModel->updateUser($id, $userData);
+        if ($result) {
+            $logData = $userData;
+            unset($logData['password']);
+            
+            $antigo = [
+                'name' => $user['nome'] ?? '',
+                'email' => $user['email'] ?? '',
+                'role' => $user['nivel'] ?? '',
+                'status' => $user['status'] ?? ''
+            ];
+            
+            $this->logModel->logAction('UPDATE', 'usuario', "Usuário atualizado: {$userData['name']}", json_encode($antigo, JSON_UNESCAPED_UNICODE), json_encode($logData, JSON_UNESCAPED_UNICODE), $dataUserId);
+        }
+        return $result;
     }
     
     /**
@@ -115,7 +139,15 @@ class UserService {
             throw new Exception('Usuário não encontrado');
         }
         
-        return $this->userModel->delete($id);
+        $result = $this->userModel->delete($id);
+        if ($result) {
+            $antigo = [
+                'name' => $user['nome'] ?? '',
+                'email' => $user['email'] ?? ''
+            ];
+            $this->logModel->logAction('DELETE', 'usuario', "Usuário excluído: {$antigo['name']}", json_encode($antigo, JSON_UNESCAPED_UNICODE), null, $id);
+        }
+        return $result;
     }
     
     /**
@@ -135,9 +167,13 @@ class UserService {
             ? 'Inativo' 
             : 'Ativo';
         
-        $this->userModel->updateUser($id, [
+        $result = $this->userModel->updateUser($id, [
             'status' => $newStatus
         ]);
+        
+        if ($result) {
+            $this->logModel->logAction('UPDATE', 'usuario', "Status do usuário '{$user['nome']}' alterado para $newStatus", json_encode(['status' => $currentStatus], JSON_UNESCAPED_UNICODE), json_encode(['status' => $newStatus], JSON_UNESCAPED_UNICODE), $id);
+        }
         
         return ['status' => $newStatus];
     }

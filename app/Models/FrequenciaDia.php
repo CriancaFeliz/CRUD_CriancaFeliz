@@ -26,7 +26,15 @@ class FrequenciaDia extends BaseModel {
                     updated_at = CURRENT_TIMESTAMP";
         
         $stmt = $pdo->prepare($sql);
-        return $stmt->execute([$idAtendido, $data, $observacao, $userId]);
+        $result = $stmt->execute([$idAtendido, $data, $observacao, $userId]);
+        
+        if ($result) {
+            require_once APP_PATH . '/Models/Log.php';
+            $log = new Log();
+            $log->logAction('UPDATE', 'frequencia_dia', "Presença registrada/atualizada para atendido ID $idAtendido em $data", null, null, $idAtendido);
+        }
+        
+        return $result;
     }
     
     /**
@@ -47,7 +55,15 @@ class FrequenciaDia extends BaseModel {
                     updated_at = CURRENT_TIMESTAMP";
         
         $stmt = $pdo->prepare($sql);
-        return $stmt->execute([$idAtendido, $data, $status, $justificativa, $observacao, $userId]);
+        $result = $stmt->execute([$idAtendido, $data, $status, $justificativa, $observacao, $userId]);
+        
+        if ($result) {
+            require_once APP_PATH . '/Models/Log.php';
+            $log = new Log();
+            $log->logAction('UPDATE', 'frequencia_dia', "Falta ($status) registrada/atualizada para atendido ID $idAtendido em $data", null, null, $idAtendido);
+        }
+        
+        return $result;
     }
     
     /**

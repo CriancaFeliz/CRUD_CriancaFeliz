@@ -25,17 +25,22 @@ class PsychologyController extends BaseController
     public function index()
     {
         $this->requireAuth();
-        $this->requirePermission('view_psychological_area');
 
-        $data = [
-            'title' => 'Área Psicológica',
-            'pageTitle' => 'Área Psicológica - Dashboard',
-            'stats' => $this->service()->getStatistics(),
-            'recentNotes' => $this->service()->getRecentNotes(),
-            'messages' => $this->getFlashMessages()
-        ];
+        try {
+            $this->requirePermission('view_psychological_area');
 
-        $this->renderWithLayout('main', 'psychology/index', $data);
+            $data = [
+                'title' => 'Área Psicológica',
+                'pageTitle' => 'Área Psicológica - Dashboard',
+                'stats' => $this->service()->getStatistics(),
+                'recentNotes' => $this->service()->getRecentNotes(),
+                'messages' => $this->getFlashMessages()
+            ];
+
+            $this->renderWithLayout('main', 'psychology/index', $data);
+        } catch (Exception $e) {
+            $this->redirectWithError('dashboard.php', $e->getMessage());
+        }
     }
 
     /* ============================================================

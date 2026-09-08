@@ -246,13 +246,71 @@ class Acolhimento extends BaseModel {
         if ($age < 18) return 'Adolescente';
         return 'Adulto';
     }
+
+    /**
+     * Obter todos os pacientes com JOIN no responsavel
+     */
+    public function getAll() {
+        $stmt = $this->query("
+            SELECT 
+                a.*,
+                r.nome as nome_responsavel,
+                r.cpf as cpf_responsavel,
+                r.telefone as contato_1
+            FROM atendido a
+            LEFT JOIN responsavel r ON a.id_responsavel = r.idresponsavel
+            ORDER BY a.nome ASC
+        ");
+        $results = $stmt->fetchAll();
+        foreach ($results as &$row) {
+            $row['id'] = $row['idatendido'];
+            $row['nome_completo'] = $row['nome'];
+            $row['data_nascimento'] = $this->formatDate($row['data_nascimento']);
+            $row['data_acolhimento'] = $this->formatDate($row['data_acolhimento'] ?? ($row['data_cadastro'] ?? ''));
+            $row['idade'] = $this->calculateAge($row['data_nascimento']);
+        }
+        return $results;
+    }
     
     /**
-     * Listar todas as fichas
+     * Listar todas as fichas com suporte a filtros de busca
      */
-    public function listFichas($page = 1, $perPage = 10) {
+    public function listFichas($page = 1, $perPage = 10, $filters = []) {
         $offset = ($page - 1) * $perPage;
         
+        $conditions = [];
+        $params = [];
+        $countParams = [];
+
+        $q = trim($filters['q'] ?? '');
+        $cpf = trim($filters['cpf'] ?? '');
+
+        if ($q !== '') {
+            $conditions[] = "(a.nome LIKE ? OR r.nome LIKE ?)";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+            $countParams[] = "%$q%";
+            $countParams[] = "%$q%";
+        }
+
+        if ($cpf !== '') {
+            $cpfDigits = preg_replace('/\D+/', '', $cpf);
+            if ($cpfDigits !== '') {
+                $conditions[] = "(REPLACE(REPLACE(REPLACE(a.cpf, '.', ''), '-', ''), '/', '') LIKE ? OR a.cpf LIKE ?)";
+                $params[] = "%$cpfDigits%";
+                $params[] = "%$cpf%";
+                $countParams[] = "%$cpfDigits%";
+                $countParams[] = "%$cpf%";
+            } else {
+                $conditions[] = "a.cpf LIKE ?";
+                $params[] = "%$cpf%";
+                $countParams[] = "%$cpf%";
+            }
+        }
+
+        $whereSql = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
+        
+        $queryParams = array_merge($params, [$perPage, $offset]);
         $stmt = $this->query("
             SELECT 
                 a.idatendido as id,
@@ -263,9 +321,10 @@ class Acolhimento extends BaseModel {
                 r.nome as nome_responsavel
             FROM atendido a
             LEFT JOIN responsavel r ON a.id_responsavel = r.idresponsavel
+            $whereSql
             ORDER BY a.data_cadastro DESC
             LIMIT ? OFFSET ?
-        ", [$perPage, $offset]);
+        ", $queryParams);
         
         $fichas = $stmt->fetchAll();
         
@@ -276,24 +335,26 @@ class Acolhimento extends BaseModel {
             $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
         }
         
-        // Contar total
-        $stmt = $this->query("
+        // Contar total respeitando filtros
+        $countStmt = $this->query("
             SELECT COUNT(*) as total 
             FROM atendido a
-        ");
-        $result = $stmt->fetch();
-        $total = $result['total'];
+            LEFT JOIN responsavel r ON a.id_responsavel = r.idresponsavel
+            $whereSql
+        ", $countParams);
+        $result = $countStmt->fetch();
+        $total = (int)($result['total'] ?? 0);
         
         return [
             'data' => $fichas,
             'total' => $total,
             'current_page' => $page,
-            'last_page' => ceil($total / $perPage),
+            'last_page' => max(1, (int)ceil($total / $perPage)),
             'per_page' => $perPage,
             // Compatibilidade
             'page' => $page,
             'perPage' => $perPage,
-            'totalPages' => ceil($total / $perPage)
+            'totalPages' => max(1, (int)ceil($total / $perPage))
         ];
     }
     
@@ -409,9 +470,16 @@ class Acolhimento extends BaseModel {
         
         // Aplicar filtros adicionais
         if (!empty($filters['cpf'])) {
-            $cpf = preg_replace('/\D+/', '', $filters['cpf']);
-            $conditions[] = "a.cpf LIKE ?";
-            $params[] = "%$cpf%";
+            $cpfRaw = trim($filters['cpf']);
+            $cpfDigits = preg_replace('/\D+/', '', $cpfRaw);
+            if ($cpfDigits !== '') {
+                $conditions[] = "(REPLACE(REPLACE(REPLACE(a.cpf, '.', ''), '-', ''), '/', '') LIKE ? OR a.cpf LIKE ?)";
+                $params[] = "%$cpfDigits%";
+                $params[] = "%$cpfRaw%";
+            } else {
+                $conditions[] = "a.cpf LIKE ?";
+                $params[] = "%$cpfRaw%";
+            }
         }
         
         // Se não há condições, retornar vazio

@@ -1,3 +1,23 @@
+<!-- BARRA DE PESQUISA -->
+<div class="card-glass mb-4">
+    <div class="search-bar-container" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <div style="flex-grow: 1; min-width: 200px;">
+            <input type="text" id="searchInput" class="form-control" placeholder="Digite o Nome ou CPF do atendido..." style="width: 100%;">
+        </div>
+        <div>
+            <select id="categoryFilter" class="form-control" style="width: auto; min-width: 150px;">
+                <option value="">Todas as Categorias</option>
+                <option value="acolhimento">Acolhimento</option>
+                <option value="socioeconomico">Socioeconômico</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 5px;">
+            <button type="button" id="searchBtn" class="btn primary"><i class="fas fa-search"></i> Buscar</button>
+            <button type="button" id="clearBtn" class="btn secondary" title="Limpar busca"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+</div>
+
 <div id="searchResults" style="display:none;">
     <div class="results-header card-glass mb-4">
         <h3 class="m-0"><i class="fas fa-clipboard-list"></i> Resultados da Busca</h3>
@@ -188,6 +208,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Não foi possível realizar a busca. Tente novamente.');
             })
             .finally(() => {
+            })
+            .finally(() => {
                 searchBtn.disabled = false;
                 searchBtn.textContent = 'Buscar';
             });
@@ -199,5 +221,12 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResults.style.display = 'none';
         defaultView.style.display = 'block';
     });
+
+    // Disparar busca automaticamente se houver parâmetro 'q' na URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('q')) {
+        searchInput.value = urlParams.get('q');
+        searchBtn.click();
+    }
 });
 </script>

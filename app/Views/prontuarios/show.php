@@ -74,7 +74,7 @@
                                 <?php echo htmlspecialchars($alerta['mensagem']); ?>
                             </div>
                             <div style="font-size: 13px; color: #666;">
-                                <?php echo htmlspecialchars($alerta['acao_sugerida']); ?>
+                                <?php echo htmlspecialchars($alerta['acao_sugerida'] ?? ''); ?>
                             </div>
                         </div>
                     </div>
@@ -90,25 +90,25 @@
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
                 <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-size: 28px; font-weight: 700; color: #27ae60;">
+                    <div style="font-size: 28px; font-weight: 700; color: #000;">
                         <?php echo $attendanceStats['total_presencas']; ?>
                     </div>
                     <div style="font-size: 13px; color: #666; margin-top: 5px;">Presenças</div>
                 </div>
                 <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-size: 28px; font-weight: 700; color: #3498db;">
+                    <div style="font-size: 28px; font-weight: 700; color: #000;">
                         <?php echo $attendanceStats['faltas_justificadas']; ?>
                     </div>
                     <div style="font-size: 13px; color: #666; margin-top: 5px;">Faltas Justificadas</div>
                 </div>
                 <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-size: 28px; font-weight: 700; color: <?php echo $attendanceStats['faltas_nao_justificadas'] >= 5 ? '#e74c3c' : '#f39c12'; ?>;">
+                    <div style="font-size: 28px; font-weight: 700; color: #000;">
                         <?php echo $attendanceStats['faltas_nao_justificadas']; ?>
                     </div>
                     <div style="font-size: 13px; color: #666; margin-top: 5px;">Faltas Não Justificadas</div>
                 </div>
                 <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-size: 28px; font-weight: 700; color: #9b59b6;">
+                    <div style="font-size: 28px; font-weight: 700; color: #000;">
                         <?php echo $attendanceStats['percentual_presenca']; ?>%
                     </div>
                     <div style="font-size: 13px; color: #666; margin-top: 5px;">Taxa de Presença</div>
@@ -216,7 +216,7 @@
                     </div>
                     <div>
                         <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Contato</div>
-                        <div style="font-weight: 600;"><?php echo htmlspecialchars($acolhimento['contato_1'] ?? 'Não informado'); ?></div>
+                        <div style="font-weight: 600;"><?php echo htmlspecialchars($acolhimento['telefone'] ?? $acolhimento['contato_1'] ?? 'Não informado'); ?></div>
                     </div>
                     <div>
                         <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Data de Acolhimento</div>
@@ -252,11 +252,11 @@
                     </div>
                     <div>
                         <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Número de Membros</div>
-                        <div style="font-weight: 600;"><?php echo htmlspecialchars($socioeconomico['numero_membros'] ?? 'Não informado'); ?></div>
+                        <div style="font-weight: 600;"><?php echo htmlspecialchars($socioeconomico['qtd_pessoas'] ?? $socioeconomico['pessoas_casa'] ?? '0'); ?></div>
                     </div>
                     <div>
                         <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Tipo de Moradia</div>
-                        <div style="font-weight: 600;"><?php echo htmlspecialchars($socioeconomico['tipo_moradia'] ?? 'Não informado'); ?></div>
+                        <div style="font-weight: 600;"><?php echo htmlspecialchars($socioeconomico['moradia'] ?? $socioeconomico['tipo_moradia'] ?? 'Não informado'); ?></div>
                     </div>
                 </div>
             </div>
@@ -265,39 +265,113 @@
 </div>
 
 <script>
-function desligarAtendido() {
-    if (!confirm('Deseja desligar este atendido do programa?\n\nVocê será redirecionado para o formulário de desligamento.')) {
-        return;
-    }
+let confirmacaoCallback = null;
+
+function abrirModalConfirmacao(titulo, descricao, textoBotao, callback) {
+    document.getElementById('modalConfirmacaoTitle').textContent = titulo;
+    document.getElementById('modalConfirmacaoDesc').textContent = descricao;
+    document.getElementById('btnConfirmarAcao').innerHTML = `<i class="fas fa-check"></i> ${textoBotao}`;
     
-    window.location.href = 'desligamento.php?action=novo&id=<?php echo (int)($acolhimento['id'] ?? 0); ?>';
+    confirmacaoCallback = callback;
+    
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function fecharModalConfirmacao() {
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.classList.remove('active');
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
+    confirmacaoCallback = null;
+}
+
+document.getElementById('btnConfirmarAcao').addEventListener('click', () => {
+    if (confirmacaoCallback) confirmacaoCallback();
+    fecharModalConfirmacao();
+});
+
+function desligarAtendido() {
+    abrirModalConfirmacao(
+        'Desligar Atendido',
+        'Deseja desligar este atendido do programa? Você será redirecionado para o formulário de desligamento.',
+        'Desligar',
+        () => {
+            window.location.href = 'desligamento.php?action=novo&id=<?php echo (int)($acolhimento['id'] ?? 0); ?>';
+        }
+    );
 }
 
 function reativarAtendido() {
-    if (!confirm('Tem certeza que deseja reativar este atendido?')) {
-        return;
-    }
-    
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'desligamento.php?action=reativar';
-    
-    const csrfInput = document.createElement('input');
-    csrfInput.type = 'hidden';
-    csrfInput.name = 'csrf_token';
-    csrfInput.value = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-    
-    const atendidoInput = document.createElement('input');
-    atendidoInput.type = 'hidden';
-    atendidoInput.name = 'id_atendido';
-    atendidoInput.value = <?php echo json_encode((int)($acolhimento['id'] ?? 0)); ?>;
-    
-    form.appendChild(csrfInput);
-    form.appendChild(atendidoInput);
-    document.body.appendChild(form);
-    form.submit();
+    abrirModalConfirmacao(
+        'Reativar Atendido',
+        'Tem certeza que deseja reativar este atendido no programa?',
+        'Reativar',
+        () => {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'desligamento.php?action=reativar';
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+            
+            const atendidoInput = document.createElement('input');
+            atendidoInput.type = 'hidden';
+            atendidoInput.name = 'id_atendido';
+            atendidoInput.value = <?php echo json_encode((int)($acolhimento['id'] ?? 0)); ?>;
+            
+            form.appendChild(csrfInput);
+            form.appendChild(atendidoInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    );
 }
 </script>
+
+<!-- Modal Customizado de Confirmação -->
+<style>
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.modal-overlay.active { opacity: 1; }
+.modal-confirm-card {
+    background: #fff;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+.modal-overlay.active .modal-confirm-card { transform: translateY(0); }
+</style>
+
+<div id="modalConfirmacaoCustom" class="modal-overlay">
+    <div class="modal-confirm-card">
+        <h3 id="modalConfirmacaoTitle" style="margin:0 0 10px; color:#1e293b; font-size:18px;">Confirmar</h3>
+        <p id="modalConfirmacaoDesc" style="margin:0 0 20px; color:#64748b; font-size:14px; line-height:1.5;">Tem certeza?</p>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn secondary" onclick="fecharModalConfirmacao()" style="background:#e2e8f0; color:#475569;">
+                Cancelar
+            </button>
+            <button type="button" id="btnConfirmarAcao" class="btn primary" style="background:#f0a36b; color:#fff;">
+                Confirmar
+            </button>
+        </div>
+    </div>
+</div>
 
 <style>
     @media (max-width: 768px) {

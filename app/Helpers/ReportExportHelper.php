@@ -25,6 +25,6 @@ class ReportExportHelper {
             return '"' . $value . '"';
         }, $values);
 
-        return implode(',', $escaped);
+        return implode(';', $escaped);
     }
 }

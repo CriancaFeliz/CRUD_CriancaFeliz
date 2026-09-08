@@ -96,15 +96,19 @@ try {
         case 'prontuarios':
         case 'prontuarios.php':
             $prontuarioController = new ProntuarioController();
-            $action = $_GET['action'] ?? 'index';
+            $action = $_GET['action'] ?? null;
+            $cpf = $_GET['cpf'] ?? null;
+            $id = $_GET['id'] ?? null;
+
+            if ($action === 'show' || (!$action && ($cpf || $id))) {
+                if (!$cpf && !$id) {
+                    throw new Exception('CPF ou ID do prontuário é obrigatório');
+                }
+                $prontuarioController->show($cpf, $id);
+                break;
+            }
+
             switch ($action) {
-                case 'show':
-                    $cpf = $_GET['cpf'] ?? null;
-                    if (!$cpf) {
-                        throw new Exception('CPF do prontuário é obrigatório');
-                    }
-                    $prontuarioController->show($cpf);
-                    break;
                 case 'buscar':
                     $prontuarioController->buscar();
                     break;
@@ -112,18 +116,13 @@ try {
                     $prontuarioController->uploadDocument();
                     break;
                 case 'document':
-                    $id = $_GET['id'] ?? null;
                     if (!$id) {
                         throw new Exception('ID do documento é obrigatório');
                     }
                     $prontuarioController->viewDocument($id);
                     break;
                 default:
-                    if (!empty($_GET['cpf'])) {
-                        $prontuarioController->show($_GET['cpf']);
-                    } else {
-                        $prontuarioController->index();
-                    }
+                    $prontuarioController->index();
                     break;
             }
             break;
@@ -396,7 +395,12 @@ try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $acolhimentoController->store();
             } else {
-                $acolhimentoController->create();
+                $editId = $_GET['edit'] ?? $_GET['id'] ?? null;
+                if ($editId) {
+                    $acolhimentoController->edit($editId);
+                } else {
+                    $acolhimentoController->create();
+                }
             }
             break;
 
@@ -442,6 +446,8 @@ try {
             }
             if (($_GET['action'] ?? '') === 'photo') {
                 $acolhimentoController->viewPhoto($id);
+            } elseif (($_GET['action'] ?? '') === 'carimbo') {
+                $acolhimentoController->viewCarimbo($id);
             } else {
                 $acolhimentoController->show($id);
             }
@@ -454,7 +460,12 @@ try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $socioeconomicoController->store();
             } else {
-                $socioeconomicoController->create();
+                $editId = $_GET['edit'] ?? $_GET['id'] ?? null;
+                if ($editId) {
+                    $socioeconomicoController->edit($editId);
+                } else {
+                    $socioeconomicoController->create();
+                }
             }
             break;
 
@@ -507,14 +518,16 @@ try {
             }
             break;
     }
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $errorId = reportException($e, 'route:' . $route);
     $publicMessage = appDebugEnabled()
         ? $e->getMessage()
         : 'Não foi possível processar a solicitação. Código: ' . $errorId;
     
     // Resposta baseada no tipo de requisição (AJAX vs Normal)
-    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+        || (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
+        || (isset($_GET['action']) && in_array($_GET['action'], ['getCalendarNotes', 'saveCalendarNote', 'deleteCalendarNote', 'api_search', 'api_stats', 'stats'], true));
     
     if ($isAjax) {
         header('Content-Type: application/json; charset=utf-8');

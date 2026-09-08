@@ -29,7 +29,7 @@ Fonte inicial: pendências descritas em [[docs/PROJECT_DOCUMENTATION]], [[docs/R
 - Rota legada `attendance.php` redirecionada para `faltas.php`/`desligamento.php`.
 - Links do prontuário atualizados para o módulo atual de faltas/desligamento.
 - `.htaccess` bloqueia acesso direto a `tools/`, `database/`, `data/`, `var/` e `docker/`.
-- `anotacao_psicologica` adicionada a `SETUP_COMPLETO_FINAL.sql`, `migration.sql` e `update_schema.sql`.
+- `anotacao_psicologica` adicionada ao `SETUP_COMPLETO_FINAL.sql`, fonte única do schema para instalações novas.
 - Senhas novas exigem política mínima mais forte e usam Argon2id quando disponível.
 - Testes automatizados mínimos, runner e CI adicionados.
 - Foto de perfil persistida em `usuario.foto_perfil`.
@@ -50,7 +50,7 @@ Fonte inicial: pendências descritas em [[docs/PROJECT_DOCUMENTATION]], [[docs/R
 - [x] Revisar endpoints psicológicos ainda não implementados.
 - [x] Implementar primeira camada de relatórios PDF/Excel conforme roadmap: impressão/PDF pelo navegador e CSV compatível com Excel.
 - [ ] Reduzir o tamanho do roteador em `index.php`.
-- [ ] Alinhar `SETUP_COMPLETO_FINAL.sql`, `migration.sql` e `update_schema.sql`.
+- [x] Consolidar `SETUP_COMPLETO_FINAL.sql` como fonte única de schema para instalações novas.
 - [x] Decidir estratégia para tabelas legadas preservadas no schema.
 - [x] Migrar reset tokens de `data/reset_tokens.json` para tabela própria com expiração.
 

@@ -283,8 +283,9 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 
 - [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md): fonte principal do estado realmente entregue e das pendências externas.
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): instalação nova, atualização legada e checklist seguro.
-- [docs/ERD.md](docs/ERD.md): DER atual do schema canônico.
-- [docs/UML.md](docs/UML.md): componentes e sequências dos fluxos principais.
+- [docs/ERD.md](docs/ERD.md): DER atual do schema canônico, cardinalidades e regras de integridade.
+- [docs/UML.md](docs/UML.md): arquitetura, sequências dos fluxos principais e diagrama de classes da aplicação.
+- [docs/ARCHITECTURAL_CLEANUP_REPORT.md](docs/ARCHITECTURAL_CLEANUP_REPORT.md): relatório da higienização e organização do repositório.
 - [docs/PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md): arquitetura, rotas, controllers, services, models, banco e pendências.
 - [docs/GAP_REMEDIATION_PLAN.md](docs/GAP_REMEDIATION_PLAN.md): plano das lacunas prioritárias.
 - [docs/LGPD_AND_DATA_GOVERNANCE.md](docs/LGPD_AND_DATA_GOVERNANCE.md): plano técnico-operacional de LGPD e governança de dados.
@@ -312,8 +313,8 @@ O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade.
 - O fluxo de recuperação de senha guarda hashes de tokens em `password_reset_tokens` e registra a URL no log do PHP enquanto não há SMTP real. Para produção, implemente envio SMTP real.
 - A pasta `data/` guarda dados locais/runtime e não deve ser usada como fonte principal de persistência.
 - O módulo atual de frequência é `faltas.php`; acessos legados a `attendance.php` são redirecionados para as rotas atuais.
-- A área psicológica usa a tabela `anotacao_psicologica`, criada pelo setup atual. Em bancos antigos, execute `database/update_schema.sql`.
-- A foto de perfil persiste em `usuario.foto_perfil`; em bancos antigos, execute `database/update_schema.sql`.
+- A área psicológica usa a tabela `anotacao_psicologica`, criada pelo setup completo.
+- A foto de perfil persiste em `usuario.foto_perfil`, também criada pelo setup completo.
 - Novos documentos de prontuário ficam em `var/private/documents/` e só abrem por rota autenticada. A leitura de caminhos legados em `uploads/documents/` foi mantida para migração.
 - Novas fotos de perfil ficam em `var/private/profiles/` e são entregues
   pela rota autenticada `profile.php?action=photo`.

@@ -371,6 +371,26 @@ class HttpSmokeTest extends TestCase {
         }
     }
 
+    public function testProntuarioAccessibleByIdAndCpf() {
+        $created = $this->createAcolhimentoFixture();
+        $client = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
+
+        // 1. Acesso com action=show, cpf e id (link gerado pelo modal de aniversariantes)
+        $showFull = $client->get('/prontuarios.php?action=show&cpf=' . urlencode($created['cpf']) . '&id=' . (int)$created['id']);
+        $this->assertSame(200, $showFull['status'], 'Prontuario deve abrir com action=show, cpf e id');
+        $this->assertTrue(strpos($showFull['body'], $created['nome_completo']) !== false, 'Prontuario deve exibir o nome do atendido');
+
+        // 2. Acesso apenas por ID (action=show&id=...)
+        $showById = $client->get('/prontuarios.php?action=show&id=' . (int)$created['id']);
+        $this->assertSame(200, $showById['status'], 'Prontuario deve abrir apenas com ID');
+        $this->assertTrue(strpos($showById['body'], $created['nome_completo']) !== false, 'Prontuario deve exibir o nome do atendido quando buscado por ID');
+
+        // 3. Acesso direto com query id (prontuarios.php?id=...)
+        $showDirect = $client->get('/prontuarios.php?id=' . (int)$created['id']);
+        $this->assertSame(200, $showDirect['status'], 'Prontuario deve abrir diretamente com prontuarios.php?id=...');
+        $this->assertTrue(strpos($showDirect['body'], $created['nome_completo']) !== false, 'Prontuario deve exibir o nome do atendido quando acessado com prontuarios.php?id=...');
+    }
+
     public function testSocioeconomicWizardPersistsAllStepsWithoutBrowserStorage() {
         $client = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
         $formPage = $client->get('/socioeconomico_form.php');
@@ -386,7 +406,7 @@ class HttpSmokeTest extends TestCase {
 
         $csrfToken = $this->extractCsrfToken($formPage['body']);
         $cpf = $this->fakeCpf();
-        $suffix = date('YmdHis') . '_' . bin2hex(random_bytes(3));
+        $suffix = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 10);
         $response = $client->post('/socioeconomico_form.php', [
             'csrf_token' => $csrfToken,
             'nome_entrevistado' => 'Entrevistado HTTP ' . $suffix,
@@ -461,10 +481,11 @@ class HttpSmokeTest extends TestCase {
 
         $csrfToken = $this->extractCsrfToken($formPage['body']);
         $suffix = date('YmdHis') . '_' . bin2hex(random_bytes(3));
+        $alphaSuffix = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 8);
         $cpf = $this->fakeCpf();
         $fields = [
             'csrf_token' => $csrfToken,
-            'nome_completo' => 'Crianca Foto HTTP ' . $suffix,
+            'nome_completo' => 'Crianca Foto HTTP ' . $alphaSuffix,
             'rg' => (string) random_int(10000000, 99999999),
             'cpf' => $cpf,
             'data_nascimento' => '10/05/2015',
@@ -543,6 +564,62 @@ class HttpSmokeTest extends TestCase {
                 $this->cleanupPrivateUpload($privatePath, 'children');
             }
         }
+    }
+
+    public function testNameAndEncaminhadoSecurityValidation() {
+        $client = $this->loginAs(self::ADMIN_EMAIL, self::ADMIN_PASSWORD);
+        $form = $client->get('/acolhimento_form.php');
+        $this->assertSame(200, $form['status'], 'Formulario de acolhimento deve abrir');
+        $this->assertTrue(strpos($form['body'], 'pattern="^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$"') !== false, 'Campo nome_completo deve conter pattern seguro');
+        $this->assertTrue(strpos($form['body'], 'pattern="^[A-Za-zÀ-ÖØ-öø-ÿ\s]*$"') !== false, 'Campo encaminha_por deve conter pattern seguro');
+
+        $csrfToken = $this->extractCsrfToken($form['body']);
+        $baseData = [
+            'csrf_token' => $csrfToken,
+            'nome_completo' => 'Crianca Teste Valida',
+            'rg' => (string) random_int(10000000, 99999999),
+            'cpf' => $this->fakeCpf(),
+            'data_nascimento' => '10/05/2015',
+            'data_acolhimento' => '01/06/2026',
+            'encaminha_por' => 'Conselho Tutelar',
+            'queixa_principal' => 'Teste validacao',
+            'endereco' => 'Rua Smoke',
+            'numero' => '123',
+            'cep' => '07000000',
+            'bairro' => 'Centro',
+            'cidade' => 'Guarulhos',
+            'estado' => 'SP',
+            'nome_responsavel' => 'Responsavel Teste',
+            'rg_responsavel' => (string) random_int(10000000, 99999999),
+            'cpf_responsavel' => $this->fakeCpf(),
+            'grau_parentesco' => 'Mae',
+            'contato_1' => '11999990000'
+        ];
+
+        // 1. Tentar enviar numeros em nome_completo
+        $invalidNum = $baseData;
+        $invalidNum['nome_completo'] = 'Crianca 123 Invalida';
+        $resNum = $client->post('/acolhimento_form.php', $invalidNum);
+        $this->assertSame(302, $resNum['status'], 'Backend deve rejeitar numeros em nome_completo');
+        $this->assertTrue(strpos((string)$resNum['location'], 'acolhimento_form.php') !== false, 'Deve redirecionar para o form em erro');
+
+        // 2. Tentar enviar emoji em nome_completo
+        $invalidEmoji = $baseData;
+        $invalidEmoji['nome_completo'] = 'Crianca 😊 Invalida';
+        $resEmoji = $client->post('/acolhimento_form.php', $invalidEmoji);
+        $this->assertSame(302, $resEmoji['status'], 'Backend deve rejeitar emojis em nome_completo');
+
+        // 3. Tentar enviar numeros em encaminha_por
+        $invalidEncNum = $baseData;
+        $invalidEncNum['encaminha_por'] = 'CRAS 123';
+        $resEncNum = $client->post('/acolhimento_form.php', $invalidEncNum);
+        $this->assertSame(302, $resEncNum['status'], 'Backend deve rejeitar numeros em encaminha_por');
+
+        // 4. Tentar enviar emoji em encaminha_por
+        $invalidEncEmoji = $baseData;
+        $invalidEncEmoji['encaminha_por'] = 'Conselho 🚀 Tutelar';
+        $resEncEmoji = $client->post('/acolhimento_form.php', $invalidEncEmoji);
+        $this->assertSame(302, $resEncEmoji['status'], 'Backend deve rejeitar emojis em encaminha_por');
     }
 
     private function newClient() {

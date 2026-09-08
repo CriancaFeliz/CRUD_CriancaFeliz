@@ -8,23 +8,24 @@ function safeDate($date) {
 $patients = $patients ?? [];
 ?>
 
-<div class="actions" style="display:flex; gap:12px; justify-content:space-between; align-items:center; margin-bottom:24px;">
+<div class="actions flex-between flex-wrap gap-2 mb-4">
     <div>
-        <a href="psychology.php" class="btn secondary" style="background:#6c757d; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">
-            ← Voltar ao Dashboard
+        <a href="psychology.php" class="btn secondary">
+            <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
         </a>
     </div>
     
-    <div style="display:flex; gap:12px; align-items:center;">
+    <div class="d-flex gap-2">
         <div class="search-box" style="position:relative;">
             <input type="text" 
                    id="patientSearch" 
+                   class="form-control"
                    placeholder="Buscar paciente..." 
-                   style="padding:10px 40px 10px 12px; border:2px solid #17a2b8; border-radius:8px; width:250px; font-family:Poppins;">
-            <div style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:#17a2b8; font-size:16px;">🔍</div>
+                   style="padding-left: 40px !important; min-width: 250px;">
+            <i class="fas fa-search text-muted" style="position:absolute; left:14px; top:50%; transform:translateY(-50%);"></i>
         </div>
         
-        <select id="ageFilter" style="padding:10px 12px; border:2px solid #17a2b8; border-radius:8px; font-family:Poppins;">
+        <select id="ageFilter" class="form-select">
             <option value="">Todas as idades</option>
             <option value="crianca">Crianças (0-11)</option>
             <option value="adolescente">Adolescentes (12-17)</option>
@@ -33,13 +34,13 @@ $patients = $patients ?? [];
     </div>
 </div>
 
-<div class="patients-grid" style="display:grid; gap:20px;">
+<div class="patients-grid">
 <?php if (empty($patients)): ?>
 
-    <div class="empty-state" style="text-align:center; padding:60px; background:#fff; border-radius:12px; color:#6c757d;">
-        <div style="font-size:64px; margin-bottom:20px;">👥</div>
-        <div style="font-size:24px; font-weight:600; margin-bottom:12px;">Nenhum paciente encontrado</div>
-        <div style="font-size:16px; line-height:1.5;">
+    <div class="empty-state text-center p-5 card-glass text-muted">
+        <div style="font-size: 48px; margin-bottom: 16px;"><i class="fas fa-users"></i></div>
+        <div style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">Nenhum paciente encontrado</div>
+        <div style="font-size: 15px; line-height: 1.5;">
             Os pacientes aparecerão aqui automaticamente quando<br>
             fichas de acolhimento forem cadastradas no sistema.
         </div>
@@ -47,16 +48,16 @@ $patients = $patients ?? [];
 
 <?php else: ?>
 
-    <div class="patients-table" style="background:#fff; border-radius:12px; overflow:hidden; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-        <table style="width:100%; border-collapse:collapse;" id="patientsTable">
+    <div class="patients-table table-responsive card-glass p-0">
+        <table style="width:100%; border-collapse:collapse; margin:0;" id="patientsTable">
             <thead>
-                <tr style="background:#f8f9fa;">
-                    <th style="padding:16px; text-align:left; font-weight:600; border-bottom:1px solid #dee2e6;">Paciente</th>
-                    <th style="padding:16px; text-align:left; font-weight:600; border-bottom:1px solid #dee2e6;">Idade</th>
-                    <th style="padding:16px; text-align:left; font-weight:600; border-bottom:1px solid #dee2e6;">Responsável</th>
-                    <th style="padding:16px; text-align:left; font-weight:600; border-bottom:1px solid #dee2e6;">Acolhimento</th>
-                    <th style="padding:16px; text-align:left; font-weight:600; border-bottom:1px solid #dee2e6;">Última Anotação</th>
-                    <th style="padding:16px; text-align:center; font-weight:600; border-bottom:1px solid #dee2e6; width:120px;">Ações</th>
+                <tr style="border-bottom: 2px solid var(--border-color); background: rgba(0,0,0,0.02);">
+                    <th style="padding:16px; text-align:left; font-weight:600; color:var(--text-muted) !important; font-size:13px; text-transform:uppercase;">Paciente</th>
+                    <th style="padding:16px; text-align:left; font-weight:600; color:var(--text-muted) !important; font-size:13px; text-transform:uppercase;">Idade</th>
+                    <th style="padding:16px; text-align:left; font-weight:600; color:var(--text-muted) !important; font-size:13px; text-transform:uppercase;">Responsável</th>
+                    <th style="padding:16px; text-align:left; font-weight:600; color:var(--text-muted) !important; font-size:13px; text-transform:uppercase;">Acolhimento</th>
+                    <th style="padding:16px; text-align:left; font-weight:600; color:var(--text-muted) !important; font-size:13px; text-transform:uppercase;">Última Anotação</th>
+                    <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted) !important; font-size:13px; text-transform:uppercase; width:120px;">Ações</th>
                 </tr>
             </thead>
             
@@ -69,16 +70,17 @@ $patients = $patients ?? [];
 
                     $dataNasc = safeDate($patient['data_nascimento'] ?? null);
                     $dataAcolh = safeDate($patient['data_acolhimento'] ?? null);
-
                     $lastNote = safeDate($patient['last_note'] ?? null);
-
                     $responsavel = (string)($patient['responsavel'] ?? 'Não informado');
+
+                    $cpfLimpo = preg_replace('/\D/', '', $patient['cpf'] ?? '');
+                    $cpfFormatado = (strlen($cpfLimpo) === 11) ? preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $cpfLimpo) : ($patient['cpf'] ?? '');
 
                     $avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
                 ?>
 
                 <tr class="patient-row"
-                    style="border-bottom:1px solid #f0f0f0;"
+                    style="border-bottom:1px solid var(--border-color); transition: background 0.2s;"
                     data-name="<?= e(mb_strtolower($nome, 'UTF-8')) ?>"
                     data-cpf="<?= e($cpf) ?>"
                     data-age-group="<?php 
@@ -89,19 +91,23 @@ $patients = $patients ?? [];
 
                     <!-- NOME + CPF -->
                     <td style="padding:16px;">
-                        <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="display:flex; align-items:center; gap:14px;">
                             
-                            <div class="avatar" 
-                                style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, #17a2b8, #20c997); display:flex; align-items:center; justify-content:center; font-weight:600; color:white; font-size:18px;">
-                                <?= e($avatar) ?>
-                            </div>
+                            <?php if (!empty($patient['foto'])): ?>
+                                <img src="acolhimento_view.php?action=photo&id=<?= $patient['id'] ?>" alt="<?= e($nome) ?>" style="width:42px; height:42px; border-radius:50%; object-fit:cover; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <?php else: ?>
+                                <div class="avatar-placeholder" 
+                                    style="width:42px; height:42px; border-radius:50%; background: linear-gradient(135deg, #0ea5e9, #20c997); display:flex; align-items:center; justify-content:center; font-weight:600; color:white; font-size:16px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                    <?= e($avatar) ?>
+                                </div>
+                            <?php endif; ?>
 
                             <div>
-                                <div style="font-weight:600; color:#212529; margin-bottom:2px;">
+                                <div style="font-weight:600; color:var(--text-primary); margin-bottom:4px;">
                                     <?= e($nome) ?>
                                 </div>
-                                <div style="font-size:12px; color:#6c757d; font-family:monospace;">
-                                    CPF: <?= e($cpf) ?>
+                                <div style="font-size:13px; color:var(--text-muted); font-family:monospace;">
+                                    <i class="fas fa-id-card" style="opacity: 0.7;"></i> <?= e($cpfFormatado) ?>
                                 </div>
                             </div>
                         </div>
@@ -109,28 +115,28 @@ $patients = $patients ?? [];
 
                     <!-- IDADE + NASCIMENTO -->
                     <td style="padding:16px;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-weight:600; font-size:18px; color:#17a2b8;">
+                        <div style="display:flex; align-items:baseline; gap:4px; margin-bottom: 4px;">
+                            <span style="font-weight:600; font-size:16px; color:var(--text-primary);">
                                 <?= $idade ?>
                             </span>
-                            <span style="font-size:12px; color:#6c757d;">anos</span>
+                            <span style="font-size:13px; color:var(--text-muted);">anos</span>
                         </div>
 
-                        <div style="font-size:11px; color:#6c757d; margin-top:2px;">
-                            <?= e($dataNasc) ?>
+                        <div style="font-size:12px; color:var(--text-muted);">
+                            <i class="fas fa-birthday-cake" style="opacity: 0.6; margin-right: 4px;"></i><?= e($dataNasc) ?>
                         </div>
                     </td>
 
                     <!-- RESPONSAVEL -->
                     <td style="padding:16px;">
-                        <div style="font-size:14px; color:#495057;">
+                        <div style="font-size:14px; <?= $responsavel === 'Não informado' ? 'color:var(--text-muted); opacity: 0.6; font-style: italic;' : 'color:var(--text-primary);' ?>">
                             <?= e($responsavel) ?>
                         </div>
                     </td>
 
                     <!-- ACOLHIMENTO -->
                     <td style="padding:16px;">
-                        <div style="font-size:14px; color:#6c757d;">
+                        <div style="font-size:14px; <?= $dataAcolh === '-' ? 'color:var(--text-muted); opacity: 0.6; font-style: italic;' : 'color:var(--text-muted);' ?>">
                             <?= e($dataAcolh) ?>
                         </div>
                     </td>
@@ -138,87 +144,61 @@ $patients = $patients ?? [];
                     <!-- ÚLTIMA ANOTAÇÃO -->
                     <td style="padding:16px;">
                         <?php if ($lastNote !== '-'): ?>
-                            <div style="font-size:14px; color:#28a745; font-weight:500;">
-                                <?= e($lastNote) ?>
+                            <div style="font-size:14px; color:var(--primary-blue); font-weight:500;">
+                                <i class="fas fa-clock" style="opacity: 0.7; margin-right: 4px;"></i> <?= e($lastNote) ?>
                             </div>
                         <?php else: ?>
-                            <span style="color:#dc3545; font-size:14px; font-weight:500;">Sem anotações</span>
+                            <span class="text-muted" style="font-size:13px; font-style: italic; opacity: 0.6;">Sem anotações</span>
                         <?php endif; ?>
                     </td>
 
                     <!-- AÇÕES -->
-                    <td style="padding:16px; text-align:center; white-space:nowrap;">
-                        <div style="display:flex; gap:8px; justify-content:center;">
-                        
-                            <a href="psychology.php?action=patient&amp;cpf=<?= rawurlencode($cpf) ?>"
-                                class="btn-action"
-                                style="background:#6c757d; color:#fff; padding:8px 12px; border-radius:6px; text-decoration:none; font-size:12px;">
-                                👤 Ver
-                            </a>
-
-                            <a href="psychology.php?action=patient&amp;cpf=<?= rawurlencode($cpf) ?>#new-note"
-                                class="btn-action"
-                                style="background:#17a2b8; color:white; padding:8px 12px; border-radius:6px; text-decoration:none; font-size:12px;">
-                                🧠 Atender
-                            </a>
-
-                        </div>
+                    <td style="padding:16px; text-align:center;">
+                        <a href="psychology.php?action=patient&cpf=<?= urlencode($cpf) ?>" class="btn primary" style="padding: 8px 16px; border-radius: 6px;">
+                            Abrir <i class="fas fa-chevron-right ml-1"></i>
+                        </a>
                     </td>
                 </tr>
 
                 <?php endforeach; ?>
-
             </tbody>
         </table>
     </div>
 
-    <div class="patients-summary" style="background:#f8f9fa; border-radius:12px; padding:20px; margin-top:20px; text-align:center;">
-        <div style="font-size:16px; color:#495057;">
-            <strong id="visibleCount"><?= count($patients) ?></strong> de <strong><?= count($patients) ?></strong> pacientes
-        </div>
-    </div>
-
 <?php endif; ?>
 </div>
+
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('patientSearch');
+    const ageFilter = document.getElementById('ageFilter');
+    const rows = document.querySelectorAll('.patient-row');
 
-    const searchInput = document.getElementById("patientSearch");
-    const ageFilter = document.getElementById("ageFilter");
-    const rows = document.querySelectorAll(".patient-row");
-    const counter = document.getElementById("visibleCount");
-
-    function applyFilters() {
-        const search = searchInput.value.trim().toLowerCase();
-        const age = ageFilter.value;
-
-        let visible = 0;
+    function filterPatients() {
+        const query = (searchInput.value || '').toLowerCase().trim();
+        const selectedAge = ageFilter.value;
 
         rows.forEach(row => {
-            const name = row.dataset.name.toLowerCase();
-            const cpf = row.dataset.cpf.toLowerCase();
-            const ageGroup = row.dataset.ageGroup;
+            const name = row.getAttribute('data-name');
+            const cpf = row.getAttribute('data-cpf');
+            const ageGroup = row.getAttribute('data-age-group');
 
-            let matchesSearch =
-                name.includes(search) ||
-                cpf.includes(search);
+            const matchSearch = !query || name.includes(query) || cpf.includes(query);
+            const matchAge = !selectedAge || ageGroup === selectedAge;
 
-            let matchesAge =
-                age === "" || ageGroup === age;
-
-            if (matchesSearch && matchesAge) {
-                row.style.display = "";
-                visible++;
+            if (matchSearch && matchAge) {
+                row.style.display = '';
             } else {
-                row.style.display = "none";
+                row.style.display = 'none';
             }
         });
-
-        counter.textContent = visible;
     }
 
-    searchInput.addEventListener("input", applyFilters);
-    ageFilter.addEventListener("change", applyFilters);
-
+    if (searchInput) {
+        searchInput.addEventListener('input', filterPatients);
+    }
+    if (ageFilter) {
+        ageFilter.addEventListener('change', filterPatients);
+    }
 });
 </script>

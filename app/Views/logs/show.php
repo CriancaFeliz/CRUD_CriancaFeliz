@@ -103,13 +103,30 @@ $hasComparison = (($log['valor_anterior'] ?? '') !== '') || (($log['valor_atual'
             </div>
 
             <div class="log-comparison-grid">
+                <?php
+                $valAnt = $maskedLog['valor_anterior'] ?? 'Sem valor anterior';
+                if (is_string($valAnt) && (strpos($valAnt, '{') === 0 || strpos($valAnt, '[') === 0)) {
+                    $json = json_decode($valAnt, true);
+                    if ($json !== null) {
+                        $valAnt = json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    }
+                }
+                
+                $valAtual = $maskedLog['valor_atual'] ?? 'Sem valor atual';
+                if (is_string($valAtual) && (strpos($valAtual, '{') === 0 || strpos($valAtual, '[') === 0)) {
+                    $json = json_decode($valAtual, true);
+                    if ($json !== null) {
+                        $valAtual = json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    }
+                }
+                ?>
                 <div class="log-comparison-item old">
                     <div class="log-comparison-label">Valor anterior</div>
-                    <pre><?php echo cfLogEsc($maskedLog['valor_anterior'] ?? 'Sem valor anterior'); ?></pre>
+                    <pre><?php echo cfLogEsc($valAnt); ?></pre>
                 </div>
                 <div class="log-comparison-item new">
                     <div class="log-comparison-label">Valor atual</div>
-                    <pre><?php echo cfLogEsc($maskedLog['valor_atual'] ?? 'Sem valor atual'); ?></pre>
+                    <pre><?php echo cfLogEsc($valAtual); ?></pre>
                 </div>
             </div>
         </div>

@@ -2,6 +2,54 @@
 $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
 ?>
 
+<style>
+    /* Clean Layout Override */
+    .section {
+        box-shadow: 0 2px 16px rgba(0,0,0,0.04) !important;
+        border: 1px solid #edf1f5 !important;
+    }
+    .section .field {
+        background: transparent !important;
+        padding: 10px 4px !important;
+        border-radius: 0 !important;
+        border-bottom: 1px solid #f1f4f7 !important;
+        transition: none !important;
+    }
+    /* Remover borda do último elemento para ficar limpo */
+    .fields-grid {
+        align-items: end !important;
+    }
+    .section .label {
+        font-size: 11px !important;
+        color: #8d98a0 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        margin-bottom: 4px !important;
+    }
+    .section .value {
+        font-size: 14px !important;
+        color: #2b343a !important;
+        font-weight: 500 !important;
+    }
+    .section h3 {
+        border-bottom: 1px solid #f1f4f7 !important;
+        color: #3e6475 !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        padding-bottom: 16px !important;
+        margin-bottom: 24px !important;
+    }
+    .section h3 i {
+        color: #3e6475 !important;
+        margin-right: 8px;
+    }
+    .photo-container img {
+        border: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    }
+</style>
+
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
     <a href="socioeconomico_list.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
     <?php if ($isAdmin): ?>
@@ -135,7 +183,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Renda e Benefícios -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">💰 Renda e Benefícios</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-money-bill-wave" style="color: #f0a36b;"></i> Renda e Benefícios</h3>
     
     <div class="fields-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -203,7 +251,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Habitação -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">🏠 Habitação</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-home" style="color: #f0a36b;"></i> Habitação</h3>
     
     <div class="fields-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -278,7 +326,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Status -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">📋 Status</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-clipboard-list" style="color: #f0a36b;"></i> Status</h3>
     
     <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
         <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Status da Ficha</div>

@@ -51,8 +51,6 @@ Pasta: `database/`
 | Arquivo | Função |
 | --- | --- |
 | `SETUP_COMPLETO_FINAL.sql` | Setup completo recomendado para ambiente novo. |
-| `migration.sql` | Schema alinhado ao setup, útil como referência ou migração base. |
-| `update_schema.sql` | Ajustes pontuais de schema e triggers. |
 | Dados históricos | Mantidos fora do Git e anonimizados antes de qualquer homologação. |
 
 Ponto de atenção: o código ainda usa nomes de tabelas com variação de caixa (`Atendido`, `atendido`, `Usuario`, `usuario`, etc.). Em servidores Linux com `lower_case_table_names=0`, valide o schema antes de produção.

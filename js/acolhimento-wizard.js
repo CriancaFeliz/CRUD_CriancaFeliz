@@ -133,6 +133,78 @@
                 .replace(/^(\d{2})(\d)/, '$1/$2')
                 .replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3'));
         });
+
+        // Restringir campos de nome: proibir números, emojis e caracteres especiais diretamente na digitação
+        form.querySelectorAll('input[name="nome_completo"], input[name="encaminha_por"]').forEach(restrictLettersOnly);
+    }
+
+    function restrictLettersOnly(input) {
+        if (!input) return;
+
+        // 1. Bloqueio instantâneo no teclado físico (keydown)
+        input.addEventListener('keydown', (event) => {
+            // Permitir atalhos (Ctrl/Alt/Meta), teclas de navegação e teclas de controle (Backspace, Tab, Setas, etc.)
+            if (event.ctrlKey || event.altKey || event.metaKey) return;
+            if (event.key && event.key.length > 1) return; // 'Backspace', 'Delete', 'ArrowLeft', 'Dead' (acentos), etc.
+
+            // Bloquear se não for letra (incluindo acentuadas e cedilha) ou espaço
+            if (!/^[\p{L}\s]$/u.test(event.key)) {
+                event.preventDefault();
+            }
+        });
+
+        // 2. Bloqueio antes da inserção (beforeinput - celulares, teclados virtuais, emojis)
+        input.addEventListener('beforeinput', (event) => {
+            if (!event.data) return;
+            // Bloqueia qualquer caractere que não seja letra ou espaço
+            if (/[^\p{L}\s]/u.test(event.data)) {
+                event.preventDefault();
+            }
+        });
+
+        // 3. Sanitização instantânea em caso de entrada por composição, preenchimento ou arrastar
+        input.addEventListener('input', () => {
+            const original = input.value;
+            const cleaned = original.replace(/[^\p{L}\s]/gu, '');
+            if (original !== cleaned) {
+                const start = input.selectionStart;
+                input.value = cleaned;
+                try {
+                    const diff = original.length - cleaned.length;
+                    input.setSelectionRange(Math.max(0, start - diff), Math.max(0, start - diff));
+                } catch (_) {}
+            }
+        });
+
+        // 4. Bloqueio no colar (paste): remove números, emojis e símbolos antes de colar
+        input.addEventListener('paste', (event) => {
+            event.preventDefault();
+            const clipboardData = event.clipboardData || window.clipboardData;
+            const text = clipboardData ? clipboardData.getData('text') : '';
+            const cleaned = text.replace(/[^\p{L}\s]/gu, '');
+            if (cleaned) {
+                const start = input.selectionStart || 0;
+                const end = input.selectionEnd || 0;
+                const val = input.value;
+                input.value = val.slice(0, start) + cleaned + val.slice(end);
+                const newPos = start + cleaned.length;
+                try {
+                    input.setSelectionRange(newPos, newPos);
+                } catch (_) {}
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+
+        // 5. Bloquear arrastar e soltar texto não filtrado
+        input.addEventListener('drop', (event) => {
+            event.preventDefault();
+            const text = event.dataTransfer ? event.dataTransfer.getData('text') : '';
+            const cleaned = text.replace(/[^\p{L}\s]/gu, '');
+            if (cleaned) {
+                input.value = cleaned;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
     }
 
     form.addEventListener('submit', (event) => {

@@ -19,7 +19,7 @@ $pagination = $pagination ?? ['current_page' => 1, 'last_page' => 1, 'total' => 
         </div>
     </div>
 
-    <div class="card-glass logs-table-card p-0 overflow-hidden">
+    <div class="card-glass logs-table-card table-responsive p-0">
         <table class="table-glass logs-table">
             <thead>
                 <tr>

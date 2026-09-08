@@ -1,150 +1,49 @@
 <!-- Alertas de Faltas -->
-<style>
-    .alert-header {
-        background: linear-gradient(135deg,#3E6475 0%,#348cb4 100%);
-        color: #fff;
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-    .alert-header h2 {
-        margin: 0;
-    }
-    .alerta-card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 15px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-left: 5px solid #ffc107;
-    }
-    .alerta-card.critico {
-        border-left-color: #dc3545;
-    }
-    .alerta-header-card {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    .alerta-nome {
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-    }
-    .badge-alerta {
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-    .badge-critico {
-        background: #dc3545;
-        color: #fff;
-    }
-    .badge-alerta-warn {
-        background:rgb(255, 217, 103);
-        color: #333;
-    }
-    .alerta-info {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        margin-top: 15px;
-    }
-    .info-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #666;
-        font-size: 14px;
-    }
-    .info-item i {
-        color:#3E6475;
-    }
-    .actions {
-        margin-top: 15px;
-        display: flex;
-        gap: 10px;
-    }
-    .btn-small {
-        padding: 8px 14px;
-        font-size: 14px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-    }
-    .btn-primary {
-        background: #348cb4;
-        color: #fff;
-    }
-    .btn-danger {
-        background: #dc3545;
-        color: #fff;
-    }
-    .btn-small:hover {
-        opacity: 0.9;
-    }
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        background: #fff;
-        border-radius: 12px;
-    }
-    .empty-state i {
-        font-size: 64px;
-        color: #28a745;
-        margin-bottom: 15px;
-    }
-</style>
-
-<div class="alert-header">
-    <h2><i class="fas fa-exclamation-triangle"></i> Alertas de Faltas</h2>
-    <p>Atendidos com 2 ou mais faltas não justificadas</p>
+<div class="alert-header card-glass mb-4" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(239, 68, 68, 0.85)); color: #fff; border: none; text-align: center; padding: 22px;">
+    <h2 class="m-0" style="color: #fff;"><i class="fas fa-exclamation-triangle"></i> Alertas de Faltas</h2>
+    <p class="m-0 mt-1 opacity-90">Atendidos com 2 ou mais faltas não justificadas</p>
 </div>
 
 <?php if (empty($atendidos)): ?>
-    <div class="empty-state">
-        <i class="fas fa-check-circle"></i>
-        <h3>Nenhum alerta!</h3>
-        <p>Não há atendidos com excesso de faltas no momento.</p>
+    <div class="empty-state card-glass text-center p-5">
+        <i class="fas fa-check-circle" style="font-size: 54px; color: var(--primary-green); margin-bottom: 12px; display: block;"></i>
+        <h3 class="m-0 mb-1" style="color: var(--text-primary); font-size: 20px;">Nenhum alerta!</h3>
+        <p class="text-muted m-0">Não há atendidos com excesso de faltas no momento.</p>
     </div>
 <?php else: ?>
     <?php foreach ($atendidos as $atendido): ?>
-        <div class="alerta-card <?php echo ($atendido['nivel_alerta'] === 'CRÍTICO') ? 'critico' : ''; ?>">
-            <div class="alerta-header-card">
-                <div class="alerta-nome">
-                    <i class="fas fa-user"></i> <?php echo htmlspecialchars($atendido['nome']); ?>
+        <?php $isCritico = ($atendido['nivel_alerta'] === 'CRÍTICO'); ?>
+        <div class="card-glass mb-3" style="border-left: 5px solid <?php echo $isCritico ? 'var(--error-border)' : 'var(--warning-border)'; ?>;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div style="font-size: 17px; font-weight: 700; color: var(--text-primary);">
+                    <i class="fas fa-user text-muted mr-1"></i> <?php echo htmlspecialchars($atendido['nome']); ?>
                 </div>
-                <span class="badge-alerta <?php echo ($atendido['nivel_alerta'] === 'CRÍTICO') ? 'badge-critico' : 'badge-alerta-warn'; ?>">
+                <span class="badge <?php echo $isCritico ? 'badge-danger' : 'badge-warning'; ?>">
                     <?php echo htmlspecialchars($atendido['nivel_alerta']); ?>
                 </span>
             </div>
             
-            <div class="alerta-info">
-                <div class="info-item">
-                    <i class="fas fa-id-card"></i>
+            <div class="d-flex flex-wrap gap-4 my-3 text-muted" style="font-size: 14px;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-id-card text-muted"></i>
                     <span><strong>CPF:</strong> <?php echo htmlspecialchars($atendido['cpf'] ?? 'N/A'); ?></span>
                 </div>
-                <div class="info-item">
-                    <i class="fas fa-times-circle"></i>
-                    <span><strong>Total de Faltas:</strong> <?php echo (int)($atendido['total_faltas'] ?? 0); ?></span>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-times-circle text-danger"></i>
+                    <span><strong>Total de Faltas:</strong> <strong style="color: var(--error-text);"><?php echo (int)($atendido['total_faltas'] ?? 0); ?></strong></span>
                 </div>
-                <div class="info-item">
-                    <i class="fas fa-calendar"></i>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-calendar text-muted"></i>
                     <span><strong>Última Falta:</strong> <?php echo date('d/m/Y', strtotime($atendido['ultima_falta'])); ?></span>
                 </div>
             </div>
             
-            <div class="actions">
-                <a href="faltas.php?action=historico&amp;id=<?php echo (int)($atendido['idatendido'] ?? 0); ?>" class="btn-small btn-primary">
+            <div class="d-flex gap-2 mt-3 pt-3" style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <a href="faltas.php?action=historico&amp;id=<?php echo (int)($atendido['idatendido'] ?? 0); ?>" class="btn secondary btn-sm">
                     <i class="fas fa-history"></i> Ver Histórico
                 </a>
-                <?php if ($atendido['nivel_alerta'] === 'CRÍTICO'): ?>
-                    <a href="desligamento.php?action=novo&amp;id=<?php echo (int)($atendido['idatendido'] ?? 0); ?>" class="btn-small btn-danger">
+                <?php if ($isCritico): ?>
+                    <a href="desligamento.php?action=novo&amp;id=<?php echo (int)($atendido['idatendido'] ?? 0); ?>" class="btn danger btn-sm">
                         <i class="fas fa-user-times"></i> Desligar
                     </a>
                 <?php endif; ?>

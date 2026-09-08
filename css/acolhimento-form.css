@@ -571,3 +571,221 @@
         flex-basis: 100%;
     }
 }
+
+/* =====================================================
+   PHOTO & CARIMBO UPLOAD COMPONENT (Profissional & Direto)
+   Suporte Completo Modo Claro & Modo Escuro
+   ===================================================== */
+.cf-photo-upload-container,
+.cf-photo-upload-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+[data-theme="dark"] .cf-photo-upload-container,
+[data-theme="dark"] .cf-photo-upload-card,
+body.dark-theme .cf-photo-upload-container,
+body.dark-theme .cf-photo-upload-card {
+    background: #142229 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Moldura 3x4 (Proporção 3:4 limpa) */
+.cf-photo-frame {
+    width: 75px;
+    height: 100px;
+    min-width: 75px;
+    max-width: 75px;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s ease;
+}
+
+/* Moldura Carimbo (Paisagem) */
+.cf-carimbo-frame {
+    width: 130px;
+    height: 65px;
+    min-width: 130px;
+    max-width: 130px;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s ease;
+}
+
+[data-theme="dark"] .cf-photo-frame,
+[data-theme="dark"] .cf-carimbo-frame,
+body.dark-theme .cf-photo-frame,
+body.dark-theme .cf-carimbo-frame {
+    background: #0d171c !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.cf-photo-frame:hover,
+.cf-carimbo-frame:hover {
+    border-color: #ef7417;
+}
+
+/* Imagens */
+.cf-photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.cf-carimbo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 4px;
+    display: block;
+}
+
+/* Placeholders */
+.cf-photo-placeholder,
+.cf-carimbo-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+}
+
+.cf-placeholder-icon {
+    font-size: 26px;
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .cf-placeholder-icon,
+body.dark-theme .cf-placeholder-icon {
+    color: #475569 !important;
+}
+
+/* Ações e Controles */
+.cf-photo-actions,
+.cf-photo-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.btn-select-photo {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #f8fafc;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.btn-select-photo:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #0f172a !important;
+}
+
+[data-theme="dark"] .btn-select-photo,
+body.dark-theme .btn-select-photo {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .btn-select-photo:hover,
+body.dark-theme .btn-select-photo:hover {
+    background: #334155 !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.cf-photo-filename,
+.cf-photo-status {
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .cf-photo-filename,
+[data-theme="dark"] .cf-photo-status,
+body.dark-theme .cf-photo-filename,
+body.dark-theme .cf-photo-status {
+    color: #cbd5e1 !important;
+}
+
+.btn-remove-photo {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    color: #dc2626 !important;
+    border: 1px solid #fca5a5;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-photo:hover {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+
+[data-theme="dark"] .btn-remove-photo,
+body.dark-theme .btn-remove-photo {
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    color: #f87171 !important;
+}
+
+[data-theme="dark"] .btn-remove-photo:hover,
+body.dark-theme .btn-remove-photo:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.cf-hidden-file-input {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+@media (max-width: 600px) {
+    .cf-photo-upload-container,
+    .cf-photo-upload-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

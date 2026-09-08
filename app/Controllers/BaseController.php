@@ -167,7 +167,15 @@ class BaseController {
      * Verifica permissão específica
      */
     protected function requirePermission($permission) {
-        $this->authService->requirePermission($permission);
+        try {
+            $this->authService->requirePermission($permission);
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                throw $e;
+            }
+
+            $this->redirectWithError('dashboard.php', 'Acesso negado.', false);
+        }
     }
     
     /**

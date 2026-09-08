@@ -18,7 +18,7 @@ Tabelas e dumps legados devem permanecer apenas como referência histórica ou c
 
 | Item | Ação |
 | --- | --- |
-| `presenca`, `sessao`, `frequencia` | Já removidas por `update_schema.sql` quando existirem |
+| `presenca`, `sessao`, `frequencia` | Avaliar somente em um plano de migração específico; o setup novo preserva compatibilidade onde necessário |
 | Variações de caixa de `Atendido`/`atendido` | Resolver no plano de normalização do banco |
 | Variações de caixa de `Usuario`/`usuario` | Resolver no plano de normalização do banco |
 | Views ou aliases temporários | Usar apenas durante migração controlada |

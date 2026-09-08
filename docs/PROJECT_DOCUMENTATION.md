@@ -326,8 +326,7 @@ CSS:
 Arquivos principais:
 
 - `database/SETUP_COMPLETO_FINAL.sql`: setup completo com tabelas, índices, foreign keys, triggers/procedures e dados iniciais.
-- `database/migration.sql`: schema alinhado ao setup, útil como referência de estrutura.
-- `database/update_schema.sql`: migração pontual para remover estruturas obsoletas e recriar triggers.
+- `database/SETUP_COMPLETO_FINAL.sql`: fonte única de schema para uma instalação nova.
 - Dumps históricos: mantidos fora do Git; homologação usa apenas dados anonimizados.
 - `docker/mysql/01-init.sh`: importação do setup completo no container MySQL.
 
@@ -349,7 +348,7 @@ Tabelas relevantes:
 
 Ponto de atenção: há mistura de caixa alta/baixa entre scripts e código. Em ambientes Linux com `lower_case_table_names=0`, isso pode causar falhas. Antes de produção, normalize os nomes ou valide a configuração do MySQL/MariaDB.
 
-O setup atual cria `anotacao_psicologica` com chaves estrangeiras para `atendido` e `usuario`. Em bancos existentes, `database/update_schema.sql` oficializa a tabela.
+O setup atual cria `anotacao_psicologica` com chaves estrangeiras para `atendido` e `usuario`. Bases existentes exigem plano de migração próprio; não importe o setup completo sobre dados reais.
 
 No ambiente Docker, o serviço MySQL é iniciado com `lower_case_table_names=1` para reduzir problemas locais causados por variação de maiúsculas/minúsculas. Isso não elimina a pendência de normalizar o schema antes de produção Linux.
 

@@ -476,19 +476,55 @@ class Socioeconomico extends BaseModel {
     }
     
     /**
-     * Listar todas as fichas
+     * Listar todas as fichas com suporte a filtros de busca
      */
-    public function listFichas($page = 1, $perPage = 10) {
+    public function listFichas($page = 1, $perPage = 10, $filters = []) {
         $offset = ($page - 1) * $perPage;
         
-        // Contar total
+        $conditions = [];
+        $params = [];
+        $countParams = [];
+
+        $q = trim($filters['q'] ?? '');
+        $cpf = trim($filters['cpf'] ?? '');
+
+        if ($q !== '') {
+            $conditions[] = "(a.nome LIKE ? OR f.nome_menor LIKE ?)";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+            $countParams[] = "%$q%";
+            $countParams[] = "%$q%";
+        }
+
+        if ($cpf !== '') {
+            $cpfDigits = preg_replace('/\D+/', '', $cpf);
+            if ($cpfDigits !== '') {
+                $conditions[] = "(REPLACE(REPLACE(REPLACE(a.cpf, '.', ''), '-', ''), '/', '') LIKE ? OR a.cpf LIKE ?)";
+                $params[] = "%$cpfDigits%";
+                $params[] = "%$cpf%";
+                $countParams[] = "%$cpfDigits%";
+                $countParams[] = "%$cpf%";
+            } else {
+                $conditions[] = "a.cpf LIKE ?";
+                $params[] = "%$cpf%";
+                $countParams[] = "%$cpf%";
+            }
+        }
+
+        $whereSql = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
+
+        // Contar total respeitando filtros
         $countStmt = $this->query("
             SELECT COUNT(*) as total 
             FROM atendido a
             INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
-        ");
+            $whereSql
+        ", $countParams);
         $countResult = $countStmt->fetch();
+        $total = (int)($countResult['total'] ?? 0);
         
+        $queryParams = array_merge($params, [$perPage, $offset]);
+
         // Try to select with all benefit columns, fallback gracefully if columns don't exist
         try {
             $stmt = $this->query("
@@ -514,9 +550,10 @@ class Socioeconomico extends BaseModel {
                     COALESCE(f.aposentadoria, 0) as aposentadoria
                 FROM atendido a
                 INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+                $whereSql
                 ORDER BY a.data_cadastro DESC
                 LIMIT ? OFFSET ?
-            ", [$perPage, $offset]);
+            ", $queryParams);
         } catch (Exception $e) {
             // Fallback: Select only columns that definitely exist
             reportException($e, 'Socioeconomico::listFichasFallback');
@@ -535,9 +572,10 @@ class Socioeconomico extends BaseModel {
                     f.qtd_pessoas
                 FROM atendido a
                 INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+                $whereSql
                 ORDER BY a.data_cadastro DESC
                 LIMIT ? OFFSET ?
-            ", [$perPage, $offset]);
+            ", $queryParams);
         }
         
         $fichas = $stmt->fetchAll();
@@ -565,25 +603,16 @@ class Socioeconomico extends BaseModel {
             }
         }
         
-        // Contar total
-        $stmt = $this->query("
-            SELECT COUNT(*) as total 
-            FROM atendido a
-            INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
-        ");
-        $result = $stmt->fetch();
-        $total = $result['total'];
-        
         return [
             'data' => $fichas,
             'total' => $total,
             'current_page' => $page,
-            'last_page' => ceil($total / $perPage),
+            'last_page' => max(1, (int)ceil($total / $perPage)),
             'per_page' => $perPage,
             // Compatibilidade
             'page' => $page,
             'perPage' => $perPage,
-            'totalPages' => ceil($total / $perPage)
+            'totalPages' => max(1, (int)ceil($total / $perPage))
         ];
     }
     
@@ -875,7 +904,39 @@ class Socioeconomico extends BaseModel {
     /**
      * Busca avançada
      */
-    public function searchAdvanced($query) {
+    public function searchAdvanced($query, $filters = []) {
+        $conditions = [];
+        $params = [];
+        
+        $query = trim($query);
+        $cpf = trim($filters['cpf'] ?? '');
+
+        if ($query !== '') {
+            $conditions[] = "(a.nome LIKE ? OR f.nome_menor LIKE ? OR a.cpf LIKE ? OR a.rg LIKE ?)";
+            $params[] = "%$query%";
+            $params[] = "%$query%";
+            $params[] = "%$query%";
+            $params[] = "%$query%";
+        }
+
+        if ($cpf !== '') {
+            $cpfDigits = preg_replace('/\D+/', '', $cpf);
+            if ($cpfDigits !== '') {
+                $conditions[] = "(REPLACE(REPLACE(REPLACE(a.cpf, '.', ''), '-', ''), '/', '') LIKE ? OR a.cpf LIKE ?)";
+                $params[] = "%$cpfDigits%";
+                $params[] = "%$cpf%";
+            } else {
+                $conditions[] = "a.cpf LIKE ?";
+                $params[] = "%$cpf%";
+            }
+        }
+
+        if (empty($conditions)) {
+            return [];
+        }
+
+        $whereSql = " WHERE " . implode(" AND ", $conditions);
+
         $stmt = $this->query("
             SELECT 
                 a.idatendido as id,
@@ -891,13 +952,10 @@ class Socioeconomico extends BaseModel {
                 f.qtd_pessoas as numero_membros
             FROM atendido a
             INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
-            WHERE 
-                a.nome LIKE ? OR
-                a.cpf LIKE ? OR
-                a.rg LIKE ?
+            $whereSql
             ORDER BY a.data_cadastro DESC
             LIMIT 100
-        ", ["%$query%", "%$query%", "%$query%"]);
+        ", $params);
         
         $results = $stmt->fetchAll();
         

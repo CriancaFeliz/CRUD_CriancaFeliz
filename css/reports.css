@@ -106,8 +106,8 @@
     border-bottom: 1px solid var(--border-color, #edf0f2);
 }
 
-.report-table th {
-    position: sticky; top: 0; color: #335f70; background: #edf5f6;
+.reports-page .report-table th {
+    position: sticky; top: 0; color: #335f70 !important; background: #edf5f6 !important;
     font-size: 11px; text-transform: uppercase; letter-spacing: .035em;
 }
 
@@ -162,4 +162,102 @@
     .report-table { min-width: 0; font-size: 8px; }
     .report-table th, .report-table td { padding: 5px 6px; }
     .report-table th { position: static; }
+}
+
+/* =====================================================
+   CENTRAL DE RELATÓRIOS — TEMA ESCURO
+   ===================================================== */
+[data-theme="dark"] .report-hero {
+    background: linear-gradient(135deg, #182a32 0%, #1e3844 60%, #13242c 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .report-privacy-badge {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .report-filter label {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .report-filter input,
+[data-theme="dark"] .report-filter select {
+    background: #0e171c;
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .report-document {
+    background: #111d23;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .report-document-header {
+    background: #182a32;
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .report-document-intro h2 {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .report-document-intro p {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .report-summary-card {
+    background: #182a32;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .report-summary-card span {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .report-summary-card strong {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .report-note {
+    background: rgba(56, 189, 248, 0.14);
+    color: #38bdf8;
+}
+
+[data-theme="dark"] .report-warning {
+    background: rgba(245, 158, 11, 0.14);
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .report-table-wrap {
+    border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .report-table {
+    background: #111d23;
+}
+
+[data-theme="dark"] .report-table th {
+    background: #182a32 !important;
+    color: #f8fafc !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .report-table td {
+    background: #111d23 !important;
+    color: #e2e8f0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .report-table tbody tr:hover td {
+    background: #192c36 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .report-document-footer {
+    background: #182a32;
+    color: #94a3b8;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }

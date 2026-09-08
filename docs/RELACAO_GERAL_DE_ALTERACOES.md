@@ -84,8 +84,7 @@ O setup principal fica em:
 
 Arquivos auxiliares:
 
-- `database/migration.sql`
-- `database/update_schema.sql`
+- `database/SETUP_COMPLETO_FINAL.sql` como fonte única para instalação nova.
 - Dumps históricos fora do Git, com dados anonimizados para homologação.
 - `docker/mysql/01-init.sh`
 
@@ -102,8 +101,8 @@ Melhorias realizadas ou documentadas:
 Pontos ainda pendentes:
 
 - normalizar nomes de tabela em maiúsculas/minúsculas para evitar falhas em Linux;
-- alinhar completamente `SETUP_COMPLETO_FINAL.sql`, `migration.sql` e `update_schema.sql`;
-- manter `anotacao_psicologica` alinhada entre setup completo, migração e ambientes existentes;
+- manter `SETUP_COMPLETO_FINAL.sql` como fonte única do schema de instalações novas;
+- definir migração específica apenas se uma base existente precisar ser aproveitada;
 - decidir se tabelas legadas como `sessao` e `presenca` serão preservadas ou removidas do setup final.
 
 ## 5. Segurança

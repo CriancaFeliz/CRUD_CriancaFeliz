@@ -1,7 +1,11 @@
+<?php
+    $mesesPt = [1 => 'Janeiro', 2 => 'Fevereiro', 3 => 'Março', 4 => 'Abril', 5 => 'Maio', 6 => 'Junho', 7 => 'Julho', 8 => 'Agosto', 9 => 'Setembro', 10 => 'Outubro', 11 => 'Novembro', 12 => 'Dezembro'];
+    $currentMonthLabel = ($mesesPt[(int)date('n')] ?? date('F')) . ', ' . date('Y');
+?>
 <section class="grid dashboard-grid">
     <div class="card-glass calendar">
         <div class="calendar-header-wrapper">
-            <div style="font-weight:700; font-size:18px;" id="currentMonth">Setembro, 2025</div>
+            <div style="font-weight:700; font-size:18px;" id="currentMonth"><?php echo e($currentMonthLabel); ?></div>
             <div class="calendar-btn-group">
                 <button onclick="changeMonth(-1)" class="calendar-btn">‹</button>
                 <button onclick="changeMonth(1)" class="calendar-btn">›</button>
@@ -18,33 +22,126 @@
         </div>
     </div>
     
-    <div class="card-glass list">
-        <div style="font-weight:700">Alertas Prioritários</div>
-        <?php if (!empty($alertas)): ?>
-            <?php foreach ($alertas as $alerta): ?>
-                <?php
-                    $alertType = in_array(($alerta['tipo'] ?? ''), ['success', 'warning', 'error', 'info'], true)
-                        ? $alerta['tipo']
-                        : 'info';
-                    $alertLink = ($alerta['link'] ?? '') === 'desligamento.php' ? 'desligamento.php' : '';
-                ?>
-                <?php if ($alertLink): ?>
-                    <a href="<?php echo e($alertLink); ?>" style="text-decoration: none; color: inherit;">
-                        <div class="pill <?php echo e($alertType); ?>">
-                            <?php echo e($alerta['icone'] ?? ''); ?> <?php echo e($alerta['mensagem'] ?? ''); ?>
-                        </div>
-                    </a>
-                <?php else: ?>
-                    <div class="pill <?php echo e($alertType); ?>">
-                        <?php echo e($alerta['icone'] ?? ''); ?> <?php echo e($alerta['mensagem'] ?? ''); ?>
+    <div class="card-glass list alerts-card">
+        <?php
+            $totalAlertas = count($alertas ?? []);
+            $hasCritical = false;
+            $hasWarning = false;
+            foreach (($alertas ?? []) as $a) {
+                $t = $a['tipo'] ?? '';
+                if ($t === 'error') {
+                    $hasCritical = true;
+                } elseif ($t === 'warning') {
+                    $hasWarning = true;
+                }
+            }
+            $badgeClass = $hasCritical ? 'badge-danger' : ($hasWarning ? 'badge-warning' : 'badge-success');
+        ?>
+        <div class="alerts-card-header">
+            <div class="alerts-header-flex">
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="font-weight:700; font-size:16px;">Alertas Prioritários</div>
+                        <span class="alerts-badge <?php echo $badgeClass; ?>" id="alertsCountBadge">
+                            <?php echo $totalAlertas; ?>
+                        </span>
                     </div>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <div class="pill green">
-                ✅ Nenhum alerta no momento
+                    <div class="alerts-subtitle">Ações recomendadas e rotinas pendentes</div>
+                </div>
+                <button type="button" id="btnRestoreAlerts" class="btn-restore-alerts" onclick="restoreAllAlerts()" style="display:none;" title="Voltar todos os alertas que você ocultou">
+                    <i class="fas fa-undo-alt"></i> <span>Restaurar (<span id="hiddenAlertsCount">0</span>)</span>
+                </button>
             </div>
-        <?php endif; ?>
+        </div>
+
+        <div class="alerts-list-container">
+            <?php if (!empty($alertas)): ?>
+                <div id="alertsPillsList" class="alerts-pills-stack">
+                    <?php foreach ($alertas as $alerta): ?>
+                        <?php
+                            $alertId = $alerta['id'] ?? '';
+                            $alertType = in_array(($alerta['tipo'] ?? ''), ['success', 'warning', 'error', 'info'], true)
+                                ? $alerta['tipo']
+                                : 'info';
+                            
+                            $isBirthdayModal = (($alerta['action'] ?? '') === 'open_birthday_modal');
+                            
+                            $rawLink = $alerta['link'] ?? '';
+                            $allowedPrefixes = ['desligamento.php', 'faltas.php', 'socioeconomico.php', 'acolhimento.php', 'psychology.php', 'prontuarios.php'];
+                            $alertLink = '';
+                            foreach ($allowedPrefixes as $prefix) {
+                                if (strpos($rawLink, $prefix) === 0) {
+                                    $alertLink = $rawLink;
+                                    break;
+                                }
+                            }
+                            
+                            $iconClass = !empty($alerta['icone']) ? $alerta['icone'] : 'fa-info-circle';
+                        ?>
+                        <div class="alert-item-wrapper" data-alert-id="<?php echo e($alertId); ?>">
+                            <?php if ($isBirthdayModal): ?>
+                                <div class="pill-link pill-birthday-trigger" onclick="openBirthdayModal(event)" role="button" tabindex="0" title="Clique para ver os aniversariantes do mês">
+                                    <div class="pill <?php echo e($alertType); ?>">
+                                        <div class="pill-content">
+                                            <i class="fas <?php echo e($iconClass); ?>"></i>
+                                            <span><?php echo e($alerta['mensagem'] ?? ''); ?></span>
+                                        </div>
+                                        <div class="pill-actions-group">
+                                            <span class="pill-open-btn">
+                                                <i class="fas fa-users"></i> <span>Ver lista</span> <i class="fas fa-chevron-right"></i>
+                                            </span>
+                                            <button type="button" class="pill-dismiss-btn" onclick="dismissAlert(event, '<?php echo e($alertId); ?>')" title="Ocultar este alerta para você" aria-label="Ocultar alerta">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php elseif ($alertLink): ?>
+                                <a href="<?php echo e($alertLink); ?>" class="pill-link" title="Clique para gerenciar esta pendência">
+                                    <div class="pill <?php echo e($alertType); ?>">
+                                        <div class="pill-content">
+                                            <i class="fas <?php echo e($iconClass); ?>"></i>
+                                            <span><?php echo e($alerta['mensagem'] ?? ''); ?></span>
+                                        </div>
+                                        <div class="pill-actions-group">
+                                            <i class="fas fa-chevron-right pill-arrow"></i>
+                                            <button type="button" class="pill-dismiss-btn" onclick="dismissAlert(event, '<?php echo e($alertId); ?>')" title="Ocultar este alerta para você" aria-label="Ocultar alerta">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </a>
+                            <?php else: ?>
+                                <div class="pill <?php echo e($alertType); ?>">
+                                    <div class="pill-content">
+                                        <i class="fas <?php echo e($iconClass); ?>"></i>
+                                        <span><?php echo e($alerta['mensagem'] ?? ''); ?></span>
+                                    </div>
+                                    <div class="pill-actions-group">
+                                        <button type="button" class="pill-dismiss-btn" onclick="dismissAlert(event, '<?php echo e($alertId); ?>')" title="Ocultar este alerta para você" aria-label="Ocultar alerta">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div id="alertsAllDismissed" class="alerts-dismissed-box" style="display:none;">
+                    <div class="alerts-dismissed-text">Alertas ocultados para o seu usuário.</div>
+                    <button type="button" class="btn-restore-inline" onclick="restoreAllAlerts()" title="Restaurar alertas na sua visualização">
+                        <i class="fas fa-undo-alt"></i> Restaurar
+                    </button>
+                </div>
+            <?php else: ?>
+                <div class="alerts-empty-card">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="empty-title">Tudo em dia!</div>
+                    <div class="empty-desc">Nenhum alerta prioritário pendente. Todas as rotinas e fichas estão regulares.</div>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
     
     <div class="stats dashboard-stats">
@@ -77,7 +174,7 @@
                             <div class="note-date"><?php echo e($anotacao['formatted_date'] ?? ''); ?></div>
                             <div class="note-text"><?php echo e($anotacao['note'] ?? ''); ?></div>
                         </div>
-                        <button onclick="deleteNote(<?php echo (int)($anotacao['id'] ?? 0); ?>)" class="delete-note-btn" title="Excluir anotação">&times;</button>
+                        <button onclick="deleteNote(<?php echo (int)($anotacao['id'] ?? 0); ?>)" class="delete-note-btn" title="Excluir anotação"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -91,7 +188,7 @@
         <div id="avisosList">
             <?php if (!empty($anotacoes['avisos'])): ?>
                 <?php foreach ($anotacoes['avisos'] as $aviso): ?>
-                    <div class="note-card-glass">
+                    <div class="note-card-glass aviso">
                         <div class="note-badge green-badge">
                             <?php echo date('d', strtotime($aviso['date'])); ?>
                         </div>
@@ -99,7 +196,7 @@
                             <div class="note-date"><?php echo e($aviso['formatted_date'] ?? ''); ?></div>
                             <div class="note-text"><?php echo e($aviso['note'] ?? ''); ?></div>
                         </div>
-                        <button onclick="deleteNote(<?php echo (int)($aviso['id'] ?? 0); ?>)" class="delete-note-btn" title="Excluir aviso">&times;</button>
+                        <button onclick="deleteNote(<?php echo (int)($aviso['id'] ?? 0); ?>)" class="delete-note-btn" title="Excluir aviso"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -110,37 +207,137 @@
 </section>
 
 <!-- Modal para escolher tipo de anotação -->
-<div id="typeModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
-    <div class="modal-content" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:24px; border-radius:12px; width:400px; max-width:90vw;">
-        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+<div id="typeModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
             <h3>Escolha o tipo</h3>
-            <button class="modal-close" onclick="closeTypeModal()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+            <button class="modal-close" onclick="closeTypeModal()" aria-label="Fechar">&times;</button>
         </div>
-        <div style="display:flex; gap:12px; flex-direction:column;">
-            <button onclick="openNoteModal('anotacao')" style="background:#ff7a00; color:white; border:none; padding:15px 20px; border-radius:8px; cursor:pointer; font-size:16px; font-weight:600; transition:all 0.2s;">
-                📝 Anotação (Laranja)
+        <div class="d-flex flex-column gap-3">
+            <button onclick="openNoteModal('anotacao')" class="modal-choice-btn orange">
+                <i class="fas fa-edit"></i> Anotação (Laranja)
             </button>
-            <button onclick="openNoteModal('aviso')" style="background:#6fb64f; color:white; border:none; padding:15px 20px; border-radius:8px; cursor:pointer; font-size:16px; font-weight:600; transition:all 0.2s;">
-                ⚠️ Aviso (Verde)
+            <button onclick="openNoteModal('aviso')" class="modal-choice-btn green">
+                <i class="fas fa-exclamation-triangle"></i> Aviso (Verde)
             </button>
         </div>
     </div>
 </div>
 
 <!-- Modal para adicionar/editar anotações -->
-<div id="noteModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1001;">
-    <div class="modal-content" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:24px; border-radius:12px; width:400px; max-width:90vw;">
-        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+<div id="noteModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
             <h3 id="modalTitle">Adicionar Anotação</h3>
-            <button class="modal-close" onclick="closeModal()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+            <button class="modal-close" onclick="closeModal()" aria-label="Fechar">&times;</button>
         </div>
-        <div>
-            <label for="noteText"><span id="noteTypeLabel">Anotação</span> para <span id="selectedDate"></span>:</label>
-            <textarea id="noteText" class="note-textarea" placeholder="Digite aqui..." style="width:100%; height:100px; border:2px solid #f0a36b; border-radius:8px; padding:12px; resize:vertical; font-family:Poppins;"></textarea>
+        <div class="form-group">
+            <label for="noteText" class="form-label-bold"><span id="noteTypeLabel">Anotação</span> para <span id="selectedDate"></span>:</label>
+            <textarea id="noteText" class="form-control" placeholder="Digite sua anotação ou aviso aqui..."></textarea>
         </div>
-        <div class="modal-buttons" style="display:flex; gap:12px; justify-content:flex-end; margin-top:16px;">
-            <button class="btn-cancel" onclick="closeModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer;">Cancelar</button>
-            <button class="btn-save" onclick="saveNote()" style="background:#6fb64f; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer;">Salvar</button>
+        <div class="modal-buttons">
+            <button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button>
+            <button type="button" class="btn success" onclick="saveNote()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Moderno de Confirmação de Exclusão -->
+<div id="deleteConfirmModal" class="modal-confirm-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+    <div class="modal-confirm-dialog">
+        <img src="img/logo.png" class="modal-confirm-logo" alt="Criança Feliz">
+        <h3 id="deleteModalTitle" class="modal-confirm-title">Confirmar Exclusão</h3>
+        <p class="modal-confirm-desc">Tem certeza de que deseja excluir este item do calendário?</p>
+        <p class="modal-confirm-subtext">Esta ação não poderá ser desfeita.</p>
+        <div class="modal-confirm-btn-group">
+            <button type="button" class="btn-confirm-cancel" onclick="closeDeleteModal()">Cancelar</button>
+            <button type="button" class="btn-confirm-delete" onclick="confirmDeleteNote()">
+                <i class="fas fa-trash-alt"></i> Sim, Excluir
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Padronizado de Aniversariantes do Mês -->
+<div id="birthdayModal" class="modal-confirm-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="birthdayModalTitle">
+    <div class="modal-birthday-dialog">
+        <button type="button" class="modal-corner-close" onclick="closeBirthdayModal()" aria-label="Fechar modal">&times;</button>
+        
+        <div class="modal-birthday-header">
+            <div class="d-flex align-items-center gap-3">
+                <img src="img/logo.png" class="modal-birthday-logo" alt="Criança Feliz">
+                <div>
+                    <h3 id="birthdayModalTitle" class="modal-birthday-title">
+                        <i class="fas fa-calendar-alt"></i> Aniversariantes de <?php echo e($mesesPt[(int)date('n')] ?? date('F')); ?>
+                    </h3>
+                    <p class="modal-birthday-desc">
+                        <?php $totalAniv = count($aniversariantesDetalhes ?? []); ?>
+                        <?php echo $totalAniv > 0 ? "<strong>{$totalAniv}</strong> atendido(s) comemoram aniversário neste mês." : "Nenhum atendido comemora aniversário neste mês."; ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="birthday-list-container">
+            <?php if (!empty($aniversariantesDetalhes)): ?>
+                <?php foreach ($aniversariantesDetalhes as $person): ?>
+                    <div class="birthday-person-card <?php echo !empty($person['is_hoje']) ? 'is-today' : ''; ?>">
+                        <div class="birthday-person-left">
+                            <div class="birthday-date-badge <?php echo !empty($person['is_hoje']) ? 'today-badge' : ''; ?>">
+                                <span class="badge-day"><?php echo e($person['dia_formatado']); ?></span>
+                                <span class="badge-month"><?php echo strtoupper(substr($mesesPt[(int)date('n')] ?? '', 0, 3)); ?></span>
+                            </div>
+                            
+                            <div class="birthday-avatar-col">
+                                <?php if (!empty($person['foto'])): ?>
+                                    <img src="<?php echo e($person['foto']); ?>" alt="<?php echo e($person['nome']); ?>" class="birthday-avatar-img">
+                                <?php else: ?>
+                                    <div class="birthday-avatar-initials">
+                                        <?php
+                                            $initials = '';
+                                            $nameParts = explode(' ', trim($person['nome']));
+                                            if (count($nameParts) > 0) $initials .= mb_substr($nameParts[0], 0, 1);
+                                            if (count($nameParts) > 1) $initials .= mb_substr($nameParts[count($nameParts)-1], 0, 1);
+                                            echo strtoupper($initials ?: 'CF');
+                                        ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <div class="birthday-info-col">
+                                <div class="birthday-person-name">
+                                    <span><?php echo e($person['nome']); ?></span>
+                                    <?php if (!empty($person['is_hoje'])): ?>
+                                        <span class="today-tag-clean">Hoje</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="birthday-person-sub">
+                                    <span><?php echo (int)$person['idade_completando']; ?> anos</span>
+                                    <span class="sub-sep">•</span>
+                                    <span>Nascimento: <?php echo e($person['data_nascimento']); ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="birthday-action-col">
+                            <a href="<?php echo e($person['link_prontuario']); ?>" class="btn-birthday-prontuario" title="Abrir prontuário do atendido">
+                                <i class="fas fa-folder-open"></i> <span>Prontuário</span>
+                            </a>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="birthday-empty-state">
+                    <i class="fas fa-calendar-check"></i>
+                    <div>Nenhum atendido comemora aniversário neste mês.</div>
+                </div>
+            <?php endif; ?>
+        </div>
+        
+        <div class="modal-birthday-footer">
+            <button type="button" class="btn-birthday-close" onclick="closeBirthdayModal()">
+                Fechar
+            </button>
         </div>
     </div>
 </div>
@@ -155,21 +352,29 @@
     async function loadNotes() {
         try {
             const monthParam = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
-            const response = await fetch('dashboard.php?action=getCalendarNotes&month=' + monthParam);
-            const notes = await response.json();
-            
-            allNotes = {};
-            notes.forEach(note => {
-                if (!allNotes[note.date]) {
-                    allNotes[note.date] = [];
+            const response = await fetch('dashboard.php?action=getCalendarNotes&month=' + monthParam, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
-                allNotes[note.date].push(note);
             });
-            
-            generateCalendar();
-            updateNotesList();
+            if (response.ok) {
+                const notes = await response.json();
+                allNotes = {};
+                if (Array.isArray(notes)) {
+                    notes.forEach(note => {
+                        if (!allNotes[note.date]) {
+                            allNotes[note.date] = [];
+                        }
+                        allNotes[note.date].push(note);
+                    });
+                }
+            }
         } catch (error) {
             console.error('Erro ao carregar anotações:', error);
+        } finally {
+            generateCalendar();
+            updateNotesList();
         }
     }
 
@@ -236,6 +441,7 @@
 
     function changeMonth(direction) {
         currentDate.setMonth(currentDate.getMonth() + direction);
+        generateCalendar();
         loadNotes();
     }
 
@@ -282,6 +488,10 @@
 
                 const response = await fetch('dashboard.php?action=saveCalendarNote', {
                     method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
                     body: formData
                 });
 
@@ -299,10 +509,30 @@
         }
     }
 
-    async function deleteNote(id) {
-        if (!confirm('Deseja realmente excluir esta anotação?')) {
-            return;
+    let noteIdToDelete = null;
+
+    function deleteNote(id) {
+        noteIdToDelete = id;
+        const modal = document.getElementById('deleteConfirmModal');
+        if (modal) {
+            modal.classList.add('active');
+            modal.style.display = 'flex';
         }
+    }
+
+    function closeDeleteModal() {
+        noteIdToDelete = null;
+        const modal = document.getElementById('deleteConfirmModal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+        }
+    }
+
+    async function confirmDeleteNote() {
+        if (!noteIdToDelete) return;
+        const id = noteIdToDelete;
+        closeDeleteModal();
 
         try {
             const formData = new FormData();
@@ -311,6 +541,10 @@
 
             const response = await fetch('dashboard.php?action=deleteCalendarNote', {
                 method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
                 body: formData
             });
 
@@ -318,7 +552,7 @@
             if (result.success) {
                 await loadNotes();
             } else {
-                alert('Erro ao excluir: ' + result.error);
+                alert('Erro ao excluir: ' + (result.error || 'Falha ao processar'));
             }
         } catch (error) {
             console.error('Erro ao excluir anotação:', error);
@@ -340,8 +574,9 @@
             : new Date(NaN);
         const validDate = !Number.isNaN(date.getTime());
 
+        const isAviso = badgeClass === 'green-badge' || note.type === 'aviso';
         const card = document.createElement('div');
-        card.className = 'note-card-glass';
+        card.className = 'note-card-glass' + (isAviso ? ' aviso' : '');
 
         const badge = document.createElement('div');
         badge.className = `note-badge ${badgeClass}`;
@@ -362,7 +597,7 @@
         deleteButton.className = 'delete-note-btn';
         deleteButton.title = deleteTitle;
         deleteButton.setAttribute('aria-label', deleteTitle);
-        deleteButton.textContent = '×';
+        deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
         const noteId = Number.parseInt(note.id, 10);
         if (Number.isSafeInteger(noteId) && noteId > 0) {
             deleteButton.addEventListener('click', () => deleteNote(noteId));
@@ -409,18 +644,189 @@
         }
     }
 
+    // ==========================================
+    // SISTEMA DE DESCARTE E RESTAURAÇÃO DE ALERTAS (POR USUÁRIO)
+    // ==========================================
+    const currentUserId = <?php echo (int)($userId ?? $_SESSION['user_id'] ?? 0); ?>;
+    const dismissedStorageKey = 'cf_dismissed_alerts_user_' + currentUserId;
+
+    function getDismissedAlerts() {
+        try {
+            const data = localStorage.getItem(dismissedStorageKey);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function setDismissedAlerts(ids) {
+        try {
+            localStorage.setItem(dismissedStorageKey, JSON.stringify(ids));
+        } catch (e) {}
+    }
+
+    function initAlertsDismissSystem() {
+        const dismissed = getDismissedAlerts();
+        const alertItems = document.querySelectorAll('.alert-item-wrapper');
+        if (alertItems.length === 0) return;
+
+        let visibleCount = 0;
+        let hiddenCount = 0;
+
+        alertItems.forEach(el => {
+            const id = el.getAttribute('data-alert-id');
+            if (id && dismissed.includes(id)) {
+                el.style.display = 'none';
+                hiddenCount++;
+            } else {
+                el.style.display = '';
+                visibleCount++;
+            }
+        });
+
+        updateAlertsCounters(visibleCount, hiddenCount);
+    }
+
+    function dismissAlert(event, alertId) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        if (!alertId) return;
+
+        const el = document.querySelector(`.alert-item-wrapper[data-alert-id="${alertId}"]`);
+        if (!el) return;
+
+        el.classList.add('pill-dismissing');
+        setTimeout(() => {
+            el.style.display = 'none';
+            el.classList.remove('pill-dismissing');
+
+            const dismissed = getDismissedAlerts();
+            if (!dismissed.includes(alertId)) {
+                dismissed.push(alertId);
+                setDismissedAlerts(dismissed);
+            }
+
+            const alertItems = document.querySelectorAll('.alert-item-wrapper');
+            let visibleCount = 0;
+            let hiddenCount = 0;
+            alertItems.forEach(item => {
+                if (item.style.display === 'none') {
+                    hiddenCount++;
+                } else {
+                    visibleCount++;
+                }
+            });
+
+            updateAlertsCounters(visibleCount, hiddenCount);
+        }, 200);
+    }
+
+    function restoreAllAlerts() {
+        try {
+            localStorage.removeItem(dismissedStorageKey);
+        } catch (e) {}
+
+        const alertItems = document.querySelectorAll('.alert-item-wrapper');
+        alertItems.forEach(el => {
+            el.style.display = '';
+            el.classList.add('pill-restoring');
+            setTimeout(() => el.classList.remove('pill-restoring'), 300);
+        });
+
+        updateAlertsCounters(alertItems.length, 0);
+    }
+
+    function updateAlertsCounters(visibleCount, hiddenCount) {
+        const badge = document.getElementById('alertsCountBadge');
+        if (badge) {
+            badge.textContent = visibleCount;
+        }
+
+        const restoreBtn = document.getElementById('btnRestoreAlerts');
+        const hiddenCountEl = document.getElementById('hiddenAlertsCount');
+        if (restoreBtn && hiddenCountEl) {
+            if (hiddenCount > 0) {
+                restoreBtn.style.display = 'inline-flex';
+                hiddenCountEl.textContent = hiddenCount;
+            } else {
+                restoreBtn.style.display = 'none';
+            }
+        }
+
+        const allDismissedBox = document.getElementById('alertsAllDismissed');
+        const pillsList = document.getElementById('alertsPillsList');
+        const totalItems = document.querySelectorAll('.alert-item-wrapper').length;
+
+        if (allDismissedBox) {
+            if (visibleCount === 0 && totalItems > 0) {
+                allDismissedBox.style.display = 'flex';
+                if (pillsList) pillsList.style.display = 'none';
+            } else {
+                allDismissedBox.style.display = 'none';
+                if (pillsList) pillsList.style.display = '';
+            }
+        }
+    }
+
+    // ==========================================
+    // MODAL DE ANIVERSARIANTES DO MÊS
+    // ==========================================
+    function openBirthdayModal(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        const modal = document.getElementById('birthdayModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeBirthdayModal() {
+        const modal = document.getElementById('birthdayModal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
     // Fechar modal clicando fora
     window.onclick = function(event) {
         const noteModal = document.getElementById('noteModal');
         const typeModal = document.getElementById('typeModal');
+        const deleteModal = document.getElementById('deleteConfirmModal');
+        const birthdayModal = document.getElementById('birthdayModal');
         if (event.target === noteModal) {
             closeModal();
         }
         if (event.target === typeModal) {
             closeTypeModal();
         }
+        if (event.target === deleteModal) {
+            closeDeleteModal();
+        }
+        if (event.target === birthdayModal) {
+            closeBirthdayModal();
+        }
     }
 
-    // Inicializar calendário
+    // Tecla ESC para fechar modais
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeBirthdayModal();
+            closeDeleteModal();
+            closeModal();
+            closeTypeModal();
+        }
+    });
+
+    // Inicializar calendário, anotações e sistema de alertas
+    generateCalendar();
     loadNotes();
+    initAlertsDismissSystem();
 </script>

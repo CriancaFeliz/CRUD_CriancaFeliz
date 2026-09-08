@@ -3,7 +3,33 @@
 $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
 ?>
 
-<div class="actions mb-4">
+<div class="actions flex-between mb-4">
+<style>
+.table-glass.table-compact th, 
+.table-glass.table-compact td {
+    padding: 4px 6px !important;
+    font-size: 12px !important;
+}
+.actions-cell {
+    white-space: nowrap !important;
+    text-align: center !important;
+    padding-right: 25px !important;
+}
+.actions-cell form {
+    display: inline-block !important;
+}
+.actions-cell .btn-icon {
+    width: 22px !important;
+    height: 22px !important;
+    padding: 0 !important;
+    font-size: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 1px !important;
+    border-radius: 4px !important;
+}
+</style>
     <a href="prontuarios.php" class="btn secondary">← Voltar</a>
     <?php if ($isAdmin): ?>
     <a href="acolhimento_form.php" class="btn">+ Cadastrar</a>
@@ -84,6 +110,17 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
           viewLink.appendChild(viewIcon);
           actionsCell.appendChild(viewLink);
 
+          const prontuarioLink = document.createElement('a');
+          prontuarioLink.href = `prontuarios.php?action=show&id=${id}`;
+          prontuarioLink.className = 'btn-icon';
+          prontuarioLink.style.color = '#3b82f6';
+          prontuarioLink.title = 'Abrir Prontuário';
+          prontuarioLink.setAttribute('aria-label', 'Abrir Prontuário');
+          const prontuarioIcon = document.createElement('i');
+          prontuarioIcon.className = 'fas fa-address-card';
+          prontuarioLink.appendChild(prontuarioIcon);
+          actionsCell.appendChild(prontuarioLink);
+
           if (isAdmin) {
             const editLink = document.createElement('a');
             editLink.href = `acolhimento_form.php?id=${id}`;
@@ -162,25 +199,36 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Filtros de busca -->
 <div class="search-filters card-glass mb-4">
-    <form method="GET" class="search-form-grid">
-        <div>
-            <label class="form-label-bold">Buscar por nome</label>
-            <input type="text" name="q" placeholder="Digite o nome..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" class="form-control">
+    <form method="GET" class="search-form-grid" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+        <div class="filter-field" style="flex-grow: 1; min-width: 250px;">
+            <label class="form-label-bold" for="search_q">
+                <i class="fas fa-search"></i> Buscar por nome
+            </label>
+            <input type="text" id="search_q" name="q" placeholder="Digite o nome..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" class="form-control" style="width: 100%;">
         </div>
-        <div>
-            <label class="form-label-bold">CPF</label>
-            <input type="text" name="cpf" placeholder="000.000.000-00" value="<?php echo htmlspecialchars($_GET['cpf'] ?? ''); ?>" class="form-control">
+        <div class="filter-field filter-field-cpf" style="min-width: 150px;">
+            <label class="form-label-bold" for="search_cpf">
+                <i class="fas fa-id-card"></i> CPF
+            </label>
+            <input type="text" id="search_cpf" name="cpf" placeholder="000.000.000-00" maxlength="14" value="<?php echo htmlspecialchars($_GET['cpf'] ?? ''); ?>" class="form-control" inputmode="numeric" style="width: 100%;">
         </div>
-        <div>
-            <button type="submit" class="btn btn-search">Buscar</button>
+        <div class="filter-actions" style="display: flex; gap: 10px;">
+            <button type="submit" class="btn primary btn-search" style="height: 42px;">
+                <i class="fas fa-search"></i> Buscar
+            </button>
+            <?php if (!empty($_GET['q']) || !empty($_GET['cpf'])): ?>
+                <a href="acolhimento_list.php" class="btn secondary btn-clear-search" title="Limpar filtros" style="height: 42px; display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-times"></i> Limpar
+                </a>
+            <?php endif; ?>
         </div>
     </form>
 </div>
 
 <!-- Tabela de resultados -->
-<div class="table-container card-glass p-0 overflow-hidden">
+<div class="table-container card-glass p-0" style="overflow-x: auto; max-width: 100%;">
     <?php if (!empty($fichas)): ?>
-        <table class="table-glass">
+        <table class="table-glass table-compact">
             <thead>
                 <tr>
                     <th>Nome</th>
@@ -227,6 +275,12 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                                 echo 'class="btn-icon view-btn" ';
                                 echo 'title="Visualizar">';
                                 echo '<i class="fas fa-eye"></i></a> ';
+                                
+                                // Botão Prontuário
+                                echo '<a href="prontuarios.php?action=show&id=' . $id . '" ';
+                                echo 'class="btn-icon" style="color: #3b82f6;" ';
+                                echo 'title="Abrir Prontuário">';
+                                echo '<i class="fas fa-address-card"></i></a> ';
                                 
                                 // Botão Editar (somente admin)
                                 if ($isAdmin) {

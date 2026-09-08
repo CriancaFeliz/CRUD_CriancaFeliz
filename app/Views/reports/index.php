@@ -16,11 +16,6 @@ $printUrl = 'reports.php?' . http_build_query(array_merge($baseParams, ['print' 
         <div>
             <span class="report-eyebrow">Associação Criança Feliz</span>
             <h1>Central de Relatórios</h1>
-            <p>Indicadores operacionais para acompanhamento da equipe e prestação de contas.</p>
-        </div>
-        <div class="report-privacy-badge">
-            <i class="fas fa-shield-alt"></i>
-            CPF protegido nas exportações
         </div>
     </header>
 
@@ -65,10 +60,13 @@ $printUrl = 'reports.php?' . http_build_query(array_merge($baseParams, ['print' 
                 <i class="fas fa-filter"></i> Gerar relatório
             </button>
             <a class="btn report-export-action" href="<?php echo e($exportUrl); ?>">
-                <i class="fas fa-file-csv"></i> Exportar CSV
+                <i class="fas fa-file-excel"></i> Exportar Excel
             </a>
+            <button type="button" class="btn report-export-action" style="background-color: #dc3545; color: white;" onclick="exportarPDF()">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
             <a class="btn secondary report-print-action" href="<?php echo e($printUrl); ?>" target="_blank" rel="noopener">
-                <i class="fas fa-print"></i> Imprimir / PDF
+                <i class="fas fa-print"></i> Imprimir
             </a>
         </div>
     </form>
@@ -160,12 +158,31 @@ $printUrl = 'reports.php?' . http_build_query(array_merge($baseParams, ['print' 
     </section>
 </section>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 document.getElementById('reportType').addEventListener('change', function () {
     document.getElementById('originFilter').hidden = this.value !== 'frequencia';
 });
 
+function exportarPDF() {
+    const element = document.querySelector('.report-document');
+    const opt = {
+      margin:       [0.5, 0.5, 0.5, 0.5],
+      filename:     'relatorio.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+    };
+    html2pdf().set(opt).from(element).save();
+}
+
 <?php if (!empty($printMode)): ?>
-window.addEventListener('load', () => window.print());
+window.addEventListener('load', () => {
+    // Evita abrir a tela de impressão toda vez que a página é recarregada
+    if (!sessionStorage.getItem('ja_imprimiu_' + window.location.href)) {
+        window.print();
+        sessionStorage.setItem('ja_imprimiu_' + window.location.href, '1');
+    }
+});
 <?php endif; ?>
 </script>

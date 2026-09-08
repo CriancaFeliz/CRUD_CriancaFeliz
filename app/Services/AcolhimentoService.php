@@ -13,10 +13,10 @@ class AcolhimentoService {
     /**
      * Lista todas as fichas com paginação
      */
-    public function listFichas($page = 1, $perPage = 10) {
+    public function listFichas($page = 1, $perPage = 10, $filters = []) {
         // Usar a listagem específica que já retorna os campos mapeados (id, nome_completo, etc.)
         if (method_exists($this->acolhimentoModel, 'listFichas')) {
-            return $this->acolhimentoModel->listFichas($page, $perPage);
+            return $this->acolhimentoModel->listFichas($page, $perPage, $filters);
         }
         // Fallback: paginate (menos ideal pois não mapeia campos), mantido por segurança
         return $this->acolhimentoModel->paginate($page, $perPage);
@@ -151,6 +151,36 @@ class AcolhimentoService {
      * Valida dados da ficha
      */
     private function validateFichaData($data, $excludeId = null) {
+        // Validar Nome Completo (proibir números, emojis e caracteres especiais para segurança)
+        if (!isset($data['nome_completo']) || trim($data['nome_completo']) === '') {
+            throw new Exception('Nome completo é obrigatório');
+        }
+
+        $nomeCompleto = trim($data['nome_completo']);
+        if (mb_strlen($nomeCompleto, 'UTF-8') < 3) {
+            throw new Exception('Nome completo deve ter pelo menos 3 caracteres');
+        }
+
+        if (preg_match('/[0-9]/', $nomeCompleto)) {
+            throw new Exception('O nome completo não pode conter números');
+        }
+
+        if (!preg_match('/^[\p{L}\s]+$/u', $nomeCompleto)) {
+            throw new Exception('O nome completo deve conter apenas letras e espaços (sem números, emojis ou caracteres especiais)');
+        }
+
+        // Validar Encaminhado por (proibir números, emojis e caracteres especiais para segurança)
+        if (!empty($data['encaminha_por']) && trim($data['encaminha_por']) !== '') {
+            $encaminhaPor = trim($data['encaminha_por']);
+            if (preg_match('/[0-9]/', $encaminhaPor)) {
+                throw new Exception('O campo Encaminhado por não pode conter números');
+            }
+
+            if (!preg_match('/^[\p{L}\s]+$/u', $encaminhaPor)) {
+                throw new Exception('O campo Encaminhado por deve conter apenas letras e espaços (sem números, emojis ou caracteres especiais)');
+            }
+        }
+
         // Validar CPF
         if (!empty($data['cpf'])) {
             $cpf = preg_replace('/\D+/', '', $data['cpf']);
@@ -275,46 +305,30 @@ class AcolhimentoService {
      * Log de ações
      */
     private function logAction($action, $fichaId, $description) {
-        $logFile = DATA_PATH . '/acolhimento_log.json';
+        require_once APP_PATH . '/Models/Log.php';
+        $logModel = new Log();
         
-        if (!file_exists($logFile)) {
-            file_put_contents($logFile, json_encode([]));
-        }
+        $acaoBd = 'UPDATE';
+        if ($action === 'create') $acaoBd = 'INSERT';
+        if ($action === 'delete') $acaoBd = 'DELETE';
         
-        $logs = json_decode(file_get_contents($logFile), true) ?: [];
-        
-        $logs[] = [
-            'id' => uniqid(),
-            'action' => $action,
-            'ficha_id' => $fichaId,
-            'description' => $description,
-            'user_id' => $_SESSION['user_id'] ?? null,
-            'user_name' => $_SESSION['user_name'] ?? 'Sistema',
-            'timestamp' => date('Y-m-d H:i:s'),
-            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
-        ];
-        
-        // Manter apenas os últimos 1000 logs
-        if (count($logs) > 1000) {
-            $logs = array_slice($logs, -1000);
-        }
-        
-        file_put_contents($logFile, json_encode($logs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $logModel->logAction(
+            $acaoBd,
+            'ficha_acolhimento',
+            "Ficha ID: $fichaId - $description",
+            null,
+            null,
+            $fichaId
+        );
     }
     
     /**
      * Obtém logs de ações
      */
     public function getLogs($limit = 50) {
-        $logFile = DATA_PATH . '/acolhimento_log.json';
-        
-        if (!file_exists($logFile)) {
-            return [];
-        }
-        
-        $logs = json_decode(file_get_contents($logFile), true) ?: [];
-        
-        // Retornar os mais recentes
-        return array_slice(array_reverse($logs), 0, $limit);
+        require_once APP_PATH . '/Models/Log.php';
+        $logModel = new Log();
+        $result = $logModel->getLogsByTable('ficha_acolhimento', 1, $limit);
+        return $result['data'] ?? [];
     }
 }

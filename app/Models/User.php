@@ -79,13 +79,14 @@ class User extends BaseModel {
             throw new Exception(passwordValidationMessage());
         }
         
-        // Mapear campos para banco (sem created_at/updated_at)
+        // Mapear campos para banco
         $dbData = [
             'nome' => $data['name'],
             'email' => $data['email'],
             'Senha' => PasswordHelper::hash($data['password']),
             'nivel' => $data['role'] ?? 'funcionario',
-            'status' => $data['status'] ?? 'Ativo'
+            'status' => $data['status'] ?? 'Ativo',
+            'created_at' => $data['created_at'] ?? date('Y-m-d H:i:s')
         ];
         
         $result = $this->create($dbData);

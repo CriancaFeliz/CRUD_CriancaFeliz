@@ -79,6 +79,7 @@ class AuthService {
     // Usa 'nivel' do banco como role
     $_SESSION['user_role'] = $user['nivel'] ?? 'funcionario';
 
+
     $_SESSION['login_time'] = time();
     session_regenerate_id(true);
 }
@@ -119,20 +120,33 @@ class AuthService {
         if (!$this->isLoggedIn()) {
             return null;
         }
+
+        if (empty($_SESSION['user_name']) && !empty($_SESSION['user_id'])) {
+            try {
+                $userData = $this->users()->findById($_SESSION['user_id']);
+                if ($userData) {
+                    $_SESSION['user_name'] = $userData['nome'] ?? $userData['name'] ?? '';
+                    if (!empty($userData['foto_perfil']) && empty($_SESSION['user_photo'])) {
+                        $_SESSION['user_photo'] = $userData['foto_perfil'];
+                    }
+                }
+            } catch (Throwable $e) {
+                // Silenciosamente mantém fallback de sessão
+            }
+        }
         
         $hasPhoto = !empty($_SESSION['user_photo']);
 
         return [
             'id' => $_SESSION['user_id'],
-            'email' => $_SESSION['user_email'],
-            'name' => $_SESSION['user_name'],
-            'role' => $_SESSION['user_role'],
+            'email' => $_SESSION['user_email'] ?? '',
+            'name' => $_SESSION['user_name'] ?? '',
+            'role' => $_SESSION['user_role'] ?? 'funcionario',
             'photo' => $hasPhoto
                 ? 'profile.php?action=photo&id=' . (int)$_SESSION['user_id']
                 : ''
         ];
     }
-    
     /**
      * Verifica se usuário tem permissão
      */

@@ -35,7 +35,13 @@ class Desligamento extends BaseModel {
         // Atualizar status do atendido
         $this->atualizarStatusAtendido($idAtendido, 'Desligado');
         
-        return $pdo->lastInsertId();
+        $newId = $pdo->lastInsertId();
+        
+        require_once APP_PATH . '/Models/Log.php';
+        $log = new Log();
+        $log->logAction('INSERT', 'desligamento', "Atendido ID $idAtendido desligado. Motivo: {$data['tipo_motivo']}", null, json_encode($data, JSON_UNESCAPED_UNICODE), $newId);
+        
+        return $newId;
     }
     
     /**
@@ -118,6 +124,10 @@ class Desligamento extends BaseModel {
         
         // Reativar atendido
         $this->atualizarStatusAtendido($idAtendido, 'Ativo');
+        
+        require_once APP_PATH . '/Models/Log.php';
+        $log = new Log();
+        $log->logAction('DELETE', 'desligamento', "Desligamento cancelado (Reativado) para o Atendido ID $idAtendido", null, null, $idAtendido);
         
         return true;
     }

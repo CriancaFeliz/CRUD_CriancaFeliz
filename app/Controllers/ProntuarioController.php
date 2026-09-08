@@ -42,30 +42,63 @@ class ProntuarioController extends BaseController {
     /**
      * Visualiza prontuário específico
      */
-    public function show($cpf) {
+    public function show($cpf = null, $id = null) {
         $this->requireAuth();
         
         try {
-            // Buscar fichas pelo CPF
             $acolhimento = null;
             $socioeconomico = null;
-            $cpfNormalizado = preg_replace('/\D+/', '', $cpf);
             
-            // Buscar ficha de acolhimento
-            $acolhimentos = $this->acolhimentoService->listFichas(1, 1000);
-            foreach ($acolhimentos['data'] as $ficha) {
-                if (preg_replace('/\D+/', '', $ficha['cpf'] ?? '') === $cpfNormalizado) {
-                    $acolhimento = $ficha;
-                    break;
+            // 1. Se fornecido ID do atendido, carregar diretamente
+            if (!empty($id)) {
+                try {
+                    $acolhimento = $this->acolhimentoService->getFicha((int)$id);
+                } catch (Exception $e) {
+                    // Sem ficha de acolhimento encontrada para este ID
+                }
+                
+                try {
+                    $socioeconomico = $this->socioeconomicoService->getFicha((int)$id);
+                } catch (Exception $e) {
+                    // Sem ficha socioeconômica encontrada para este ID
                 }
             }
             
-            // Buscar ficha socioeconômica
-            $socioeconomicos = $this->socioeconomicoService->listFichas(1, 1000);
-            foreach ($socioeconomicos['data'] as $ficha) {
-                if (preg_replace('/\D+/', '', $ficha['cpf'] ?? '') === $cpfNormalizado) {
-                    $socioeconomico = $ficha;
-                    break;
+            // 2. Se não encontrou por ID ou ID não foi informado, buscar por CPF
+            if ((!$acolhimento && !$socioeconomico) && !empty($cpf)) {
+                $cpfNormalizado = preg_replace('/\D+/', '', (string)$cpf);
+                
+                // Buscar ficha de acolhimento
+                $acolhimentos = $this->acolhimentoService->listFichas(1, 1000);
+                foreach ($acolhimentos['data'] as $ficha) {
+                    if (preg_replace('/\D+/', '', $ficha['cpf'] ?? '') === $cpfNormalizado) {
+                        $acolhimento = $ficha;
+                        break;
+                    }
+                }
+                
+                // Buscar ficha socioeconômica
+                $socioeconomicos = $this->socioeconomicoService->listFichas(1, 1000);
+                foreach ($socioeconomicos['data'] as $ficha) {
+                    if (preg_replace('/\D+/', '', $ficha['cpf'] ?? '') === $cpfNormalizado) {
+                        $socioeconomico = $ficha;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Se uma das fichas foi localizada e a outra não, buscar a faltante pelo ID
+            $atendidoId = $acolhimento['id'] ?? $socioeconomico['id'] ?? ($id ? (int)$id : null);
+            if ($atendidoId) {
+                if (!$acolhimento) {
+                    try {
+                        $acolhimento = $this->acolhimentoService->getFicha((int)$atendidoId);
+                    } catch (Exception $e) {}
+                }
+                if (!$socioeconomico) {
+                    try {
+                        $socioeconomico = $this->socioeconomicoService->getFicha((int)$atendidoId);
+                    } catch (Exception $e) {}
                 }
             }
             
@@ -73,7 +106,8 @@ class ProntuarioController extends BaseController {
                 throw new Exception('Prontuário não encontrado');
             }
 
-            $atendidoId = $acolhimento['id'] ?? $socioeconomico['id'] ?? null;
+            $cpfDisplay = !empty($cpf) ? $cpf : ($acolhimento['cpf'] ?? $socioeconomico['cpf'] ?? 'Não informado');
+
             $documents = [];
             if ($atendidoId) {
                 try {
@@ -99,7 +133,10 @@ class ProntuarioController extends BaseController {
                     if ($faltasNaoJustificadas >= 3) {
                         $alertas[] = [
                             'tipo' => 'excesso_faltas',
-                            'mensagem' => "Atendido com {$faltasNaoJustificadas} faltas não justificadas"
+                            'nivel' => 'critico',
+                            'icone' => '⚠️',
+                            'mensagem' => "Atendido com {$faltasNaoJustificadas} faltas não justificadas",
+                            'acao_sugerida' => "Verificar justificativas ou avaliar encaminhamento disciplinar."
                         ];
                     }
                     
@@ -108,7 +145,10 @@ class ProntuarioController extends BaseController {
                     if ($idade >= 18) {
                         $alertas[] = [
                             'tipo' => 'idade_limite',
-                            'mensagem' => "Atendido completou {$idade} anos - Desligamento automático pendente"
+                            'nivel' => 'critico',
+                            'icone' => '⏰',
+                            'mensagem' => "Atendido completou {$idade} anos - Desligamento automático pendente",
+                            'acao_sugerida' => "Proceder com a rotina de desligamento por atingimento de maioridade."
                         ];
                     }
                     
@@ -134,7 +174,7 @@ class ProntuarioController extends BaseController {
                 'attendanceStats' => $attendanceStats,
                 'documents' => $documents,
                 'atendidoId' => $atendidoId,
-                'cpf' => $cpf,
+                'cpf' => $cpfDisplay,
                 'csrf_token' => $this->generateCSRF()
             ];
             

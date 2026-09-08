@@ -52,6 +52,20 @@ class PsychologyService
         $fichas = $this->acolhimentoModel->getAll();
         $patients = [];
 
+        // Buscar a data da última anotação de todos os pacientes de uma vez
+        $sqlNotes = "SELECT at.cpf, MAX(a.data_anotacao) as last_note 
+                     FROM anotacao_psicologica a 
+                     JOIN atendido at ON a.id_atendido = at.idatendido 
+                     GROUP BY at.cpf";
+        $pdo = Database::getConnection();
+        $stmt = $pdo->query($sqlNotes);
+        $lastNotes = [];
+        if ($stmt) {
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $lastNotes[$row['cpf']] = $row['last_note'];
+            }
+        }
+
         foreach ($fichas as $ficha) {
 
             $cpf = $ficha['cpf'] ?? null;
@@ -62,12 +76,15 @@ class PsychologyService
             $data_nasc = $ficha['data_nascimento'] ?? null;
 
             $patients[] = [
+                'id' => $ficha['idatendido'] ?? null,
                 'cpf' => $cpf,
                 'nome_completo' => $nome,
+                'data_nascimento' => $data_nasc,
                 'idade' => $data_nasc ? $this->calculateAgeSafe($data_nasc) : null,
-                'responsavel' => $ficha['nome_responsavel'] ?? 'Não informado',
+                'responsavel' => !empty($ficha['nome_responsavel']) ? $ficha['nome_responsavel'] : 'Não informado',
                 'data_acolhimento' => $ficha['data_cadastro'] ?? null,
-                'last_note' => null
+                'last_note' => $lastNotes[$cpf] ?? null,
+                'foto' => $ficha['foto'] ?? null
             ];
         }
 
@@ -81,6 +98,7 @@ class PsychologyService
         if (!$at) return null;
 
         return [
+            'id' => $at['id'] ?? $at['idatendido'] ?? null,
             'cpf' => $at['cpf'],
             'nome_completo' => $at['nome'] ?? $at['nome_completo'],
             'data_nascimento' => $at['data_nascimento'],
@@ -89,6 +107,7 @@ class PsychologyService
             'contato' => $at['contato_1'] ?? null,
             'endereco' => $this->formatAddress($at),
             'data_acolhimento' => $at['data_cadastro'] ?? null,
+            'foto' => $at['foto'] ?? null,
             '_raw' => $at
         ];
     }
@@ -176,11 +195,19 @@ class PsychologyService
             ];
 
             $created = $this->noteModel->create($noteData);
+            $newId = $created['id_anotacao'] ?? $created;
+            
+            if ($newId) {
+                require_once APP_PATH . '/Models/Log.php';
+                $log = new Log();
+                // Preservar sigilo: loga apenas a ação e ID do atendido
+                $log->logAction('INSERT', 'anotacao_psicologica', "Anotação Psicológica ({$noteData['tipo']}) adicionada para Atendido ID: {$id_atendido}", null, null, $newId);
+            }
 
             return [
                 'success'=>true,
                 'message'=>'Anotação salva com sucesso',
-                'id'=>$created['id_anotacao'] ?? $created
+                'id'=>$newId
             ];
 
         } catch (Exception $e) {
@@ -219,7 +246,9 @@ class PsychologyService
         if (!$date || $date=="0000-00-00") return null;
 
         try {
-            $d = new DateTime($date);
+            // Se vier no formato dd/mm/yyyy, troca para dd-mm-yyyy para o DateTime entender o padrao europeu/brasileiro
+            $dateStr = str_replace('/', '-', $date);
+            $d = new DateTime($dateStr);
             return (new DateTime())->diff($d)->y;
         } catch (Exception $e) {
             return null;
@@ -398,6 +427,13 @@ class PsychologyService
 
         $ok = $this->noteModel->updateNote($id, $update);
 
+        if ($ok) {
+            require_once APP_PATH . '/Models/Log.php';
+            $log = new Log();
+            // Preservar sigilo: apenas loga a ação
+            $log->logAction('UPDATE', 'anotacao_psicologica', "Anotação Psicológica atualizada (ID: $id)", null, null, $id);
+        }
+
         return [
             'success' => $ok,
             'message' => $ok ? 'Anotação atualizada com sucesso!' : 'Erro ao atualizar'
@@ -407,6 +443,12 @@ class PsychologyService
     public function deleteNote($id)
     {
         $ok = $this->noteModel->deleteNote($id);
+
+        if ($ok) {
+            require_once APP_PATH . '/Models/Log.php';
+            $log = new Log();
+            $log->logAction('DELETE', 'anotacao_psicologica', "Anotação Psicológica removida (ID: $id)", null, null, $id);
+        }
 
         return [
             'success' => $ok,

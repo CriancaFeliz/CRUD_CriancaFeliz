@@ -27,6 +27,9 @@ class DashboardController extends BaseController {
             // Obter alertas
             $alertas = $this->getAlertas();
             
+            // Obter lista detalhada de aniversariantes do mês
+            $aniversariantesDetalhes = $this->getAniversariantesDoMes();
+            
             // Obter anotações do calendário
             $anotacoes = $this->getAnotacoesCalendario();
             
@@ -35,9 +38,11 @@ class DashboardController extends BaseController {
                 'userName' => $_SESSION['user_name'] ?? 'Usuário',
                 'userEmail' => $_SESSION['user_email'] ?? '',
                 'userRole' => $_SESSION['user_role'] ?? 'user',
+                'userId' => $_SESSION['user_id'] ?? 0,
                 'statsAcolhimento' => $statsAcolhimento,
                 'statsSocioeconomico' => $statsSocioeconomico,
                 'alertas' => $alertas,
+                'aniversariantesDetalhes' => $aniversariantesDetalhes,
                 'anotacoes' => $anotacoes,
                 'messages' => $this->getFlashMessages()
             ];
@@ -159,125 +164,331 @@ class DashboardController extends BaseController {
     }
     
     /**
-     * Obtém alertas do sistema
+     * Obtém alertas do sistema com identificador único
      */
     private function getAlertas() {
         $alertas = [];
+        $userRole = $_SESSION['user_role'] ?? 'funcionario';
         
         try {
-            // Alertas de fichas incompletas
-            $acolhimentos = $this->acolhimentoService->listFichas(1, 100);
-            $socioeconomicos = $this->socioeconomicoService->listFichas(1, 100);
+            $pdo = Database::getConnection();
             
-            $fichasIncompletas = 0;
-            $fichasVencidas = 0;
-            
-            // Verificar fichas de acolhimento
-            foreach ($acolhimentos['data'] as $ficha) {
-                if (empty($ficha['cpf']) || empty($ficha['nome_completo'])) {
-                    $fichasIncompletas++;
-                }
-                
-                // Verificar se ficha tem mais de 6 meses
-                if (!empty($ficha['data_acolhimento'])) {
-                    $dataAcolhimento = DateTime::createFromFormat('d/m/Y', $ficha['data_acolhimento']);
-                    if ($dataAcolhimento && $dataAcolhimento->diff(new DateTime())->days > 180) {
-                        $fichasVencidas++;
-                    }
-                }
-            }
-            
-            // Alertas de faltas e desligamentos
+            if ($userRole !== 'psicologo') {
+            // 1. Faltas Não Justificadas (Críticas >= 3 e em Risco = 2)
             try {
                 $frequenciaModel = new FrequenciaDia();
-                $desligamentoModel = new Desligamento();
-                
-                // Buscar atendidos com alertas de faltas
                 $atendidosComAlertas = $frequenciaModel->getAtendidosComAlertas();
                 
-                $excessoFaltas = 0;
+                $excessoFaltasCritico = 0;
+                $excessoFaltasRisco = 0;
+                
                 foreach ($atendidosComAlertas as $atendido) {
-                    if ($atendido['total_faltas'] >= 3) {
-                        $excessoFaltas++;
+                    $total = (int)($atendido['total_faltas'] ?? 0);
+                    if ($total >= 3) {
+                        $excessoFaltasCritico++;
+                    } elseif ($total === 2) {
+                        $excessoFaltasRisco++;
                     }
                 }
                 
-                // Buscar atendidos com idade limite (>= 18 anos)
-                $acolhimentoModel = new Acolhimento();
-                $todosAtendidos = $acolhimentoModel->findAll();
-                $idadeLimite = 0;
-                
-                foreach ($todosAtendidos as $atendido) {
-                    $id = $atendido['idatendido'] ?? $atendido['id'];
-                    if (($atendido['status'] ?? 'Ativo') === 'Ativo' && !$desligamentoModel->isDesligado($id)) {
-                        $idade = calculateAge($atendido['data_nascimento'] ?? '');
-                        if ($idade >= 18) {
-                            $idadeLimite++;
-                        }
-                    }
-                }
-                
-                if ($excessoFaltas > 0) {
+                if ($excessoFaltasCritico > 0) {
                     $alertas[] = [
-                        'tipo' => 'warning',
-                        'titulo' => 'Excesso de Faltas',
-                        'mensagem' => "$excessoFaltas atendido(s) com excesso de faltas não justificadas",
-                        'icone' => '⚠️',
-                        'link' => 'desligamento.php'
+                        'id' => 'faltas_criticas',
+                        'tipo' => 'error',
+                        'titulo' => 'Faltas Críticas',
+                        'mensagem' => "{$excessoFaltasCritico} atendido(s) com 3+ faltas não justificadas (passíveis de desligamento)",
+                        'icone' => 'fa-exclamation-circle',
+                        'link' => 'faltas.php?action=alertas'
                     ];
                 }
                 
+                if ($excessoFaltasRisco > 0) {
+                    $alertas[] = [
+                        'id' => 'faltas_risco',
+                        'tipo' => 'warning',
+                        'titulo' => 'Risco de Desligamento',
+                        'mensagem' => "{$excessoFaltasRisco} atendido(s) em risco de desligamento (2 faltas não justificadas)",
+                        'icone' => 'fa-exclamation-triangle',
+                        'link' => 'faltas.php?action=alertas'
+                    ];
+                }
+            } catch (Exception $e) {
+                reportException($e, 'DashboardController::alertasFaltas');
+            }
+            
+            // 2. Maioridade (>= 18 anos) com desligamento pendente
+            try {
+                $stmt = $pdo->query("
+                    SELECT COUNT(*) as total
+                    FROM atendido a
+                    WHERE a.status = 'Ativo'
+                      AND a.data_nascimento IS NOT NULL
+                      AND a.data_nascimento != '0000-00-00'
+                      AND TIMESTAMPDIFF(YEAR, a.data_nascimento, CURDATE()) >= 18
+                      AND NOT EXISTS (
+                          SELECT 1 FROM desligamento d WHERE d.id_atendido = a.idatendido
+                      )
+                ");
+                $idadeLimite = (int)($stmt->fetchColumn() ?: 0);
                 if ($idadeLimite > 0) {
                     $alertas[] = [
+                        'id' => 'maioridade',
                         'tipo' => 'error',
                         'titulo' => 'Desligamento Pendente',
-                        'mensagem' => "$idadeLimite atendido(s) completou(aram) 18 anos - Desligamento automático pendente",
-                        'icone' => '🎂',
+                        'mensagem' => "{$idadeLimite} atendido(s) completaram 18 anos — Desligamento pendente",
+                        'icone' => 'fa-user-clock',
                         'link' => 'desligamento.php'
                     ];
                 }
             } catch (Exception $e) {
-                reportException($e, 'DashboardController::alertas');
+                reportException($e, 'DashboardController::alertasMaioridade');
             }
             
-            if ($fichasIncompletas > 0) {
-                $alertas[] = [
-                    'tipo' => 'warning',
-                    'titulo' => 'Fichas Incompletas',
-                    'mensagem' => "$fichasIncompletas ficha(s) com dados incompletos",
-                    'icone' => '⚠️'
-                ];
+            // 3. Atendidos ativos sem Ficha Socioeconômica vinculada
+            try {
+                $stmt = $pdo->query("
+                    SELECT COUNT(*) as total
+                    FROM atendido a
+                    WHERE a.status = 'Ativo'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM desligamento d WHERE d.id_atendido = a.idatendido
+                      )
+                      AND NOT EXISTS (
+                          SELECT 1 FROM ficha_socioeconomico fs WHERE fs.id_atendido = a.idatendido
+                      )
+                ");
+                $semSocio = (int)($stmt->fetchColumn() ?: 0);
+                if ($semSocio > 0) {
+                    $alertas[] = [
+                        'id' => 'sem_socioeconomico',
+                        'tipo' => 'warning',
+                        'titulo' => 'Estudo Socioeconômico Pendente',
+                        'mensagem' => "{$semSocio} atendido(s) sem Ficha Socioeconômica cadastrada",
+                        'icone' => 'fa-file-invoice',
+                        'link' => 'socioeconomico_list.php'
+                    ];
+                }
+            } catch (Exception $e) {
+                reportException($e, 'DashboardController::alertasSemSocio');
             }
             
-            if ($fichasVencidas > 0) {
-                $alertas[] = [
-                    'tipo' => 'info',
-                    'titulo' => 'Fichas para Revisão',
-                    'mensagem' => "$fichasVencidas ficha(s) com mais de 6 meses",
-                    'icone' => '📅'
-                ];
+            // 4. Fichas de Acolhimento com dados essenciais incompletos
+            try {
+                $stmt = $pdo->query("
+                    SELECT COUNT(*) as total
+                    FROM atendido a
+                    WHERE a.status = 'Ativo'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM desligamento d WHERE d.id_atendido = a.idatendido
+                      )
+                      AND (
+                          a.id_responsavel IS NULL 
+                          OR a.telefone IS NULL 
+                          OR TRIM(a.telefone) = ''
+                          OR a.endereco IS NULL 
+                          OR TRIM(a.endereco) = ''
+                      )
+                ");
+                $fichasIncompletas = (int)($stmt->fetchColumn() ?: 0);
+                if ($fichasIncompletas > 0) {
+                    $alertas[] = [
+                        'id' => 'dados_incompletos',
+                        'tipo' => 'warning',
+                        'titulo' => 'Dados Incompletos',
+                        'mensagem' => "{$fichasIncompletas} ficha(s) com dados essenciais incompletos",
+                        'icone' => 'fa-id-card',
+                        'link' => 'acolhimento_list.php'
+                    ];
+                }
+            } catch (Exception $e) {
+                reportException($e, 'DashboardController::alertasIncompletas');
             }
             
-            // Alertas de sistema
+            // 5. Fichas Socioeconômicas com mais de 6 meses sem reavaliação
+            try {
+                $stmt = $pdo->query("
+                    SELECT COUNT(*) as total
+                    FROM ficha_socioeconomico fs
+                    JOIN atendido a ON a.idatendido = fs.id_atendido
+                    WHERE a.status = 'Ativo'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM desligamento d WHERE d.id_atendido = a.idatendido
+                      )
+                      AND (
+                          (fs.data_atualizacao IS NOT NULL AND fs.data_atualizacao < DATE_SUB(NOW(), INTERVAL 6 MONTH))
+                          OR (fs.data_atualizacao IS NULL AND fs.data_criacao < DATE_SUB(NOW(), INTERVAL 6 MONTH))
+                      )
+                ");
+                $fichasVencidas = (int)($stmt->fetchColumn() ?: 0);
+                if ($fichasVencidas > 0) {
+                    $alertas[] = [
+                        'id' => 'revisao_socioeconomica',
+                        'tipo' => 'info',
+                        'titulo' => 'Revisão Socioeconômica',
+                        'mensagem' => "{$fichasVencidas} ficha(s) socioeconômica(s) com mais de 6 meses para revisão",
+                        'icone' => 'fa-sync-alt',
+                        'link' => 'socioeconomico_list.php'
+                    ];
+                }
+            } catch (Exception $e) {
+                reportException($e, 'DashboardController::alertasVencidas');
+            }
+            } // fim if !== 'psicologo'
+            
+            if ($userRole === 'psicologo') {
+            // 6. Atendimentos Psicológicos agendados para hoje
+            try {
+                $stmt = $pdo->query("
+                    SELECT COUNT(*) as total
+                    FROM anotacao_psicologica ap
+                    JOIN atendido a ON a.idatendido = ap.id_atendido
+                    WHERE a.status = 'Ativo'
+                      AND ap.proxima_sessao = CURDATE()
+                      AND NOT EXISTS (
+                          SELECT 1 FROM desligamento d WHERE d.id_atendido = a.idatendido
+                      )
+                ");
+                $sessoesHoje = (int)($stmt->fetchColumn() ?: 0);
+                if ($sessoesHoje > 0) {
+                    $alertas[] = [
+                        'id' => 'sessoes_psicologicas',
+                        'tipo' => 'info',
+                        'titulo' => 'Atendimento Psicológico',
+                        'mensagem' => "{$sessoesHoje} sessão(ões) psicológica(s) agendada(s) para hoje",
+                        'icone' => 'fa-brain',
+                        'link' => 'psychology.php'
+                    ];
+                }
+            } catch (Exception $e) {
+                // Tabela opcional ou não utilizada
+            }
+            } // fim if === 'psicologo'
+            
+            // 7. Aniversariantes do Mês (Com Ação de Abrir Modal)
+            try {
+                $mesAtual = (int)date('n');
+                $stmt = $pdo->prepare("
+                    SELECT COUNT(*) as total
+                    FROM atendido a
+                    WHERE a.status = 'Ativo'
+                      AND a.data_nascimento IS NOT NULL
+                      AND a.data_nascimento != '0000-00-00'
+                      AND MONTH(a.data_nascimento) = ?
+                      AND NOT EXISTS (
+                          SELECT 1 FROM desligamento d WHERE d.id_atendido = a.idatendido
+                      )
+                ");
+                $stmt->execute([$mesAtual]);
+                $aniversariantesMes = (int)($stmt->fetchColumn() ?: 0);
+                if ($aniversariantesMes > 0) {
+                    $mesesPt = [1 => 'Janeiro', 2 => 'Fevereiro', 3 => 'Março', 4 => 'Abril', 5 => 'Maio', 6 => 'Junho', 7 => 'Julho', 8 => 'Agosto', 9 => 'Setembro', 10 => 'Outubro', 11 => 'Novembro', 12 => 'Dezembro'];
+                    $nomeMes = $mesesPt[$mesAtual] ?? 'este mês';
+                    $alertas[] = [
+                        'id' => 'aniversariantes_mes',
+                        'tipo' => 'info',
+                        'titulo' => 'Aniversariantes',
+                        'mensagem' => "{$aniversariantesMes} atendido(s) fazem aniversário em {$nomeMes}",
+                        'icone' => 'fa-birthday-cake',
+                        'action' => 'open_birthday_modal',
+                        'link' => ''
+                    ];
+                }
+            } catch (Exception $e) {
+                reportException($e, 'DashboardController::alertasAniversariantes');
+            }
+            
+            // Alertas de sistema se tudo estiver limpo
             if (empty($alertas)) {
                 $alertas[] = [
+                    'id' => 'sistema_ok',
                     'tipo' => 'success',
                     'titulo' => 'Sistema Funcionando',
-                    'mensagem' => 'Todas as funcionalidades operacionais',
-                    'icone' => '✅'
+                    'mensagem' => 'Nenhum alerta prioritário pendente. Todas as rotinas em dia.',
+                    'icone' => 'fa-check-circle'
                 ];
             }
             
         } catch (Exception $e) {
+            reportException($e, 'DashboardController::getAlertas');
             $alertas[] = [
+                'id' => 'sistema_erro',
                 'tipo' => 'error',
                 'titulo' => 'Erro no Sistema',
                 'mensagem' => 'Não foi possível carregar os alertas neste momento.',
-                'icone' => '❌'
+                'icone' => 'fa-times-circle'
             ];
         }
         
         return $alertas;
+    }
+
+    /**
+     * Obtém lista detalhada de aniversariantes do mês atual para exibição no modal
+     */
+    private function getAniversariantesDoMes() {
+        try {
+            $pdo = Database::getConnection();
+            $mesAtual = (int)date('n');
+            $stmt = $pdo->prepare("
+                SELECT 
+                    a.idatendido as id,
+                    a.nome,
+                    a.cpf,
+                    a.data_nascimento,
+                    a.foto,
+                    a.telefone,
+                    DAY(a.data_nascimento) as dia_aniversario
+                FROM atendido a
+                WHERE a.status = 'Ativo'
+                  AND a.data_nascimento IS NOT NULL
+                  AND a.data_nascimento != '0000-00-00'
+                  AND MONTH(a.data_nascimento) = ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM desligamento d WHERE d.id_atendido = a.idatendido
+                  )
+                ORDER BY DAY(a.data_nascimento) ASC, a.nome ASC
+            ");
+            $stmt->execute([$mesAtual]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $aniversariantes = [];
+            $hojeDia = (int)date('j');
+            
+            foreach ($rows as $row) {
+                $nasc = $row['data_nascimento'];
+                $dia = (int)($row['dia_aniversario'] ?? date('d', strtotime($nasc)));
+                $anoNasc = (int)date('Y', strtotime($nasc));
+                $idadeCompletando = (int)date('Y') - $anoNasc;
+                
+                $isHoje = ($dia === $hojeDia);
+                $jaPassou = ($dia < $hojeDia);
+                
+                $cpfTrimmed = trim((string)($row['cpf'] ?? ''));
+                $linkProntuario = ($cpfTrimmed !== '') 
+                    ? 'prontuarios.php?action=show&cpf=' . urlencode($cpfTrimmed) . '&id=' . (int)$row['id']
+                    : 'prontuarios.php?action=show&id=' . (int)$row['id'];
+
+                $aniversariantes[] = [
+                    'id' => (int)$row['id'],
+                    'nome' => $row['nome'],
+                    'cpf' => $cpfTrimmed,
+                    'data_nascimento' => date('d/m/Y', strtotime($nasc)),
+                    'dia' => $dia,
+                    'dia_formatado' => sprintf('%02d', $dia),
+                    'idade_completando' => $idadeCompletando,
+                    'foto' => !empty($row['foto']) ? 'acolhimento_view.php?action=photo&id=' . (int)$row['id'] : null,
+                    'telefone' => $row['telefone'] ?? null,
+                    'is_hoje' => $isHoje,
+                    'ja_passou' => $jaPassou,
+                    'link_prontuario' => $linkProntuario
+                ];
+            }
+            
+            return $aniversariantes;
+        } catch (Exception $e) {
+            reportException($e, 'DashboardController::getAniversariantesDoMes');
+            return [];
+        }
     }
 
     /**

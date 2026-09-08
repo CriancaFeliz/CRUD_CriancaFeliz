@@ -9,7 +9,7 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-fwrite(STDERR, "Executor legado desativado. Use SETUP_COMPLETO_FINAL.sql em banco novo ou a migration versionada para upgrade.\n");
+fwrite(STDERR, "Executor legado desativado. Para uma base nova, use database/SETUP_COMPLETO_FINAL.sql conforme database/README_SETUP.md.\n");
 exit(1);
 
 // Configurações do banco

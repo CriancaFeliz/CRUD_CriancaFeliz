@@ -2,16 +2,64 @@
 $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
 ?>
 
+<style>
+    /* Clean Layout Override */
+    .section {
+        box-shadow: 0 2px 16px rgba(0,0,0,0.04) !important;
+        border: 1px solid #edf1f5 !important;
+    }
+    .section .field {
+        background: transparent !important;
+        padding: 10px 4px !important;
+        border-radius: 0 !important;
+        border-bottom: 1px solid #f1f4f7 !important;
+        transition: none !important;
+    }
+    /* Remover borda do último elemento para ficar limpo */
+    .fields-grid {
+        align-items: end !important;
+    }
+    .section .label {
+        font-size: 11px !important;
+        color: #8d98a0 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        margin-bottom: 4px !important;
+    }
+    .section .value {
+        font-size: 14px !important;
+        color: #2b343a !important;
+        font-weight: 500 !important;
+    }
+    .section h3 {
+        border-bottom: 1px solid #f1f4f7 !important;
+        color: #3e6475 !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        padding-bottom: 16px !important;
+        margin-bottom: 24px !important;
+    }
+    .section h3 i {
+        color: #3e6475 !important;
+        margin-right: 8px;
+    }
+    .photo-container img {
+        border: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    }
+</style>
+
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
     <a href="acolhimento_list.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
     <?php if ($isAdmin): ?>
-    <a href="acolhimento_form.php?edit=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">✏️ Editar</a>
+    <a href="acolhimento_form.php?edit=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;"><i class="fas fa-edit"></i> Editar</a>
     <?php endif; ?>
 </div>
 
 <!-- Dados Pessoais -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">👤 Dados Pessoais</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-user" style="color: #f0a36b;"></i> Dados Pessoais</h3>
     
     <div class="fields-grid" style="display:grid; grid-template-columns: 120px 1fr 1fr 1fr; gap:16px; align-items:start;">
         <!-- Foto -->
@@ -107,7 +155,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Endereço -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">🏠 Endereço</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-home" style="color: #f0a36b;"></i> Endereço</h3>
     
     <div class="fields-grid" style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:16px;">
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -155,7 +203,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Responsável -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">👨‍👩‍👧‍👦 Responsável</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-users" style="color: #f0a36b;"></i> Responsável</h3>
     
     <div class="fields-grid" style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:16px;">
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -223,7 +271,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Informações Adicionais -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">📋 Informações Adicionais</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-clipboard-list" style="color: #f0a36b;"></i> Informações Adicionais</h3>
     
     <div class="fields-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -236,17 +284,24 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
             <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['acolhimento_responsavel'] ?? 'Não informado'); ?></div>
         </div>
         
-        <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Status</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
-                <span class="status" style="padding:4px 8px; border-radius:12px; font-size:12px; font-weight:500;
-                                           <?php echo ($ficha['status'] ?? 'Ativo') === 'Ativo' ? 'background:#e8f6ea; color:#6fb64f;' : 'background:#f8d7da; color:#721c24;'; ?>">
-                    <?php echo e($ficha['status'] ?? 'Ativo'); ?>
-                </span>
+            <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
+                <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Status</div>
+                <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                    <span class="status" style="padding:4px 8px; border-radius:12px; font-size:12px; font-weight:500;
+                                               <?php echo ($ficha['status'] ?? 'Ativo') === 'Ativo' ? 'background:#e8f6ea; color:#6fb64f;' : 'background:#f8d7da; color:#721c24;'; ?>">
+                        <?php echo e($ficha['status'] ?? 'Ativo'); ?>
+                    </span>
+                </div>
             </div>
+
+            <?php if (!empty($ficha['carimbo_url'])): ?>
+                <div class="field" style="grid-column: 1 / -1; background:var(--card-bg, #f8f9fa); padding:16px; border-radius:8px; margin-top: 8px;">
+                    <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:8px;"><i class="fas fa-signature"></i> Carimbo / Assinatura do Responsável</div>
+                    <img src="<?php echo e($ficha['carimbo_url']); ?>" alt="Carimbo/Assinatura" style="max-height: 120px; max-width: 280px; object-fit: contain; background: #ffffff; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                </div>
+            <?php endif; ?>
         </div>
     </div>
-</div>
 
 <style>
     /* Responsividade */

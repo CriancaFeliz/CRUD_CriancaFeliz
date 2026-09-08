@@ -1,8 +1,9 @@
 # Implantação Segura
 
-Este roteiro serve para um ambiente novo. A atualização de um banco legado usa
-`database/migrations/20260825_upgrade_legacy_production.sql` e deve ser
-ensaiada primeiro em uma cópia do banco.
+Este roteiro serve para um ambiente novo. O repositório distribui um único
+setup oficial e não inclui migração automática para bancos legados. Qualquer
+aproveitamento de uma base antiga deve ser planejado, testado em cópia e
+executado somente depois de backup validado.
 
 ## 1. Requisitos
 

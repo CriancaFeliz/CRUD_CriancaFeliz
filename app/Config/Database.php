@@ -14,12 +14,12 @@ class Database {
     public static function getConnection() {
         if (self::$pdo === null) {
             try {
-                $host = trim((string) (getenv('DB_HOST') ?: ''));
-                $port = (int) (getenv('DB_PORT') ?: 3306);
-                $dbname = trim((string) (getenv('DB_NAME') ?: ''));
-                $username = trim((string) (getenv('DB_USER') ?: ''));
-                $password = getenv('DB_PASS') !== false ? (string) getenv('DB_PASS') : '';
-                $charset = trim((string) (getenv('DB_CHARSET') ?: 'utf8mb4'));
+                $host = trim((string) ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? getenv('DB_HOST') ?: ''));
+                $port = (int) ($_ENV['DB_PORT'] ?? $_SERVER['DB_PORT'] ?? getenv('DB_PORT') ?: 3306);
+                $dbname = trim((string) ($_ENV['DB_NAME'] ?? $_SERVER['DB_NAME'] ?? getenv('DB_NAME') ?: ''));
+                $username = trim((string) ($_ENV['DB_USER'] ?? $_SERVER['DB_USER'] ?? getenv('DB_USER') ?: ''));
+                $password = isset($_ENV['DB_PASS']) ? (string)$_ENV['DB_PASS'] : (isset($_SERVER['DB_PASS']) ? (string)$_SERVER['DB_PASS'] : (getenv('DB_PASS') !== false ? (string) getenv('DB_PASS') : ''));
+                $charset = trim((string) ($_ENV['DB_CHARSET'] ?? $_SERVER['DB_CHARSET'] ?? getenv('DB_CHARSET') ?: 'utf8mb4'));
 
                 if ($host === '' || $dbname === '' || $username === '') {
                     throw new RuntimeException('Banco de dados não configurado. Defina DB_HOST, DB_NAME e DB_USER.');

@@ -14,7 +14,9 @@ class ReportService {
             'atendidos' => 'Atendidos ativos',
             'frequencia' => 'Frequência e faltas',
             'desligamentos' => 'Desligamentos',
-            'socioeconomico' => 'Socioeconômico sintético'
+            'socioeconomico' => 'Socioeconômico sintético',
+            'usuarios' => 'Relatório de Funcionários',
+            'psicologia' => 'Relatório Psicológico'
         ];
     }
 
@@ -32,6 +34,10 @@ class ReportService {
                 return $this->dismissalsReport($filters);
             case 'socioeconomico':
                 return $this->socioeconomicReport($filters);
+            case 'usuarios':
+                return $this->employeeReport($filters);
+            case 'psicologia':
+                return $this->psychologyReport($filters);
             case 'atendidos':
             default:
                 return $this->activePeopleReport($filters);
@@ -494,5 +500,119 @@ class ReportService {
             }
         }
         return $labels;
+    }
+
+    private function employeeReport(array $filters) {
+        $sql = "SELECT nome, email, nivel, status, created_at FROM usuario WHERE 1=1";
+        $params = [];
+        
+        $this->appendSearchFilter($sql, $params, $filters['q'], 'nome', 'email');
+        $sql .= " ORDER BY nome ASC LIMIT " . (self::MAX_ROWS + 1);
+
+        $rawRows = $this->fetchAll($sql, $params);
+        $truncated = count($rawRows) > self::MAX_ROWS;
+        $rawRows = array_slice($rawRows, 0, self::MAX_ROWS);
+
+        $rows = [];
+        $totals = ['ativos' => 0, 'inativos' => 0];
+
+        foreach ($rawRows as $row) {
+            $status = strtolower($row['status'] ?? 'ativo');
+            if ($status === 'ativo' || $status === 'active') {
+                $statusDisplay = 'Ativo';
+                $totals['ativos']++;
+            } else {
+                $statusDisplay = 'Inativo';
+                $totals['inativos']++;
+            }
+
+            $rows[] = [
+                'nome' => $row['nome'] ?? '',
+                'email' => $row['email'] ?? '',
+                'nivel' => $row['nivel'] ?? '',
+                'status' => $statusDisplay,
+                'data_cadastro' => $this->formatDate($row['created_at'] ?? '')
+            ];
+        }
+
+        return $this->reportEnvelope(
+            'usuarios',
+            'Relatório de Funcionários',
+            'Listagem da equipe e controle de acessos.',
+            [
+                'nome' => 'Nome',
+                'email' => 'E-mail',
+                'nivel' => 'Nível de Acesso',
+                'status' => 'Status',
+                'data_cadastro' => 'Data de Cadastro'
+            ],
+            $rows,
+            [
+                ['label' => 'Total', 'value' => count($rows), 'tone' => 'blue'],
+                ['label' => 'Ativos', 'value' => $totals['ativos'], 'tone' => 'green'],
+                ['label' => 'Inativos', 'value' => $totals['inativos'], 'tone' => 'red']
+            ],
+            $filters,
+            $truncated
+        );
+    }
+
+    private function psychologyReport(array $filters) {
+        $sql = "SELECT a.data_anotacao, at.nome, at.cpf, a.tipo_anotacao, u.nome AS psicologo
+                FROM anotacao_psicologica a
+                JOIN atendido at ON a.id_atendido = at.idatendido
+                LEFT JOIN usuario u ON a.id_psicologo = u.idusuario
+                WHERE 1=1";
+        $params = [];
+        $this->appendDateFilters($sql, $params, 'a.data_anotacao', $filters);
+        $this->appendSearchFilter($sql, $params, $filters['q'], 'at.nome', 'at.cpf');
+        
+        $sql .= " ORDER BY a.data_anotacao DESC, at.nome ASC LIMIT " . (self::MAX_ROWS + 1);
+
+        $rawRows = $this->fetchAll($sql, $params);
+        $truncated = count($rawRows) > self::MAX_ROWS;
+        $rawRows = array_slice($rawRows, 0, self::MAX_ROWS);
+
+        $rows = [];
+        $totals = ['Consulta' => 0, 'Avaliação' => 0, 'Evolução' => 0, 'Observação' => 0];
+
+        foreach ($rawRows as $row) {
+            $tipo = $row['tipo_anotacao'] ?? 'Consulta';
+            if (!isset($totals[$tipo])) {
+                $totals[$tipo] = 0;
+            }
+            $totals[$tipo]++;
+
+            $rows[] = [
+                'data' => $this->formatDate($row['data_anotacao'] ?? ''),
+                'paciente' => $row['nome'] ?? '',
+                'cpf' => $this->maskCpf($row['cpf'] ?? ''),
+                'tipo' => $tipo,
+                'psicologo' => $row['psicologo'] ?? 'Não informado'
+            ];
+        }
+
+        return $this->reportEnvelope(
+            'psicologia',
+            'Relatório Psicológico',
+            'Histórico de consultas, avaliações e evoluções psicológicas.',
+            [
+                'data' => 'Data',
+                'paciente' => 'Paciente',
+                'cpf' => 'CPF protegido',
+                'tipo' => 'Tipo',
+                'psicologo' => 'Psicólogo'
+            ],
+            $rows,
+            [
+                ['label' => 'Total', 'value' => count($rows), 'tone' => 'blue'],
+                ['label' => 'Consultas', 'value' => $totals['Consulta'] ?? 0, 'tone' => 'green'],
+                ['label' => 'Avaliações', 'value' => $totals['Avaliação'] ?? 0, 'tone' => 'orange'],
+                ['label' => 'Evoluções', 'value' => $totals['Evolução'] ?? 0, 'tone' => 'purple']
+            ],
+            $filters,
+            $truncated,
+            'Estes dados são protegidos e devem ser manuseados apenas por profissionais autorizados.'
+        );
     }
 }

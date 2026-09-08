@@ -1,197 +1,68 @@
 <!-- Gerenciar Oficinas -->
 <style>
-    .actions-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    .oficinas-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-    .oficina-card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-left: 5px solid #3E6475;
-    }
-    .oficina-card.inativa {
-        opacity: 0.6;
-        border-left-color: #ccc;
-    }
-    .oficina-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: start;
-        margin-bottom: 15px;
-    }
-    .oficina-nome {
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-    }
-    .oficina-status {
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-    .status-ativa {
-        background: #d4edda;
-        color: #155724;
-    }
-    .status-inativa {
-        background: #f8d7da;
-        color: #721c24;
-    }
-    .oficina-info {
-        margin: 10px 0;
-        color: #666;
-        font-size: 14px;
-    }
-    .oficina-info i {
-        width: 20px;
-        color: #348cb4;
-    }
-    .oficina-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-    }
-    .btn-small {
-        padding: 8px 14px;
-        font-size: 13px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-    }
-    .btn-edit {
-        background: #348cb4;
-        color: #fff;
-    }
-    .btn-toggle {
-        background: #6c757d;
-        color: #fff;
-    }
-    .btn-small:hover {
-        opacity: 0.9;
-    }
     .modal {
         display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 9999;
-        align-items: center;
-        justify-content: center;
     }
     .modal.active {
         display: flex;
     }
-    .modal-content {
-        background: #fff;
-        border-radius: 12px;
-        padding: 30px;
-        max-width: 500px;
-        width: 90%;
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    .modal-header h3 {
-        margin: 0;
-    }
-    .btn-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: #999;
-    }
-    .form-group {
-        margin-bottom: 20px;
-    }
-    .form-group label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 8px;
-    }
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-        font-family: 'Poppins', sans-serif;
-    }
 </style>
 
 <!-- Header -->
-<div class="actions-top">
-    <h3 style="margin: 0;"><i class="fas fa-chalkboard-teacher"></i> Gerenciar Oficinas</h3>
-    <button onclick="abrirModalNova()" class="btn">
+<div class="actions flex-between flex-wrap gap-2 mb-4">
+    <h2 class="m-0" style="color: var(--text-primary); font-size: 22px;">
+        <i class="fas fa-chalkboard-teacher text-muted"></i> Gerenciar Oficinas
+    </h2>
+    <button onclick="abrirModalNova()" class="btn success">
         <i class="fas fa-plus"></i> Nova Oficina
     </button>
 </div>
 
 <!-- Grid de Oficinas -->
-<div class="oficinas-grid">
+<div class="stats-row mb-4">
     <?php if (empty($oficinas)): ?>
-        <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #fff; border-radius: 12px;">
-            <p style="color: #999;">Nenhuma oficina cadastrada</p>
+        <div class="empty-state card-glass text-center p-5 text-muted" style="grid-column: 1/-1;">
+            <i class="fas fa-chalkboard-teacher" style="font-size: 48px; margin-bottom: 12px; display: block;"></i>
+            <p class="m-0" style="font-size: 16px; font-weight: 600;">Nenhuma oficina cadastrada</p>
         </div>
     <?php else: ?>
         <?php foreach ($oficinas as $oficina): ?>
-            <div class="oficina-card <?php echo !$oficina['ativo'] ? 'inativa' : ''; ?>">
-                <div class="oficina-header">
-                    <div class="oficina-nome"><?php echo htmlspecialchars($oficina['nome']); ?></div>
-                    <span class="oficina-status <?php echo $oficina['ativo'] ? 'status-ativa' : 'status-inativa'; ?>">
-                        <?php echo $oficina['ativo'] ? 'Ativa' : 'Inativa'; ?>
-                    </span>
+            <div class="card-glass d-flex flex-column justify-content-between p-4" style="<?php echo !$oficina['ativo'] ? 'opacity: 0.65;' : ''; ?> border-left: 4px solid <?php echo $oficina['ativo'] ? 'var(--primary-green)' : 'var(--text-muted)'; ?>;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div style="font-size: 17px; font-weight: 700; color: var(--text-primary);"><?php echo htmlspecialchars($oficina['nome']); ?></div>
+                        <span class="status <?php echo $oficina['ativo'] ? 'ativo' : 'inativo'; ?>">
+                            <?php echo $oficina['ativo'] ? 'Ativa' : 'Inativa'; ?>
+                        </span>
+                    </div>
+                    
+                    <?php if ($oficina['descricao']): ?>
+                        <div class="text-muted mb-2" style="font-size: 14px;">
+                            <i class="fas fa-align-left mr-1"></i> <?php echo htmlspecialchars($oficina['descricao']); ?>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <?php if ($oficina['dia_semana']): ?>
+                        <div class="text-muted mb-1" style="font-size: 13px;">
+                            <i class="fas fa-calendar mr-1"></i> <?php echo htmlspecialchars($oficina['dia_semana']); ?>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <?php if ($oficina['horario_inicio']): ?>
+                        <div class="text-muted mb-3" style="font-size: 13px;">
+                            <i class="fas fa-clock mr-1"></i> 
+                            <?php echo substr($oficina['horario_inicio'], 0, 5); ?> - 
+                            <?php echo substr($oficina['horario_fim'], 0, 5); ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 
-                <?php if ($oficina['descricao']): ?>
-                    <div class="oficina-info">
-                        <i class="fas fa-align-left"></i> <?php echo htmlspecialchars($oficina['descricao']); ?>
-                    </div>
-                <?php endif; ?>
-                
-                <?php if ($oficina['dia_semana']): ?>
-                    <div class="oficina-info">
-                        <i class="fas fa-calendar"></i> <?php echo htmlspecialchars($oficina['dia_semana']); ?>
-                    </div>
-                <?php endif; ?>
-                
-                <?php if ($oficina['horario_inicio']): ?>
-                    <div class="oficina-info">
-                        <i class="fas fa-clock"></i> 
-                        <?php echo substr($oficina['horario_inicio'], 0, 5); ?> - 
-                        <?php echo substr($oficina['horario_fim'], 0, 5); ?>
-                    </div>
-                <?php endif; ?>
-                
-                <div class="oficina-actions">
-                    <button type="button" data-action="edit-workshop" data-workshop="<?php echo e(json_encode($oficina, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE)); ?>" class="btn-small btn-edit">
+                <div class="d-flex gap-2 pt-3 mt-3" style="border-top: 1px solid var(--border-color); margin-top: 16px;">
+                    <button type="button" data-action="edit-workshop" data-workshop="<?php echo e(json_encode($oficina, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE)); ?>" class="btn secondary btn-sm">
                         <i class="fas fa-edit"></i> Editar
                     </button>
-                    <button type="button" data-action="toggle-workshop" data-workshop-id="<?php echo (int)($oficina['id_oficina'] ?? 0); ?>" class="btn-small btn-toggle">
-                        <i class="fas fa-power-off"></i> <?php echo $oficina['ativo'] ? 'Desativar' : 'Ativar'; ?>
+                    <button type="button" data-action="toggle-workshop" data-workshop-id="<?php echo (int)($oficina['id_oficina'] ?? 0); ?>" class="btn <?php echo $oficina['ativo'] ? 'danger' : 'success'; ?> btn-sm" <?php echo $oficina['ativo'] ? 'style="background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important;"' : ''; ?>>
+                        <i class="fas fa-power-off" <?php echo $oficina['ativo'] ? 'style="color: white !important;"' : ''; ?>></i> <?php echo $oficina['ativo'] ? 'Desativar' : 'Ativar'; ?>
                     </button>
                 </div>
             </div>
@@ -204,7 +75,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3 id="modalTitulo">Nova Oficina</h3>
-            <button class="btn-close" onclick="fecharModal()">&times;</button>
+            <button class="modal-close" onclick="fecharModal()" aria-label="Fechar">&times;</button>
         </div>
         
         <form id="formOficina" method="POST" action="faltas.php?action=salvarOficinaConfig">
@@ -212,18 +83,18 @@
             <input type="hidden" name="id_oficina" id="id_oficina" value="">
             
             <div class="form-group">
-                <label>Nome da Oficina *</label>
-                <input type="text" name="nome" id="nome" required>
+                <label class="form-label-bold">Nome da Oficina <span class="required-asterisk">*</span></label>
+                <input type="text" name="nome" id="nome" class="form-control" required>
             </div>
             
             <div class="form-group">
-                <label>Descrição</label>
-                <textarea name="descricao" id="descricao" rows="3"></textarea>
+                <label class="form-label-bold">Descrição</label>
+                <textarea name="descricao" id="descricao" class="form-control" rows="3"></textarea>
             </div>
             
             <div class="form-group">
-                <label>Dia da Semana</label>
-                <select name="dia_semana" id="dia_semana">
+                <label class="form-label-bold">Dia da Semana</label>
+                <select name="dia_semana" id="dia_semana" class="form-select">
                     <option value="">Selecione...</option>
                     <option value="Segunda">Segunda-feira</option>
                     <option value="Terça">Terça-feira</option>
@@ -236,24 +107,42 @@
             </div>
             
             <div class="form-group">
-                <label>Horário Início</label>
-                <input type="time" name="horario_inicio" id="horario_inicio">
+                <label class="form-label-bold">Horário Início</label>
+                <input type="time" name="horario_inicio" id="horario_inicio" class="form-control">
             </div>
             
             <div class="form-group">
-                <label>Horário Fim</label>
-                <input type="time" name="horario_fim" id="horario_fim">
+                <label class="form-label-bold">Horário Fim</label>
+                <input type="time" name="horario_fim" id="horario_fim" class="form-control">
             </div>
             
-            <div style="display: flex; gap: 10px;">
-                <button type="submit" class="btn">
-                    <i class="fas fa-save"></i> Salvar
-                </button>
+            <div class="modal-buttons">
                 <button type="button" onclick="fecharModal()" class="btn secondary">
                     Cancelar
                 </button>
+                <button type="submit" class="btn success">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modal Moderno de Confirmação Padronizado Criança Feliz -->
+<div id="modalConfirmacaoCustom" class="modal-confirm-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modalConfirmacaoTitle">
+    <div class="modal-confirm-dialog" style="max-width: 440px; text-align: center;">
+        <img src="img/logo.png" class="modal-confirm-logo" alt="Criança Feliz">
+        <h3 id="modalConfirmacaoTitle" class="modal-confirm-title">Confirmação</h3>
+        <p id="modalConfirmacaoDesc" class="modal-confirm-desc">
+            Deseja continuar?
+        </p>
+        
+        <div class="modal-confirm-btn-group" style="margin-top: 24px;">
+            <button type="button" class="btn-confirm-cancel" onclick="fecharModalConfirmacao()">Cancelar</button>
+            <button type="button" id="btnConfirmarAcao" class="btn primary" style="flex: 1; height: 44px; border-radius: 10px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fas fa-check"></i> Confirmar
+            </button>
+        </div>
     </div>
 </div>
 
@@ -298,9 +187,11 @@ function fecharModal() {
 }
 
 function toggleOficina(id) {
-    if (!confirm('Deseja alterar o status desta oficina?')) {
-        return;
-    }
+    abrirModalConfirmacao(
+        'Alterar Status',
+        'Tem certeza que deseja alterar o status desta oficina?',
+        'Sim, alterar',
+        () => {
     
     // Fazer requisição AJAX
     fetch('faltas.php?action=toggleOficina', {
@@ -313,20 +204,46 @@ function toggleOficina(id) {
             csrf_token: <?php echo json_encode($csrf_token); ?>
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Recarregar a página para atualizar o status
-            window.location.reload();
-        } else {
-            alert(data.error || 'Erro ao alterar status da oficina');
-        }
-    })
-    .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao processar requisição');
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'Erro ao alterar status da oficina');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao processar requisição');
+        });
     });
 }
+
+let confirmacaoCallback = null;
+
+function abrirModalConfirmacao(titulo, descricao, textoBotao, callback) {
+    document.getElementById('modalConfirmacaoTitle').textContent = titulo;
+    document.getElementById('modalConfirmacaoDesc').textContent = descricao;
+    document.getElementById('btnConfirmarAcao').innerHTML = `<i class="fas fa-check"></i> ${textoBotao}`;
+    
+    confirmacaoCallback = callback;
+    
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function fecharModalConfirmacao() {
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.classList.remove('active');
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
+    confirmacaoCallback = null;
+}
+
+document.getElementById('btnConfirmarAcao').addEventListener('click', () => {
+    if (confirmacaoCallback) confirmacaoCallback();
+    fecharModalConfirmacao();
+});
 
 // Fechar modal ao clicar fora
 document.getElementById('modalOficina').addEventListener('click', function(e) {

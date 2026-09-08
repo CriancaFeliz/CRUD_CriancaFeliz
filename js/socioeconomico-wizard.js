@@ -467,6 +467,123 @@
         if (event.target === modal) closeFamilyModal();
     });
 
+    function restrictLettersOnly(input) {
+        if (!input) return;
+
+        // 1. Bloqueio instantâneo no teclado físico (keydown)
+        input.addEventListener('keydown', (event) => {
+            // Permitir atalhos (Ctrl/Alt/Meta), teclas de navegação e teclas de controle (Backspace, Tab, Setas, etc.)
+            if (event.ctrlKey || event.altKey || event.metaKey) return;
+            if (event.key && event.key.length > 1) return; // 'Backspace', 'Delete', 'ArrowLeft', 'Dead' (acentos), etc.
+
+            // Bloquear se não for letra (incluindo acentuadas e cedilha) ou espaço
+            if (!/^[\p{L}\s]$/u.test(event.key)) {
+                event.preventDefault();
+            }
+        });
+
+        // 2. Bloqueio antes da inserção (beforeinput - celulares, teclados virtuais, emojis)
+        input.addEventListener('beforeinput', (event) => {
+            if (!event.data) return;
+            // Bloqueia qualquer caractere que não seja letra ou espaço
+            if (/[^\p{L}\s]/u.test(event.data)) {
+                event.preventDefault();
+            }
+        });
+
+        // 3. Sanitização instantânea em caso de entrada por composição, preenchimento ou arrastar
+        input.addEventListener('input', () => {
+            const original = input.value;
+            const cleaned = original.replace(/[^\p{L}\s]/gu, '');
+            if (original !== cleaned) {
+                const start = input.selectionStart;
+                input.value = cleaned;
+                try {
+                    const diff = original.length - cleaned.length;
+                    input.setSelectionRange(Math.max(0, start - diff), Math.max(0, start - diff));
+                } catch (_) {}
+            }
+        });
+
+        // 4. Bloqueio no colar (paste): remove números, emojis e símbolos antes de colar
+        input.addEventListener('paste', (event) => {
+            event.preventDefault();
+            const clipboardData = event.clipboardData || window.clipboardData;
+            const text = clipboardData ? clipboardData.getData('text') : '';
+            const cleaned = text.replace(/[^\p{L}\s]/gu, '');
+            if (cleaned) {
+                const start = input.selectionStart || 0;
+                const end = input.selectionEnd || 0;
+                const val = input.value;
+                input.value = val.slice(0, start) + cleaned + val.slice(end);
+                const newPos = start + cleaned.length;
+                try {
+                    input.setSelectionRange(newPos, newPos);
+                } catch (_) {}
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+
+        // 5. Bloquear arrastar e soltar texto não filtrado
+        input.addEventListener('drop', (event) => {
+            event.preventDefault();
+            const text = event.dataTransfer ? event.dataTransfer.getData('text') : '';
+            const cleaned = text.replace(/[^\p{L}\s]/gu, '');
+            if (cleaned) {
+                input.value = cleaned;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+    }
+
+    function maskDigits(input, maxLength, formatter) {
+        if (!input) return;
+        input.addEventListener('input', (event) => {
+            const digits = event.target.value.replace(/\D/g, '').slice(0, maxLength);
+            event.target.value = formatter(digits);
+        });
+    }
+
+    function applyMasksAndRestrictions() {
+        // Máscara de CPF (000.000.000-00)
+        const cpfInputs = [form.querySelector('input[name="cpf"]'), document.getElementById('cpf')].filter(Boolean);
+        cpfInputs.forEach((input) => {
+            maskDigits(input, 11, (digits) => digits
+                .replace(/^(\d{3})(\d)/, '$1.$2')
+                .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+                .replace(/(\d{3})(\d{1,2})$/, '$1-$2'));
+        });
+
+        // Máscara de RG (00.000.000-0)
+        const rgInputs = [form.querySelector('input[name="rg"]'), document.getElementById('rg')].filter(Boolean);
+        rgInputs.forEach((input) => {
+            maskDigits(input, 9, (digits) => digits
+                .replace(/^(\d{2})(\d)/, '$1.$2')
+                .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+                .replace(/(\d{3})(\d)$/, '$1-$2'));
+        });
+
+        // Máscara de Data (dd/mm/aaaa)
+        const dateInputs = [
+            form.querySelector('input[name="data_acolhimento"]'),
+            document.getElementById('data_acolhimento'),
+            document.getElementById('family_data_nasc')
+        ].filter(Boolean);
+        dateInputs.forEach((input) => {
+            maskDigits(input, 8, (digits) => digits
+                .replace(/^(\d{2})(\d)/, '$1/$2')
+                .replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3'));
+        });
+
+        // Restringir campos de nome: proibir números, emojis e caracteres especiais diretamente na digitação
+        const nameInputs = [
+            ...form.querySelectorAll('input[name="nome_entrevistado"], input[name="nome_menor"], input[name="assistente_social"]'),
+            document.getElementById('family_nome')
+        ].filter(Boolean);
+
+        nameInputs.forEach(restrictLettersOnly);
+    }
+
     window.nextStep = nextStep;
     window.prevStep = prevStep;
     window.openFamilyModal = openFamilyModal;
@@ -478,5 +595,6 @@
     window.toggleCltField = toggleCltField;
 
     hydrate(parseInitialData());
+    applyMasksAndRestrictions();
     showStep(1);
 })();

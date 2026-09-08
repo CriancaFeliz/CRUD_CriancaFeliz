@@ -66,6 +66,13 @@ Limites da validacao local:
 - O PHP local em `C:\Program Files\PHP\current\php.exe` nao possui `pdo_mysql`, entao login/rotas com banco nao puderam ser validadas pelo servidor embutido nesta maquina.
 - A validacao completa com banco deve ser repetida com Docker Desktop ativo ou PHP com `pdo_mysql` habilitado.
 
+### Proteção Contra SQL Injection e Sanitização (07/09/2026)
+
+Estado atual verificado e homologado:
+- Todos os acessos a banco de dados nas rotas novas de cadastro/edição (ex: `Acolhimento.php`, `Socioeconomico.php`) utilizam rigorosamente **PDO Prepared Statements**. Isso significa que a base está imune a tentativas de injeção de SQL via formulário.
+- A função `sanitizeInput($data)` sanitiza a entrada no controller antes que qualquer inserção ocorra.
+- Restrições de frontend (Regex bloqueando emojis/caracteres indesejados) servem de usabilidade, e o servidor blinda o banco com queries parametrizadas (ex: `$this->query("INSERT ... VALUES (?)", [$dado])`).
+
 ## Próxima Decisão
 
 Antes de mercado, decidir se a autenticação continuará interna ou se será substituída/integrada a um provedor externo de identidade.

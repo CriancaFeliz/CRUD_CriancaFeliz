@@ -167,10 +167,43 @@
     </form>
 </div>
 
+<!-- Modal Moderno de Confirmação Padronizado Criança Feliz -->
+<div id="modalConfirmacaoCustom" class="modal-confirm-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modalConfirmacaoTitle">
+    <div class="modal-confirm-dialog" style="max-width: 440px; text-align: center;">
+        <img src="img/logo.png" class="modal-confirm-logo" alt="Criança Feliz">
+        <h3 id="modalConfirmacaoTitle" class="modal-confirm-title">Confirmar Desligamento</h3>
+        <p id="modalConfirmacaoDesc" class="modal-confirm-desc">
+            Deseja realmente desligar este atendido do sistema?
+        </p>
+        
+        <div class="modal-confirm-btn-group" style="margin-top: 24px;">
+            <button type="button" class="btn-confirm-cancel" onclick="fecharModalConfirmacao()">Cancelar</button>
+            <button type="button" id="btnConfirmarAcao" class="btn primary" style="background: #dc3545; border-color: #dc3545; flex: 1; height: 44px; border-radius: 10px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fas fa-check"></i> Sim, Desligar
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 document.getElementById('formDesligamento').addEventListener('submit', function(e) {
-    if (!confirm('Deseja realmente desligar este atendido?')) {
-        e.preventDefault();
-    }
+    e.preventDefault(); // Impede o envio imediato
+    
+    // Mostra o modal customizado
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+});
+
+function fecharModalConfirmacao() {
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+}
+
+document.getElementById('btnConfirmarAcao').addEventListener('click', function() {
+    // Quando o usuário clica em "Sim, Desligar", envia o formulário diretamente
+    const form = document.getElementById('formDesligamento');
+    HTMLFormElement.prototype.submit.call(form);
 });
 </script>
