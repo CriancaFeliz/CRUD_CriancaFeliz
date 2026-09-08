@@ -1,11 +1,35 @@
+# Ambiente
+/.env
+.env.*
+!.env.example
+
+# Dados locais e sensíveis
+/data/*.json
+/data/*.log
+/data/reset_tokens.json
+/database/legacy_dumps/
+*.sql.bak
+*.sql.dump
+
 # Logs
+/var/logs/*.log
+/var/private/
 *.log
-data/*.log
 
-# Archives
-*.zip
-*.tar.gz
+# Uploads
+/uploads/
+!/uploads/
+/uploads/*
+!/uploads/.gitkeep
 
-# System files
-.DS_Store
+# Sistema operacional
 Thumbs.db
+.DS_Store
+desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

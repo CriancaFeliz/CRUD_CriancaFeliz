@@ -1,0 +1,26 @@
+<!-- CAMPOS A PREENCHER -->
+
+ENDEREÇO:
+- endereco
+- numero
+- cep
+- bairro
+- cidade
+- complemento
+- ponto_referencia
+- escola
+- periodo (select)
+- cras
+- ubs
+
+RESPONSÁVEL:
+- nome_responsavel
+- rg_responsavel
+- cpf_responsavel
+- grau_parentesco
+- contato_1
+
+DOCUMENTOS:
+- cad_unico (select)
+- acolhimento_responsavel
+- acolhimento_funcao

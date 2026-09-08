@@ -6,13 +6,11 @@
 class ProntuarioController extends BaseController {
     private $acolhimentoService;
     private $socioeconomicoService;
-    private $attendanceService;
     
     public function __construct() {
         parent::__construct();
         $this->acolhimentoService = new AcolhimentoService();
         $this->socioeconomicoService = new SocioeconomicoService();
-        $this->attendanceService = new AttendanceService();
     }
     
     /**
@@ -44,43 +42,127 @@ class ProntuarioController extends BaseController {
     /**
      * Visualiza prontuário específico
      */
-    public function show($cpf) {
+    public function show($cpf = null, $id = null) {
         $this->requireAuth();
         
         try {
-            // Buscar fichas pelo CPF
             $acolhimento = null;
             $socioeconomico = null;
             
-            // Buscar ficha de acolhimento
-            $acolhimentos = $this->acolhimentoService->listFichas(1, 1000);
-            foreach ($acolhimentos['data'] as $ficha) {
-                if ($ficha['cpf'] === $cpf) {
-                    $acolhimento = $ficha;
-                    break;
+            // 1. Se fornecido ID do atendido, carregar diretamente
+            if (!empty($id)) {
+                try {
+                    $acolhimento = $this->acolhimentoService->getFicha((int)$id);
+                } catch (Exception $e) {
+                    // Sem ficha de acolhimento encontrada para este ID
+                }
+                
+                try {
+                    $socioeconomico = $this->socioeconomicoService->getFicha((int)$id);
+                } catch (Exception $e) {
+                    // Sem ficha socioeconômica encontrada para este ID
                 }
             }
             
-            // Buscar ficha socioeconômica
-            $socioeconomicos = $this->socioeconomicoService->listFichas(1, 1000);
-            foreach ($socioeconomicos['data'] as $ficha) {
-                if ($ficha['cpf'] === $cpf) {
-                    $socioeconomico = $ficha;
-                    break;
+            // 2. Se não encontrou por ID ou ID não foi informado, buscar por CPF
+            if ((!$acolhimento && !$socioeconomico) && !empty($cpf)) {
+                $cpfNormalizado = preg_replace('/\D+/', '', (string)$cpf);
+                
+                // Buscar ficha de acolhimento
+                $acolhimentos = $this->acolhimentoService->listFichas(1, 1000);
+                foreach ($acolhimentos['data'] as $ficha) {
+                    if (preg_replace('/\D+/', '', $ficha['cpf'] ?? '') === $cpfNormalizado) {
+                        $acolhimento = $ficha;
+                        break;
+                    }
+                }
+                
+                // Buscar ficha socioeconômica
+                $socioeconomicos = $this->socioeconomicoService->listFichas(1, 1000);
+                foreach ($socioeconomicos['data'] as $ficha) {
+                    if (preg_replace('/\D+/', '', $ficha['cpf'] ?? '') === $cpfNormalizado) {
+                        $socioeconomico = $ficha;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Se uma das fichas foi localizada e a outra não, buscar a faltante pelo ID
+            $atendidoId = $acolhimento['id'] ?? $socioeconomico['id'] ?? ($id ? (int)$id : null);
+            if ($atendidoId) {
+                if (!$acolhimento) {
+                    try {
+                        $acolhimento = $this->acolhimentoService->getFicha((int)$atendidoId);
+                    } catch (Exception $e) {}
+                }
+                if (!$socioeconomico) {
+                    try {
+                        $socioeconomico = $this->socioeconomicoService->getFicha((int)$atendidoId);
+                    } catch (Exception $e) {}
                 }
             }
             
             if (!$acolhimento && !$socioeconomico) {
                 throw new Exception('Prontuário não encontrado');
             }
+
+            $cpfDisplay = !empty($cpf) ? $cpf : ($acolhimento['cpf'] ?? $socioeconomico['cpf'] ?? 'Não informado');
+
+            $documents = [];
+            if ($atendidoId) {
+                try {
+                    $documentModel = new Document();
+                    $documents = $documentModel->findByAtendido($atendidoId);
+                } catch (Exception $e) {
+                    reportException($e, 'ProntuarioController::documentos');
+                }
+            }
             
-            // Buscar estatísticas de faltas se tiver acolhimento
             $attendanceStats = null;
             if ($acolhimento) {
                 try {
-                    $attendanceStats = $this->attendanceService->getAtendidoStatistics($acolhimento['id']);
+                    $frequenciaModel = new FrequenciaDia();
+                    $desligamentoModel = new Desligamento();
+                    
+                    $dbStats = $frequenciaModel->getEstatisticas($acolhimento['id']);
+                    $desligamento = $desligamentoModel->getByAtendido($acolhimento['id']);
+                    
+                    // Alertas dinâmicos baseados nas faltas não justificadas
+                    $alertas = [];
+                    $faltasNaoJustificadas = $dbStats['faltas'] ?? 0;
+                    if ($faltasNaoJustificadas >= 3) {
+                        $alertas[] = [
+                            'tipo' => 'excesso_faltas',
+                            'nivel' => 'critico',
+                            'icone' => '⚠️',
+                            'mensagem' => "Atendido com {$faltasNaoJustificadas} faltas não justificadas",
+                            'acao_sugerida' => "Verificar justificativas ou avaliar encaminhamento disciplinar."
+                        ];
+                    }
+                    
+                    // Idade limite alerta
+                    $idade = $acolhimento['idade'] ?? calculateAge($acolhimento['data_nascimento']);
+                    if ($idade >= 18) {
+                        $alertas[] = [
+                            'tipo' => 'idade_limite',
+                            'nivel' => 'critico',
+                            'icone' => '⏰',
+                            'mensagem' => "Atendido completou {$idade} anos - Desligamento automático pendente",
+                            'acao_sugerida' => "Proceder com a rotina de desligamento por atingimento de maioridade."
+                        ];
+                    }
+                    
+                    $attendanceStats = [
+                        'desligado' => !empty($desligamento),
+                        'desligamento' => $desligamento,
+                        'alertas' => $alertas,
+                        'total_presencas' => $dbStats['presencas'] ?? 0,
+                        'faltas_justificadas' => $dbStats['justificadas'] ?? 0,
+                        'faltas_nao_justificadas' => $dbStats['faltas'] ?? 0,
+                        'percentual_presenca' => $dbStats['percentual_presenca'] ?? 100
+                    ];
                 } catch (Exception $e) {
-                    error_log("Erro ao buscar estatísticas de faltas: " . $e->getMessage());
+                    reportException($e, 'ProntuarioController::frequencia');
                 }
             }
             
@@ -90,7 +172,9 @@ class ProntuarioController extends BaseController {
                 'acolhimento' => $acolhimento,
                 'socioeconomico' => $socioeconomico,
                 'attendanceStats' => $attendanceStats,
-                'cpf' => $cpf,
+                'documents' => $documents,
+                'atendidoId' => $atendidoId,
+                'cpf' => $cpfDisplay,
                 'csrf_token' => $this->generateCSRF()
             ];
             
@@ -101,16 +185,186 @@ class ProntuarioController extends BaseController {
         }
     }
 
-    public function buscar(){
-    $query = $_GET['q'] ?? '';
+    public function buscar() {
+        $this->requireAuth();
 
-    $model = new ProntuarioModel();
-    $resultados = $model->buscarPorNomeOuCpf($query);
+        $query = trim($_GET['q'] ?? '');
+        $categoria = trim($_GET['categoria'] ?? '');
 
-    $this->renderWithLayout('main', 'prontuarios/index', [
-        'resultados' => $resultados,
-        'query' => $query
-    ]);
-}
+        if (strlen($query) < 2) {
+            $this->json([]);
+        }
+
+        $resultados = [];
+        if ($categoria === '' || $categoria === 'acolhimento') {
+            foreach ($this->acolhimentoService->searchFichas($query) as $ficha) {
+                $ficha['categoria'] = 'acolhimento';
+                $ficha['nome'] = $ficha['nome_completo'] ?? $ficha['nome'] ?? '';
+                $resultados[] = $ficha;
+            }
+        }
+
+        if ($categoria === '' || $categoria === 'socioeconomico') {
+            foreach ($this->socioeconomicoService->searchFichas($query) as $ficha) {
+                $ficha['categoria'] = 'socioeconomico';
+                $ficha['nome'] = $ficha['nome_completo'] ?? $ficha['nome_entrevistado'] ?? $ficha['nome'] ?? '';
+                $resultados[] = $ficha;
+            }
+        }
+
+        $this->json(array_values($resultados));
+    }
+
+    public function uploadDocument() {
+        $this->requireAuth();
+        $this->requirePermission('edit_records');
+
+        if (!$this->isPost()) {
+            $this->redirectWithError('prontuarios.php', 'Método não permitido');
+        }
+
+        try {
+            $this->validateCSRF();
+
+            $atendidoId = intval($_POST['id_atendido'] ?? 0);
+            $cpf = trim($_POST['cpf'] ?? '');
+            $tipo = trim($_POST['tipo'] ?? 'outros');
+
+            if ($atendidoId <= 0) {
+                throw new Exception('Atendido inválido para anexar documento');
+            }
+
+            $allowedTypes = [
+                'identidade',
+                'comprovante_residencia',
+                'escola',
+                'saude',
+                'autorizacao',
+                'outros'
+            ];
+            if (!in_array($tipo, $allowedTypes, true)) {
+                $tipo = 'outros';
+            }
+
+            if (!isset($_FILES['documento']) || $_FILES['documento']['error'] !== UPLOAD_ERR_OK) {
+                throw new Exception('Nenhum documento foi enviado');
+            }
+
+            $file = $_FILES['documento'];
+            if ($file['size'] > 10 * 1024 * 1024) {
+                throw new Exception('Arquivo muito grande. Tamanho máximo: 10MB');
+            }
+
+            $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+            if (!in_array($extension, $allowedExtensions, true)) {
+                throw new Exception('Tipo de documento não permitido. Use PDF, JPG, PNG, DOC ou DOCX');
+            }
+
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo ? finfo_file($finfo, $file['tmp_name']) : '';
+            if ($finfo) {
+                finfo_close($finfo);
+            }
+
+            $allowedMimeTypes = [
+                'application/pdf',
+                'image/jpeg',
+                'image/png',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/zip'
+            ];
+            if (!$mimeType || !in_array($mimeType, $allowedMimeTypes, true)) {
+                throw new Exception('Conteúdo do arquivo não corresponde a um documento permitido');
+            }
+
+            $uploadDir = BASE_PATH . '/var/private/documents';
+            if (!is_dir($uploadDir)) {
+                if (!mkdir($uploadDir, 0750, true) && !is_dir($uploadDir)) {
+                    throw new Exception('Não foi possível preparar a área segura de documentos');
+                }
+            }
+
+            $fileName = $atendidoId . '_' . bin2hex(random_bytes(16)) . '.' . $extension;
+            $targetPath = $uploadDir . '/' . $fileName;
+            if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+                throw new Exception('Erro ao salvar documento');
+            }
+
+            $documentModel = new Document();
+            try {
+                $documentModel->createForAtendido($atendidoId, $tipo, 'var/private/documents/' . $fileName);
+            } catch (Throwable $exception) {
+                @unlink($targetPath);
+                throw $exception;
+            }
+
+            $redirect = 'prontuarios.php';
+            if ($cpf !== '') {
+                $redirect .= '?action=show&cpf=' . urlencode($cpf);
+            }
+
+            $this->redirectWithSuccess($redirect, 'Documento anexado com sucesso!');
+        } catch (Exception $e) {
+            $redirect = 'prontuarios.php';
+            if (!empty($_POST['cpf'])) {
+                $redirect .= '?action=show&cpf=' . urlencode($_POST['cpf']);
+            }
+            $this->redirectWithError($redirect, $e->getMessage(), false);
+        }
+    }
+
+    public function viewDocument($id) {
+        $this->requirePermission('view_all_records');
+
+        try {
+            $documentModel = new Document();
+            $document = $documentModel->findById($id);
+            if (!$document) {
+                throw new Exception('Documento não encontrado');
+            }
+
+            $relativePath = ltrim((string) ($document['arquivo'] ?? ''), '/\\');
+            $filePath = realpath(BASE_PATH . '/' . $relativePath);
+            $allowedDirectories = [
+                realpath(BASE_PATH . '/var/private/documents'),
+                realpath(BASE_PATH . '/uploads/documents') // Compatibilidade com anexos legados.
+            ];
+            $isAllowed = false;
+
+            foreach (array_filter($allowedDirectories) as $allowedDirectory) {
+                if ($filePath && strpos($filePath, $allowedDirectory . DIRECTORY_SEPARATOR) === 0) {
+                    $isAllowed = true;
+                    break;
+                }
+            }
+
+            if (!$filePath || !$isAllowed || !is_file($filePath)) {
+                throw new Exception('Arquivo não encontrado');
+            }
+
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo ? finfo_file($finfo, $filePath) : 'application/octet-stream';
+            if ($finfo) {
+                finfo_close($finfo);
+            }
+
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            header('Content-Type: ' . $mimeType);
+            header('Content-Length: ' . filesize($filePath));
+            header('Content-Disposition: inline; filename="' . basename($filePath) . '"');
+            header('X-Content-Type-Options: nosniff');
+            header('Cache-Control: private, no-store, max-age=0');
+            header('Pragma: no-cache');
+            readfile($filePath);
+            exit;
+        } catch (Exception $e) {
+            $this->redirectWithError('prontuarios.php', $e->getMessage(), false);
+        }
+    }
 
 }

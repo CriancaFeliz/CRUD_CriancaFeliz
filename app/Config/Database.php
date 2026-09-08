@@ -4,51 +4,62 @@
  * Configurações do Banco de Dados
  */
 class Database {
-    
-    // Configurações de conexão
-    private static $host = null;
-    private static $dbname = null;
-    private static $username = null;
-    private static $password = null;
-    private static $port = null;
-    private static $charset = 'utf8mb4';
-    
+
     // Instância PDO (singleton)
     private static $pdo = null;
-
-    private static function initConfig() {
-        if (self::$host === null) {
-            self::$host = getenv('DB_HOST') ?: 'localhost';
-            self::$port = getenv('DB_PORT') ?: '3306';
-            self::$dbname = getenv('DB_DATABASE') ?: (getenv('DB_NAME') ?: 'criancafeliz_db');
-            self::$username = getenv('DB_USERNAME') ?: (getenv('DB_USER') ?: 'criancafeliz_criancafeliz');
-            self::$password = getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : 'Windows10@';
-        }
-    }
     
     /**
      * Obter conexão PDO (singleton)
      */
     public static function getConnection() {
         if (self::$pdo === null) {
-            self::initConfig();
             try {
-                $dsn = "mysql:host=" . self::$host . ";port=" . self::$port . ";dbname=" . self::$dbname . ";charset=" . self::$charset;
+                $host = trim((string) ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost'));
+                $port = (int) ($_ENV['DB_PORT'] ?? $_SERVER['DB_PORT'] ?? getenv('DB_PORT') ?: 3306);
+                $dbname = trim((string) ($_ENV['DB_NAME'] ?? $_ENV['DB_DATABASE'] ?? $_SERVER['DB_NAME'] ?? $_SERVER['DB_DATABASE'] ?? getenv('DB_NAME') ?: (getenv('DB_DATABASE') ?: '')));
+                $username = trim((string) ($_ENV['DB_USER'] ?? $_ENV['DB_USERNAME'] ?? $_SERVER['DB_USER'] ?? $_SERVER['DB_USERNAME'] ?? getenv('DB_USER') ?: (getenv('DB_USERNAME') ?: '')));
+                $password = isset($_ENV['DB_PASS']) ? (string)$_ENV['DB_PASS'] : (isset($_ENV['DB_PASSWORD']) ? (string)$_ENV['DB_PASSWORD'] : (isset($_SERVER['DB_PASS']) ? (string)$_SERVER['DB_PASS'] : (isset($_SERVER['DB_PASSWORD']) ? (string)$_SERVER['DB_PASSWORD'] : (getenv('DB_PASS') !== false ? (string)getenv('DB_PASS') : (getenv('DB_PASSWORD') !== false ? (string)getenv('DB_PASSWORD') : '')))));
+                $charset = trim((string) ($_ENV['DB_CHARSET'] ?? $_SERVER['DB_CHARSET'] ?? getenv('DB_CHARSET') ?: 'utf8mb4'));
+
+                if ($dbname === '' || $username === '') {
+                    throw new RuntimeException('Banco de dados não configurado no .env. Defina DB_HOST, DB_NAME (ou DB_DATABASE) e DB_USER (ou DB_USERNAME).');
+                }
+
+                if (!preg_match('/^[A-Za-z0-9._-]+$/', $host)) {
+                    throw new RuntimeException("DB_HOST inválido: '{$host}'");
+                }
+
+                if ($port < 1 || $port > 65535) {
+                    throw new RuntimeException("DB_PORT inválido: {$port}");
+                }
+
+                if (!extension_loaded('pdo_mysql')) {
+                    throw new Exception('A extensão PHP pdo_mysql não está habilitada neste servidor.');
+                }
+
+                $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
                 
                 $options = [
                     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES   => false,
-                    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
+                    PDO::ATTR_EMULATE_PREPARES   => false
                 ];
+
+                if (defined('Pdo\Mysql::ATTR_INIT_COMMAND')) {
+                    $options[constant('Pdo\Mysql::ATTR_INIT_COMMAND')] = "SET NAMES utf8mb4";
+                } elseif (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+                    $options[constant('PDO::MYSQL_ATTR_INIT_COMMAND')] = "SET NAMES utf8mb4";
+                }
                 
-                self::$pdo = new PDO($dsn, self::$username, self::$password, $options);
+                self::$pdo = new PDO($dsn, $username, $password, $options);
                 
-                error_log('✅ Conexão com banco de dados estabelecida');
-                
-            } catch (PDOException $e) {
-                error_log('❌ ERRO ao conectar ao banco: ' . $e->getMessage());
-                throw new Exception('Erro ao conectar ao banco de dados: ' . $e->getMessage());
+            } catch (Throwable $e) {
+                debugLog('Falha ao conectar ao banco de dados', [
+                    'exception' => get_class($e),
+                    'message' => $e->getMessage(),
+                    'code' => (string) $e->getCode()
+                ]);
+                throw new RuntimeException($e->getMessage(), (int)$e->getCode(), $e);
             }
         }
         
@@ -77,8 +88,11 @@ class Database {
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            error_log('❌ Erro na query: ' . $e->getMessage());
-            throw new Exception('Erro ao executar query: ' . $e->getMessage());
+            debugLog('Falha ao executar consulta no banco de dados', [
+                'message' => $e->getMessage(),
+                'code' => (string) $e->getCode()
+            ]);
+            throw new RuntimeException($e->getMessage(), (int)$e->getCode(), $e);
         }
     }
     
@@ -117,8 +131,9 @@ class Database {
         try {
             self::query("SET @usuario_id = ?", [$userId]);
         } catch (Exception $e) {
-            error_log('⚠️ Erro ao definir usuário logado: ' . $e->getMessage());
+            debugLog('Falha ao preparar o contexto de auditoria', [
+                'exception' => get_class($e)
+            ]);
         }
     }
 }
-

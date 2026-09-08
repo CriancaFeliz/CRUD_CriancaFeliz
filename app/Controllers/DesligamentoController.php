@@ -10,8 +10,8 @@ class DesligamentoController extends BaseController {
     
     public function __construct() {
         parent::__construct();
-        $this->desligamentoDB = new DesligamentoDB();
-        $this->frequenciaDiaDB = new FrequenciaDiaDB();
+        $this->desligamentoDB = new Desligamento();
+        $this->frequenciaDiaDB = new FrequenciaDia();
     }
     
     /**
@@ -64,7 +64,7 @@ class DesligamentoController extends BaseController {
                 return;
             }
             
-            $acolhimentoModel = new AcolhimentoDB();
+            $acolhimentoModel = new Acolhimento();
             $atendido = $acolhimentoModel->findById($id);
             
             if (!$atendido) {
@@ -160,8 +160,7 @@ class DesligamentoController extends BaseController {
             }
             
         } catch (Exception $e) {
-            error_log('Erro ao salvar desligamento: ' . $e->getMessage());
-            error_log('Stack trace: ' . $e->getTraceAsString());
+            reportException($e, 'DesligamentoController::salvar');
             if ($this->isAjaxRequest()) {
                 $this->json(['success' => false, 'error' => $e->getMessage()], 400);
             } else {
@@ -241,8 +240,7 @@ class DesligamentoController extends BaseController {
             }
             
         } catch (Exception $e) {
-            error_log('Erro ao reativar atendido: ' . $e->getMessage());
-            error_log('Stack trace: ' . $e->getTraceAsString());
+            reportException($e, 'DesligamentoController::reativar');
             if ($this->isAjaxRequest()) {
                 $this->json(['success' => false, 'error' => $e->getMessage()], 400);
             } else {
@@ -295,8 +293,7 @@ class DesligamentoController extends BaseController {
             }
             
         } catch (Exception $e) {
-            error_log('Erro ao processar desligamento automático: ' . $e->getMessage());
-            error_log('Stack trace: ' . $e->getTraceAsString());
+            reportException($e, 'DesligamentoController::automatico');
             if ($this->isAjaxRequest()) {
                 $this->json(['success' => false, 'error' => $e->getMessage()], 400);
             } else {
@@ -313,7 +310,7 @@ class DesligamentoController extends BaseController {
             $search = $this->getParam('search', '');
             
             // Buscar atendidos ativos
-            $acolhimentoModel = new AcolhimentoDB();
+            $acolhimentoModel = new Acolhimento();
             $atendidos = $acolhimentoModel->findAll();
             
             // Filtrar apenas não desligados

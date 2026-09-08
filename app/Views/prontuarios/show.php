@@ -12,7 +12,7 @@
         </div>
         <div style="display: flex; gap: 10px;">
             <?php if ($acolhimento && $attendanceStats && !$attendanceStats['desligado']): ?>
-                <a href="attendance.php?action=show&id=<?php echo $acolhimento['id']; ?>" 
+                <a href="faltas.php?action=historico&amp;id=<?php echo (int)($acolhimento['id'] ?? 0); ?>"
                    class="btn" style="background: #3498db;">
                     <i class="fas fa-calendar-check"></i> Ver Controle de Faltas
                 </a>
@@ -47,7 +47,7 @@
                         <strong>Motivo:</strong> <?php echo htmlspecialchars($attendanceStats['desligamento']['motivo'] ?? 'Não informado'); ?><br>
                         <strong>Data:</strong> <?php 
                         $date = DateTime::createFromFormat('Y-m-d', $attendanceStats['desligamento']['data_desligamento']);
-                        echo $date ? $date->format('d/m/Y') : $attendanceStats['desligamento']['data_desligamento'];
+                        echo e($date ? $date->format('d/m/Y') : ($attendanceStats['desligamento']['data_desligamento'] ?? 'Não informada'));
                         ?><br>
                         <?php if (!empty($attendanceStats['desligamento']['observacao'])): ?>
                             <strong>Observação:</strong> <?php echo htmlspecialchars($attendanceStats['desligamento']['observacao']); ?>
@@ -62,18 +62,19 @@
     <?php if ($acolhimento && $attendanceStats && !empty($attendanceStats['alertas'])): ?>
         <div class="alertas-section" style="margin-bottom: 20px;">
             <?php foreach ($attendanceStats['alertas'] as $alerta): ?>
-                <div class="alert alert-<?php echo $alerta['nivel']; ?>" 
-                     style="background: <?php echo $alerta['nivel'] === 'critico' ? '#fee' : ($alerta['nivel'] === 'atencao' ? '#fff3cd' : '#d1ecf1'); ?>; 
-                            border-left: 4px solid <?php echo $alerta['nivel'] === 'critico' ? '#e74c3c' : ($alerta['nivel'] === 'atencao' ? '#f39c12' : '#3498db'); ?>; 
+                <?php $alertLevel = in_array(($alerta['nivel'] ?? ''), ['critico', 'atencao', 'info'], true) ? $alerta['nivel'] : 'info'; ?>
+                <div class="alert alert-<?php echo e($alertLevel); ?>"
+                     style="background: <?php echo $alertLevel === 'critico' ? '#fee' : ($alertLevel === 'atencao' ? '#fff3cd' : '#d1ecf1'); ?>;
+                            border-left: 4px solid <?php echo $alertLevel === 'critico' ? '#e74c3c' : ($alertLevel === 'atencao' ? '#f39c12' : '#3498db'); ?>;
                             padding: 15px; border-radius: 8px; margin-bottom: 10px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 24px;"><?php echo $alerta['icone']; ?></span>
+                        <span style="font-size: 24px;"><?php echo e($alerta['icone'] ?? ''); ?></span>
                         <div style="flex: 1;">
                             <div style="font-weight: 600; margin-bottom: 5px;">
                                 <?php echo htmlspecialchars($alerta['mensagem']); ?>
                             </div>
                             <div style="font-size: 13px; color: #666;">
-                                <?php echo htmlspecialchars($alerta['acao_sugerida']); ?>
+                                <?php echo htmlspecialchars($alerta['acao_sugerida'] ?? ''); ?>
                             </div>
                         </div>
                     </div>
@@ -89,25 +90,25 @@
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
                 <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-size: 28px; font-weight: 700; color: #27ae60;">
+                    <div style="font-size: 28px; font-weight: 700; color: #000;">
                         <?php echo $attendanceStats['total_presencas']; ?>
                     </div>
                     <div style="font-size: 13px; color: #666; margin-top: 5px;">Presenças</div>
                 </div>
                 <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-size: 28px; font-weight: 700; color: #3498db;">
+                    <div style="font-size: 28px; font-weight: 700; color: #000;">
                         <?php echo $attendanceStats['faltas_justificadas']; ?>
                     </div>
                     <div style="font-size: 13px; color: #666; margin-top: 5px;">Faltas Justificadas</div>
                 </div>
                 <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-size: 28px; font-weight: 700; color: <?php echo $attendanceStats['faltas_nao_justificadas'] >= 5 ? '#e74c3c' : '#f39c12'; ?>;">
+                    <div style="font-size: 28px; font-weight: 700; color: #000;">
                         <?php echo $attendanceStats['faltas_nao_justificadas']; ?>
                     </div>
                     <div style="font-size: 13px; color: #666; margin-top: 5px;">Faltas Não Justificadas</div>
                 </div>
                 <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-size: 28px; font-weight: 700; color: #9b59b6;">
+                    <div style="font-size: 28px; font-weight: 700; color: #000;">
                         <?php echo $attendanceStats['percentual_presenca']; ?>%
                     </div>
                     <div style="font-size: 13px; color: #666; margin-top: 5px;">Taxa de Presença</div>
@@ -116,6 +117,73 @@
         </div>
     <?php endif; ?>
 
+    <!-- Documentos -->
+    <div class="documents-section" style="background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
+        <h2 style="margin: 0 0 15px 0; font-size: 18px; font-weight: 600;"><i class="fas fa-folder-open"></i> Documentos</h2>
+
+        <?php if (($currentUser['role'] ?? '') === 'admin' && !empty($atendidoId)): ?>
+            <form method="POST" action="prontuarios.php?action=upload_document" enctype="multipart/form-data" style="display: grid; grid-template-columns: minmax(160px, 220px) 1fr auto; gap: 10px; align-items: end; margin-bottom: 16px;">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                <input type="hidden" name="id_atendido" value="<?php echo htmlspecialchars($atendidoId); ?>">
+                <input type="hidden" name="cpf" value="<?php echo htmlspecialchars($cpf); ?>">
+
+                <label style="display: grid; gap: 6px; font-size: 13px; color: #666;">
+                    Tipo
+                    <select name="tipo" style="padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="identidade">Identidade</option>
+                        <option value="comprovante_residencia">Comprovante de residência</option>
+                        <option value="escola">Escola</option>
+                        <option value="saude">Saúde</option>
+                        <option value="autorizacao">Autorização</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </label>
+
+                <label style="display: grid; gap: 6px; font-size: 13px; color: #666;">
+                    Arquivo
+                    <input type="file" name="documento" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required style="padding: 9px; border: 1px solid #ddd; border-radius: 8px;">
+                </label>
+
+                <button type="submit" class="btn" style="background: #27ae60;">
+                    <i class="fas fa-upload"></i> Anexar
+                </button>
+            </form>
+        <?php endif; ?>
+
+        <?php if (!empty($documents)): ?>
+            <div style="display: grid; gap: 10px;">
+                <?php foreach ($documents as $document): ?>
+                    <?php
+                        $tipoLabels = [
+                            'identidade' => 'Identidade',
+                            'comprovante_residencia' => 'Comprovante de residência',
+                            'escola' => 'Escola',
+                            'saude' => 'Saúde',
+                            'autorizacao' => 'Autorização',
+                            'outros' => 'Outros'
+                        ];
+                        $tipo = $document['tipo'] ?? 'outros';
+                    ?>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <div>
+                            <div style="font-weight: 600;"><?php echo htmlspecialchars($tipoLabels[$tipo] ?? $tipo); ?></div>
+                            <div style="font-size: 12px; color: #666;">
+                                <?php echo htmlspecialchars($document['data_upload'] ?? 'Data não informada'); ?>
+                            </div>
+                        </div>
+                        <a class="btn" href="prontuarios.php?action=document&amp;id=<?php echo (int)($document['iddocumento'] ?? 0); ?>" target="_blank" rel="noopener" style="background: #3498db; font-size: 12px; padding: 8px 12px;">
+                            <i class="fas fa-eye"></i> Abrir
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div style="padding: 12px; background: #f8f9fa; border-radius: 8px; color: #666;">
+                Nenhum documento anexado.
+            </div>
+        <?php endif; ?>
+    </div>
+
     <!-- Fichas -->
     <div class="fichas-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
         <!-- Ficha de Acolhimento -->
@@ -123,7 +191,7 @@
             <div class="ficha-card" style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;"><i class="fas fa-clipboard-list"></i> Ficha de Acolhimento</h2>
-                    <a href="acolhimento_view.php?id=<?php echo $acolhimento['id']; ?>" 
+                    <a href="acolhimento_view.php?id=<?php echo (int)($acolhimento['id'] ?? 0); ?>"
                        class="btn" style="background: #3498db; font-size: 12px; padding: 6px 12px;">
                         Ver Completa
                     </a>
@@ -148,7 +216,7 @@
                     </div>
                     <div>
                         <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Contato</div>
-                        <div style="font-weight: 600;"><?php echo htmlspecialchars($acolhimento['contato_1'] ?? 'Não informado'); ?></div>
+                        <div style="font-weight: 600;"><?php echo htmlspecialchars($acolhimento['telefone'] ?? $acolhimento['contato_1'] ?? 'Não informado'); ?></div>
                     </div>
                     <div>
                         <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Data de Acolhimento</div>
@@ -163,7 +231,7 @@
             <div class="ficha-card" style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h2 style="margin: 0; font-size: 18px; font-weight: 600;"><i class="fas fa-home"></i> Ficha Socioeconômica</h2>
-                    <a href="socioeconomico_view.php?id=<?php echo $socioeconomico['id']; ?>" 
+                    <a href="socioeconomico_view.php?id=<?php echo (int)($socioeconomico['id'] ?? 0); ?>"
                        class="btn" style="background: #f0a36b; font-size: 12px; padding: 6px 12px;">
                         Ver Completa
                     </a>
@@ -184,11 +252,11 @@
                     </div>
                     <div>
                         <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Número de Membros</div>
-                        <div style="font-weight: 600;"><?php echo htmlspecialchars($socioeconomico['numero_membros'] ?? 'Não informado'); ?></div>
+                        <div style="font-weight: 600;"><?php echo htmlspecialchars($socioeconomico['qtd_pessoas'] ?? $socioeconomico['pessoas_casa'] ?? '0'); ?></div>
                     </div>
                     <div>
                         <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Tipo de Moradia</div>
-                        <div style="font-weight: 600;"><?php echo htmlspecialchars($socioeconomico['tipo_moradia'] ?? 'Não informado'); ?></div>
+                        <div style="font-weight: 600;"><?php echo htmlspecialchars($socioeconomico['moradia'] ?? $socioeconomico['tipo_moradia'] ?? 'Não informado'); ?></div>
                     </div>
                 </div>
             </div>
@@ -197,39 +265,113 @@
 </div>
 
 <script>
-function desligarAtendido() {
-    if (!confirm('Deseja desligar este atendido do programa?\n\nVocê será redirecionado para o formulário de desligamento.')) {
-        return;
-    }
+let confirmacaoCallback = null;
+
+function abrirModalConfirmacao(titulo, descricao, textoBotao, callback) {
+    document.getElementById('modalConfirmacaoTitle').textContent = titulo;
+    document.getElementById('modalConfirmacaoDesc').textContent = descricao;
+    document.getElementById('btnConfirmarAcao').innerHTML = `<i class="fas fa-check"></i> ${textoBotao}`;
     
-    window.location.href = 'attendance.php?action=desligamento&id=<?php echo $acolhimento['id'] ?? ''; ?>';
+    confirmacaoCallback = callback;
+    
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function fecharModalConfirmacao() {
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.classList.remove('active');
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
+    confirmacaoCallback = null;
+}
+
+document.getElementById('btnConfirmarAcao').addEventListener('click', () => {
+    if (confirmacaoCallback) confirmacaoCallback();
+    fecharModalConfirmacao();
+});
+
+function desligarAtendido() {
+    abrirModalConfirmacao(
+        'Desligar Atendido',
+        'Deseja desligar este atendido do programa? Você será redirecionado para o formulário de desligamento.',
+        'Desligar',
+        () => {
+            window.location.href = 'desligamento.php?action=novo&id=<?php echo (int)($acolhimento['id'] ?? 0); ?>';
+        }
+    );
 }
 
 function reativarAtendido() {
-    if (!confirm('Tem certeza que deseja reativar este atendido?')) {
-        return;
-    }
-    
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'attendance.php?action=cancelar_desligamento';
-    
-    const csrfInput = document.createElement('input');
-    csrfInput.type = 'hidden';
-    csrfInput.name = 'csrf_token';
-    csrfInput.value = '<?php echo $csrf_token; ?>';
-    
-    const atendidoInput = document.createElement('input');
-    atendidoInput.type = 'hidden';
-    atendidoInput.name = 'atendido_id';
-    atendidoInput.value = '<?php echo $acolhimento['id'] ?? ''; ?>';
-    
-    form.appendChild(csrfInput);
-    form.appendChild(atendidoInput);
-    document.body.appendChild(form);
-    form.submit();
+    abrirModalConfirmacao(
+        'Reativar Atendido',
+        'Tem certeza que deseja reativar este atendido no programa?',
+        'Reativar',
+        () => {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'desligamento.php?action=reativar';
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+            
+            const atendidoInput = document.createElement('input');
+            atendidoInput.type = 'hidden';
+            atendidoInput.name = 'id_atendido';
+            atendidoInput.value = <?php echo json_encode((int)($acolhimento['id'] ?? 0)); ?>;
+            
+            form.appendChild(csrfInput);
+            form.appendChild(atendidoInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    );
 }
 </script>
+
+<!-- Modal Customizado de Confirmação -->
+<style>
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.modal-overlay.active { opacity: 1; }
+.modal-confirm-card {
+    background: #fff;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+.modal-overlay.active .modal-confirm-card { transform: translateY(0); }
+</style>
+
+<div id="modalConfirmacaoCustom" class="modal-overlay">
+    <div class="modal-confirm-card">
+        <h3 id="modalConfirmacaoTitle" style="margin:0 0 10px; color:#1e293b; font-size:18px;">Confirmar</h3>
+        <p id="modalConfirmacaoDesc" style="margin:0 0 20px; color:#64748b; font-size:14px; line-height:1.5;">Tem certeza?</p>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="btn secondary" onclick="fecharModalConfirmacao()" style="background:#e2e8f0; color:#475569;">
+                Cancelar
+            </button>
+            <button type="button" id="btnConfirmarAcao" class="btn primary" style="background:#f0a36b; color:#fff;">
+                Confirmar
+            </button>
+        </div>
+    </div>
+</div>
 
 <style>
     @media (max-width: 768px) {
@@ -245,6 +387,10 @@ function reativarAtendido() {
         
         .stats-section > div:last-child {
             grid-template-columns: 1fr 1fr !important;
+        }
+
+        .documents-section form {
+            grid-template-columns: 1fr !important;
         }
     }
 </style>

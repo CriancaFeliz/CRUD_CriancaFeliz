@@ -12,10 +12,10 @@ class FaltasController extends BaseController {
     
     public function __construct() {
         parent::__construct();
-        $this->frequenciaDiaDB = new FrequenciaDiaDB();
-        $this->frequenciaOficinaDB = new FrequenciaOficinaDB();
-        $this->oficinaDB = new OficinaDB();
-        $this->desligamentoDB = new DesligamentoDB();
+        $this->frequenciaDiaDB = new FrequenciaDia();
+        $this->frequenciaOficinaDB = new FrequenciaOficina();
+        $this->oficinaDB = new Oficina();
+        $this->desligamentoDB = new Desligamento();
     }
     
     /**
@@ -30,7 +30,7 @@ class FaltasController extends BaseController {
             $faixaEtaria = $this->getParam('faixa_etaria', '');
             
             // Buscar todos os atendidos ativos
-            $acolhimentoModel = new AcolhimentoDB();
+            $acolhimentoModel = new Acolhimento();
             $atendidos = $acolhimentoModel->findAll();
             
             // Filtrar desligados
@@ -63,14 +63,19 @@ class FaltasController extends BaseController {
                     $atendido['idade'] = 0;
                 }
             }
+            unset($atendido);
             
-            // Filtrar por faixa etária
+            $periodo = $this->getParam('periodo', '');
+            $statusFiltro = $this->getParam('status_filtro', '');
+
+            // Filtrar por faixa etária (0-13 = 0 a 12 anos completos; 13-18 = 13 a 18 anos)
             if (!empty($faixaEtaria)) {
                 $atendidosAtivos = array_filter($atendidosAtivos, function($a) use ($faixaEtaria) {
                     $idade = $a['idade'];
                     switch ($faixaEtaria) {
+                        case '0-12':
                         case '0-13':
-                            return $idade >= 0 && $idade <= 13;
+                            return $idade >= 0 && $idade < 13;
                         case '13-18':
                             return $idade >= 13 && $idade <= 18;
                         default:
@@ -78,8 +83,42 @@ class FaltasController extends BaseController {
                     }
                 });
             }
+
+            // Filtrar por turno (Manhã / Tarde)
+            if (!empty($periodo)) {
+                $atendidosAtivos = array_filter($atendidosAtivos, function($a) use ($periodo) {
+                    return strcasecmp($a['periodo'] ?? '', $periodo) === 0;
+                });
+            }
+
+            // Estatísticas da listagem (por data, faixa etária e turno)
+            $stats = [
+                'total' => count($atendidosAtivos),
+                'presentes' => 0,
+                'faltas' => 0,
+                'justificadas' => 0,
+                'pendentes' => 0
+            ];
+            foreach ($atendidosAtivos as $a) {
+                $st = $a['frequencia']['status'] ?? '';
+                if ($st === 'P') $stats['presentes']++;
+                elseif ($st === 'F') $stats['faltas']++;
+                elseif ($st === 'J') $stats['justificadas']++;
+                else $stats['pendentes']++;
+            }
+
+            // Filtrar por status da chamada (P, F, J, pendente)
+            if (!empty($statusFiltro)) {
+                $atendidosAtivos = array_filter($atendidosAtivos, function($a) use ($statusFiltro) {
+                    $st = $a['frequencia']['status'] ?? '';
+                    if ($statusFiltro === 'pendente') {
+                        return empty($st);
+                    }
+                    return $st === $statusFiltro;
+                });
+            }
             
-            // Filtrar por busca
+            // Filtrar por busca (nome ou CPF)
             if (!empty($search)) {
                 $atendidosAtivos = array_filter($atendidosAtivos, function($a) use ($search) {
                     return stripos($a['nome'], $search) !== false || 
@@ -94,6 +133,9 @@ class FaltasController extends BaseController {
                 'atendidos' => array_values($atendidosAtivos),
                 'search' => $search,
                 'faixa_etaria' => $faixaEtaria,
+                'periodo' => $periodo,
+                'status_filtro' => $statusFiltro,
+                'stats' => $stats,
                 'csrf_token' => $this->generateCSRF(),
                 'messages' => $this->getFlashMessages()
             ];
@@ -125,7 +167,7 @@ class FaltasController extends BaseController {
                 $oficinaAtual = $this->oficinaDB->findById($idOficina);
                 
                 // Buscar atendidos ativos
-                $acolhimentoModel = new AcolhimentoDB();
+                $acolhimentoModel = new Acolhimento();
                 $todosAtendidos = $acolhimentoModel->findAll();
                 
                 foreach ($todosAtendidos as $atendido) {
@@ -250,7 +292,7 @@ class FaltasController extends BaseController {
         $this->requireAuth();
         
         try {
-            $acolhimentoModel = new AcolhimentoDB();
+            $acolhimentoModel = new Acolhimento();
             $atendido = $acolhimentoModel->findById($id);
             
             if (!$atendido) {
@@ -395,6 +437,7 @@ class FaltasController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
             $id = $this->getParam('id_oficina', '');
             
             if (empty($id)) {

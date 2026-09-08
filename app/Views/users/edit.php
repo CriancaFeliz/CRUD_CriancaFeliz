@@ -1,72 +1,53 @@
-<div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
-    <a href="users.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">
-        ← Voltar
-    </a>
+<div class="actions flex-between mb-4">
+    <div></div>
+    <div class="d-flex gap-2">
+        <a href="users.php" class="btn secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
 </div>
 
-<form method="post" style="max-width: 800px;">
-    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+<form method="post" class="user-form" style="max-width: 800px;">
+    <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
     
-    <div class="form-section" style="background:#fff; border-radius:12px; padding:24px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-        <h3 style="margin:0 0 20px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">
-            ✏️ Editar Usuário
+    <div class="card-glass form-section p-4 mb-4">
+        <h3 class="form-section-title mb-3">
+            <i class="fas fa-user-edit text-orange"></i> Editar Usuário
         </h3>
         
-        <div class="user-info" style="background:#f8f9fa; padding:16px; border-radius:8px; margin-bottom:20px; display:flex; align-items:center; gap:16px;">
-            <div class="avatar" style="width:60px; height:60px; border-radius:50%; background:#e9ecef; display:flex; align-items:center; justify-content:center; font-weight:600; color:#495057; font-size:24px;">
+        <div class="user-info card-glass p-3 mb-4 d-flex align-items-center gap-3">
+            <div class="avatar avatar-placeholder" style="width:54px; height:54px; font-size:20px;">
                 <?php echo strtoupper(substr($user['name'] ?? $user['nome'] ?? 'U', 0, 1)); ?>
             </div>
             <div>
-                <div style="font-weight:600; font-size:18px; color:#212529;"><?php echo htmlspecialchars($user['name'] ?? $user['nome'] ?? 'Sem nome'); ?></div>
-                <div style="color:#6c757d; font-size:14px;"><?php echo htmlspecialchars($user['email'] ?? 'Sem email'); ?></div>
-                <div style="font-size:12px; color:#6c757d;">Criado em: <?php echo isset($user['created_at']) ? date('d/m/Y H:i', strtotime($user['created_at'])) : 'N/A'; ?></div>
+                <div style="font-weight:700; font-size:17px; color:var(--text-primary);"><?php echo htmlspecialchars($user['name'] ?? $user['nome'] ?? 'Sem nome'); ?></div>
+                <div class="text-muted" style="font-size:14px;"><?php echo htmlspecialchars($user['email'] ?? 'Sem email'); ?></div>
+                <div class="text-muted" style="font-size:12px;">Criado em: <?php echo isset($user['created_at']) ? date('d/m/Y H:i', strtotime($user['created_at'])) : 'N/A'; ?></div>
             </div>
         </div>
         
         <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
             <div>
-                <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:8px;">
-                    Nome Completo *
-                </label>
-                <input type="text" 
-                       name="name" 
-                       required
-                       value="<?php echo htmlspecialchars($user['name'] ?? $user['nome'] ?? ''); ?>"
-                       style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;"
-                       placeholder="Digite o nome completo">
+                <label class="form-label-bold">Nome Completo *</label>
+                <input type="text" name="name" required value="<?php echo htmlspecialchars($user['name'] ?? $user['nome'] ?? ''); ?>" class="form-control" placeholder="Digite o nome completo">
             </div>
             
             <div>
-                <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:8px;">
-                    Email *
-                </label>
-                <input type="email" 
-                       name="email" 
-                       required
-                       value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>"
-                       style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;"
-                       placeholder="exemplo@email.com">
+                <label class="form-label-bold">Email *</label>
+                <input type="email" name="email" required value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>" class="form-control" placeholder="exemplo@email.com">
             </div>
             
             <div>
-                <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:8px;">
+                <label class="form-label-bold">
                     Nova Senha
-                    <small style="color:#6c757d; font-weight:400;">(deixe em branco para manter a atual)</small>
+                    <small class="text-muted font-weight-normal">(deixe em branco para manter a atual)</small>
                 </label>
-                <input type="password" 
-                       name="password" 
-                       minlength="6"
-                       style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;"
-                       placeholder="Nova senha (opcional)">
+                <input type="password" name="password" minlength="12" class="form-control" placeholder="Nova senha (opcional)">
             </div>
             
             <div>
-                <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:8px;">
-                    Nível de Acesso *
-                </label>
-                <select name="role" 
-                        required
-                        style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
+                <label class="form-label-bold">Nível de Acesso *</label>
+                <select name="role" required class="form-select">
                     <?php $userRole = $user['role'] ?? $user['nivel'] ?? ''; ?>
                     <option value="">Selecione o nível de acesso</option>
                     <option value="admin" <?php echo ($userRole === 'admin' || $userRole === 'Administrador') ? 'selected' : ''; ?>>Administrador</option>
@@ -77,46 +58,49 @@
         </div>
     </div>
     
-    <div class="current-permissions" style="background:#e3f2fd; border-radius:12px; padding:20px; margin-bottom:20px; border-left:4px solid #2196f3;">
-        <h4 style="margin:0 0 16px 0; color:#1976d2; display:flex; align-items:center; gap:8px;">
-            🔍 Permissões Atuais
+    <div class="card-glass p-4 mb-4" style="border-left:4px solid var(--primary-blue, #17a2b8);">
+        <h4 class="mb-3" style="color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-shield-alt text-blue"></i> Permissões Atuais
         </h4>
         
-        <div class="current-role" style="background:white; padding:16px; border-radius:8px;">
+        <div class="current-role card-glass p-3">
             <?php
             $roleInfo = [
                 'admin' => [
-                    'name' => '👑 Administrador',
-                    'color' => '#dc3545',
+                    'name' => 'Administrador',
+                    'icon' => 'fa-crown',
+                    'color' => 'var(--primary-red, #dc3545)',
                     'permissions' => [
-                        '✅ Acesso total ao sistema',
-                        '✅ Gerenciamento de usuários',
-                        '✅ Criação, edição e exclusão de fichas',
-                        '✅ Visualização de relatórios',
-                        '✅ Configurações do sistema',
-                        '❌ NÃO tem acesso à área psicológica'
+                        'Acesso total ao sistema',
+                        'Gerenciamento de usuários',
+                        'Criação, edição e exclusão de fichas',
+                        'Visualização de relatórios',
+                        'Configurações do sistema',
+                        'NÃO tem acesso à área psicológica'
                     ]
                 ],
                 'psicologo' => [
-                    'name' => '🧠 Psicólogo',
-                    'color' => '#17a2b8',
+                    'name' => 'Psicólogo',
+                    'icon' => 'fa-brain',
+                    'color' => 'var(--primary-blue, #17a2b8)',
                     'permissions' => [
-                        '✅ Visualização de todas as fichas',
-                        '✅ Acesso exclusivo à área psicológica',
-                        '✅ Criação e edição de anotações psicológicas',
-                        '✅ Avaliações e evolução das crianças',
-                        '🔐 Área psicológica é privada e exclusiva'
+                        'Visualização de todas as fichas',
+                        'Acesso exclusivo à área psicológica',
+                        'Criação e edição de anotações psicológicas',
+                        'Avaliações e evolução das crianças',
+                        'Área psicológica é privada e exclusiva'
                     ]
                 ],
                 'funcionario' => [
-                    'name' => '👥 Funcionário',
-                    'color' => '#28a745',
+                    'name' => 'Funcionário',
+                    'icon' => 'fa-user-friends',
+                    'color' => 'var(--primary-green, #28a745)',
                     'permissions' => [
-                        '✅ Apenas visualização de informações',
-                        '❌ Não pode criar ou editar fichas',
-                        '❌ Não pode criar anotações na agenda',
-                        '❌ Acesso limitado para consulta',
-                        '📖 Somente leitura'
+                        'Apenas visualização de informações',
+                        'Não pode criar ou editar fichas',
+                        'Não pode criar anotações na agenda',
+                        'Acesso limitado para consulta',
+                        'Somente leitura'
                     ]
                 ]
             ];
@@ -129,90 +113,55 @@
             ?>
             
             <?php if ($currentRole): ?>
-                <div style="font-weight:600; color:<?php echo $currentRole['color']; ?>; margin-bottom:12px; font-size:16px;">
-                    <?php echo $currentRole['name']; ?>
+                <div style="font-weight:700; color:<?php echo $currentRole['color']; ?>; margin-bottom:12px; font-size:16px;">
+                    <i class="fas <?php echo $currentRole['icon']; ?>"></i> <?php echo e($currentRole['name'] ?? ''); ?>
                 </div>
-                <div style="font-size:14px; color:#6c757d; line-height:1.6;">
+                <div class="text-muted" style="font-size:14px; line-height:1.7;">
                     <?php foreach ($currentRole['permissions'] as $permission): ?>
-                        <?php echo $permission; ?><br>
+                        • <?php echo e($permission); ?><br>
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>
-                <div style="color:#dc3545;">Nível de acesso não reconhecido</div>
+                <div style="color:var(--primary-red, #dc3545);">Nível de acesso não reconhecido</div>
             <?php endif; ?>
         </div>
     </div>
     
-    <div class="actions" style="display:flex; gap:10px; justify-content:flex-end;">
-        <a href="users.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:12px 20px; border-radius:8px; cursor:pointer; text-decoration:none;">
+    <div class="actions d-flex gap-2 justify-content-end">
+        <a href="users.php" class="btn secondary">
             Cancelar
         </a>
-        <button type="submit" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:12px 20px; border-radius:8px; cursor:pointer;">
-            💾 Salvar Alterações
+        <button type="submit" class="btn primary">
+            <i class="fas fa-save"></i> Salvar Alterações
         </button>
     </div>
 </form>
 
 <script>
-// Validação em tempo real
 document.addEventListener('DOMContentLoaded', function() {
     const emailInput = document.querySelector('input[name="email"]');
     const passwordInput = document.querySelector('input[name="password"]');
     
-    // Validação de email
-    emailInput.addEventListener('blur', function() {
-        const email = this.value;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
-        if (email && !emailRegex.test(email)) {
-            this.style.borderColor = '#dc3545';
-            showFieldError(this, 'Email inválido');
-        } else {
-            this.style.borderColor = '#f0a36b';
-            hideFieldError(this);
-        }
-    });
-    
-    // Validação de senha
-    passwordInput.addEventListener('input', function() {
-        const password = this.value;
-        
-        if (password.length > 0 && password.length < 6) {
-            this.style.borderColor = '#dc3545';
-            showFieldError(this, 'Senha deve ter pelo menos 6 caracteres');
-        } else {
-            this.style.borderColor = '#f0a36b';
-            hideFieldError(this);
-        }
-    });
-    
-    function showFieldError(field, message) {
-        hideFieldError(field);
-        const error = document.createElement('div');
-        error.className = 'field-error';
-        error.style.cssText = 'color:#dc3545; font-size:12px; margin-top:4px;';
-        error.textContent = message;
-        field.parentNode.appendChild(error);
+    if (emailInput) {
+        emailInput.addEventListener('blur', function() {
+            const email = this.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (email && !emailRegex.test(email)) {
+                this.classList.add('input-error');
+            } else {
+                this.classList.remove('input-error');
+            }
+        });
     }
     
-    function hideFieldError(field) {
-        const existing = field.parentNode.querySelector('.field-error');
-        if (existing) {
-            existing.remove();
-        }
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            if (this.value.length > 0 && this.value.length < 12) {
+                this.classList.add('input-error');
+            } else {
+                this.classList.remove('input-error');
+            }
+        });
     }
 });
 </script>
-
-<style>
-@media (max-width: 768px) {
-    .form-grid {
-        grid-template-columns: 1fr !important;
-    }
-    
-    .user-info {
-        flex-direction: column;
-        text-align: center;
-    }
-}
-</style>

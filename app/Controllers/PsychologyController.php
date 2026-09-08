@@ -7,7 +7,16 @@ class PsychologyController extends BaseController
     public function __construct()
     {
         parent::__construct();
-        $this->psychologyService = new PsychologyService();
+        $this->psychologyService = null;
+    }
+
+    private function service()
+    {
+        if ($this->psychologyService === null) {
+            $this->psychologyService = new PsychologyService();
+        }
+
+        return $this->psychologyService;
     }
 
     /* ============================================================
@@ -16,17 +25,22 @@ class PsychologyController extends BaseController
     public function index()
     {
         $this->requireAuth();
-        $this->requirePermission('view_psychological_area');
 
-        $data = [
-            'title' => 'Área Psicológica',
-            'pageTitle' => 'Área Psicológica - Dashboard',
-            'stats' => $this->psychologyService->getStatistics(),
-            'recentNotes' => $this->psychologyService->getRecentNotes(),
-            'messages' => $this->getFlashMessages()
-        ];
+        try {
+            $this->requirePermission('view_psychological_area');
 
-        $this->renderWithLayout('main', 'psychology/index', $data);
+            $data = [
+                'title' => 'Área Psicológica',
+                'pageTitle' => 'Área Psicológica - Dashboard',
+                'stats' => $this->service()->getStatistics(),
+                'recentNotes' => $this->service()->getRecentNotes(),
+                'messages' => $this->getFlashMessages()
+            ];
+
+            $this->renderWithLayout('main', 'psychology/index', $data);
+        } catch (Exception $e) {
+            $this->redirectWithError('dashboard.php', $e->getMessage());
+        }
     }
 
     /* ============================================================
@@ -41,7 +55,7 @@ class PsychologyController extends BaseController
             $data = [
                 'title' => 'Pacientes',
                 'pageTitle' => 'Acompanhamento Psicológico',
-                'patients' => $this->psychologyService->getAllPatients(),
+                'patients' => $this->service()->getAllPatients(),
                 'messages' => $this->getFlashMessages()
             ];
             $this->renderWithLayout('main', 'psychology/patients', $data);
@@ -59,15 +73,15 @@ class PsychologyController extends BaseController
         $this->requirePermission('view_psychological_area');
 
         try {
-            $patient = $this->psychologyService->getPatient($cpf);
+            $patient = $this->service()->getPatient($cpf);
             if (!$patient) throw new Exception('Paciente não encontrado');
 
             $data = [
                 'title' => 'Prontuário Psicológico',
                 'pageTitle' => 'Prontuário Psicológico - ' . $patient['nome_completo'],
                 'patient' => $patient,
-                'notes' => $this->psychologyService->getPatientNotes($cpf),
-                'assessments' => $this->psychologyService->getPatientNotes($cpf),
+                'notes' => $this->service()->getPatientNotes($cpf),
+                'assessments' => $this->service()->getPatientNotes($cpf),
                 'csrf_token' => $this->generateCSRF(),
                 'messages' => $this->getFlashMessages()
             ];
@@ -94,13 +108,11 @@ class PsychologyController extends BaseController
                 throw new Exception('Método não permitido');
             }
 
-            if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-                throw new Exception('Token CSRF inválido');
-            }
+            $this->validateCsrfTokenFromData($_POST);
 
             $post = array_map(fn($v) => is_string($v) ? trim($v) : $v, $_POST);
 
-            $result = $this->psychologyService->saveNote([
+            $result = $this->service()->saveNote([
                 'patient_cpf' => $post['patient_cpf'] ?? null,
                 'note_type' => $post['note_type'] ?? null,
                 'title' => $post['title'] ?? '',
@@ -119,12 +131,11 @@ class PsychologyController extends BaseController
 
             if ($result['success']) {
                 $_SESSION['flash_success'] = 'Anotação salva com sucesso';
-                header('Location: psychology.php?action=patient&cpf=' . $post['patient_cpf']);
+                redirect('psychology.php?action=patient&cpf=' . urlencode((string)$post['patient_cpf']));
             } else {
                 $_SESSION['flash_error'] = $result['message'];
-                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'psychology.php'));
+                redirect($this->safeReferrer('psychology.php'));
             }
-            exit;
         } catch (Exception $e) {
             if ($isAjax) {
                 header('Content-Type: application/json');
@@ -132,8 +143,7 @@ class PsychologyController extends BaseController
                 exit;
             }
             $_SESSION['flash_error'] = $e->getMessage();
-            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'psychology.php'));
-            exit;
+            redirect($this->safeReferrer('psychology.php'));
         }
     }
 
@@ -142,13 +152,17 @@ class PsychologyController extends BaseController
     ============================================================ */
     public function getNote()
     {
+        $this->requireAuth();
+        $this->requirePermission('view_psychological_area');
+        header('Content-Type: application/json');
+
         $id = $_GET['id'] ?? null;
         if (!$id) {
             echo json_encode(['success' => false, 'error' => 'ID da anotação é obrigatório']);
             return;
         }
 
-        $note = $this->psychologyService->getAnnotationById($id); 
+        $note = $this->service()->getAnnotationById($id); 
         if ($note) {
             echo json_encode(['success' => true, 'note' => $note]);
         } else {
@@ -162,7 +176,7 @@ class PsychologyController extends BaseController
     public function updateNote()
     {
         $this->requireAuth();
-        $this->requirePermission('add_psychological_note');
+        $this->requirePermission('edit_psychological_notes');
 
         $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                   strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
@@ -173,18 +187,25 @@ class PsychologyController extends BaseController
             }
 
             // Pode receber via POST form ou JSON
-            if ($isAjax && $_SERVER['CONTENT_TYPE'] === 'application/json') {
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+            if ($isAjax && stripos($contentType, 'application/json') !== false) {
                 $data = json_decode(file_get_contents('php://input'), true);
             } else {
                 $data = $_POST;
             }
+
+            if (!is_array($data)) {
+                throw new Exception('Dados inválidos');
+            }
+
+            $this->validateCsrfTokenFromData($data);
 
             $id = $data['id'] ?? $data['note_id'] ?? null;
             if (!$id) {
                 throw new Exception('ID da anotação é obrigatório');
             }
 
-            $result = $this->psychologyService->updateNote($id, [
+            $result = $this->service()->updateNote($id, [
                 'title' => $data['title'] ?? '',
                 'content' => $data['content'] ?? '',
                 'note_type' => $data['note_type'] ?? 'consulta',
@@ -205,8 +226,7 @@ class PsychologyController extends BaseController
             } else {
                 $_SESSION['flash_error'] = $result['message'];
             }
-            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'psychology.php'));
-            exit;
+            redirect($this->safeReferrer('psychology.php'));
         } catch (Exception $e) {
             if ($isAjax) {
                 header('Content-Type: application/json');
@@ -214,8 +234,7 @@ class PsychologyController extends BaseController
                 exit;
             }
             $_SESSION['flash_error'] = $e->getMessage();
-            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'psychology.php'));
-            exit;
+            redirect($this->safeReferrer('psychology.php'));
         }
     }
 
@@ -225,7 +244,22 @@ class PsychologyController extends BaseController
     public function deleteNote($id = null)
     {
         $this->requireAuth();
-        $this->requirePermission('add_psychological_note');
+        $this->requirePermission('delete_psychological_note');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'error' => 'Método não permitido'], 405);
+        }
+
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        if (stripos($contentType, 'application/json') !== false) {
+            $data = json_decode(file_get_contents('php://input'), true);
+        } else {
+            $data = $_POST;
+        }
+
+        if (!is_array($data)) {
+            $data = [];
+        }
 
         $id = $id ?? $_GET['id'] ?? null;
         if (!$id) {
@@ -234,7 +268,8 @@ class PsychologyController extends BaseController
         }
 
         try {
-            $result = $this->psychologyService->deleteNote($id);
+            $this->validateCsrfTokenFromData($data);
+            $result = $this->service()->deleteNote($id);
             header('Content-Type: application/json');
             echo json_encode($result);
             exit;
@@ -244,9 +279,88 @@ class PsychologyController extends BaseController
     }
 
     /* ============================================================
-       MÉTODOS DEPENDENTES DO SERVICE (placeholder)
+       AVALIAÇÃO, BUSCA E RELATÓRIO
     ============================================================ */
-    public function saveAssessment()         { $this->json(['error' => 'Método não implementado'], 400); }
-    public function search()                 { $this->json(['error' => 'Método não implementado'], 400); }
-    public function report()                 { $this->json(['error' => 'Método não implementado'], 400); }
+    public function saveAssessment()
+    {
+        $this->requireAuth();
+        $this->requirePermission('add_psychological_note');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'error' => 'Método não permitido'], 405);
+        }
+
+        try {
+            $this->validateCsrfTokenFromData($_POST);
+
+            $result = $this->service()->saveAssessment([
+                'patient_cpf' => $_POST['patient_cpf'] ?? null,
+                'title' => $_POST['title'] ?? '',
+                'content' => $_POST['content'] ?? '',
+                'mood_assessment' => $_POST['mood_assessment'] ?? null,
+                'next_session' => $_POST['next_session'] ?? null,
+                'behavior_notes' => $_POST['behavior_notes'] ?? null,
+                'recommendations' => $_POST['recommendations'] ?? null
+            ]);
+
+            $this->json($result, !empty($result['success']) ? 200 : 400);
+        } catch (Exception $e) {
+            $this->json(['success' => false, 'error' => $e->getMessage()], 400);
+        }
+    }
+
+    public function search()
+    {
+        $this->requireAuth();
+        $this->requirePermission('view_psychological_area');
+
+        $query = $_GET['q'] ?? '';
+        $this->json([
+            'success' => true,
+            'patients' => $this->service()->searchPatients($query)
+        ]);
+    }
+
+    public function report()
+    {
+        $this->requireAuth();
+        $this->requirePermission('view_psychological_area');
+
+        $filters = $this->getGetData();
+        $format = $filters['format'] ?? 'html';
+        unset($filters['format']);
+
+        try {
+            if ($format === 'csv') {
+                $csv = $this->service()->exportReportToCSV($filters);
+                header('Content-Type: text/csv; charset=utf-8');
+                header('Content-Disposition: attachment; filename="relatorio_psicologia_' . date('Y-m-d') . '.csv"');
+                echo "\xEF\xBB\xBF";
+                echo $csv;
+                exit;
+            }
+
+            $data = [
+                'title' => 'Relatório Psicológico',
+                'pageTitle' => 'Relatório Psicológico',
+                'filters' => $filters,
+                'rows' => $this->service()->getReportRows($filters),
+                'csrf_token' => $this->generateCSRF(),
+                'messages' => $this->getFlashMessages()
+            ];
+
+            $this->renderWithLayout('main', 'psychology/report', $data);
+        } catch (Exception $e) {
+            $this->handleException($e);
+        }
+    }
+
+    private function validateCsrfTokenFromData($data)
+    {
+        $token = is_array($data) ? ($data['csrf_token'] ?? null) : null;
+
+        if (!$token || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
+            throw new Exception('Token CSRF inválido');
+        }
+    }
 }

@@ -1,13 +1,20 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="<?php echo htmlspecialchars($_COOKIE['theme'] ?? 'light'); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $title ?? 'Sistema Criança Feliz'; ?></title>
-    <link rel="stylesheet" href="css/style.css">
+    <title><?php echo e($title ?? 'Sistema Criança Feliz'); ?></title>
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme') || '<?php echo addslashes($_COOKIE['theme'] ?? 'light'); ?>' || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" href="css/style.css?v=<?php echo @filemtime(BASE_PATH . '/css/style.css') ?: time(); ?>">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body>
+<body class="auth-page">
     <div class="container">
         <div class="login-container">
             <!-- Lado esquerdo com a imagem -->
@@ -28,13 +35,24 @@
     </div>
     
     <!-- Scripts -->
-    <script src="js/script.js"></script>
-    <script src="js/chatbot.js"></script>
-    <script src="js/theme-toggle.js"></script>
+    <script>
+        window.APP_DEBUG = <?php echo appDebugEnabled() ? 'true' : 'false'; ?>;
+        window.debugLog = function() {
+            if (window.APP_DEBUG && window.console && typeof window.console.log === 'function') {
+                window.console.log.apply(window.console, arguments);
+            }
+        };
+        if (!window.APP_DEBUG && window.console && typeof window.console.log === 'function') {
+            window.console.log = function() {};
+        }
+    </script>
+    <script src="js/script.js?v=<?php echo @filemtime(BASE_PATH . '/js/script.js') ?: time(); ?>"></script>
+    <script src="js/chatbot.js?v=<?php echo @filemtime(BASE_PATH . '/js/chatbot.js') ?: time(); ?>"></script>
+    <script src="js/theme-toggle.js?v=<?php echo @filemtime(BASE_PATH . '/js/theme-toggle.js') ?: time(); ?>"></script>
     
     <?php if (isset($additionalScripts)): ?>
         <?php foreach ($additionalScripts as $script): ?>
-            <script src="<?php echo $script; ?>"></script>
+            <script src="<?php echo e($script); ?>"></script>
         <?php endforeach; ?>
     <?php endif; ?>
 </body>

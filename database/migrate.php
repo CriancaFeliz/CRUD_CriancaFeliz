@@ -1,8 +1,16 @@
 <?php
 /**
- * Script de Migração do Banco de Dados
- * Execute este arquivo para criar/atualizar o banco
+ * Executor legado desativado: usava credenciais previsíveis e um schema de
+ * demonstração. Consulte database/README_SETUP.md.
  */
+
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
+fwrite(STDERR, "Executor legado desativado. Para uma base nova, use database/SETUP_COMPLETO_FINAL.sql conforme database/README_SETUP.md.\n");
+exit(1);
 
 // Configurações do banco
 $host = 'localhost';
@@ -41,7 +49,7 @@ try {
     echo "==========================================\n";
     echo "📦 Banco de dados: criancafeliz\n";
     echo "👤 Usuário padrão: admin@criancafeliz.org\n";
-    echo "🔑 Senha padrão: admin123\n";
+    echo "🔑 Senha padrão: AlterarEstaSenha!2026\n";
     echo "==========================================\n\n";
     
     // Verificar tabelas criadas

@@ -3,28 +3,10 @@
 /**
  * Model para usuários do sistema - MYSQL
  */
-class User extends BaseModelDB {
+class User extends BaseModel {
     
     public function __construct() {
-        parent::__construct('Usuario', 'idusuario');
-        $this->createDefaultUser();
-    }
-    
-    /**
-     * Cria usuário padrão se não existir
-     */
-    private function createDefaultUser() {
-        try {
-            $count = $this->count();
-            if ($count == 0) {
-                $this->query(
-                    "INSERT INTO Usuario (nome, email, Senha, nivel, status) VALUES (?, ?, ?, ?, ?)",
-                    ['Administrador', 'admin@criancafeliz.org', password_hash('admin123', PASSWORD_DEFAULT), 'admin', 'Ativo']
-                );
-            }
-        } catch (Exception $e) {
-            // Usuário já existe ou erro - ignorar
-        }
+        parent::__construct('usuario', 'idusuario');
     }
     
     /**
@@ -34,7 +16,11 @@ class User extends BaseModelDB {
         $user = $this->findByEmail($email);
         
         // Verificar se usuário existe e senha está correta
-        if ($user && password_verify($password, $user['Senha'])) {
+        if ($user && PasswordHelper::verify($password, $user['Senha'])) {
+            if (PasswordHelper::needsRehash($user['Senha']) && PasswordHelper::isValid($password)) {
+                $this->update($user['idusuario'], ['Senha' => PasswordHelper::hash($password)]);
+            }
+
             // Verificar se usuário está ativo
             $status = strtolower($user['status'] ?? 'inativo');
             if ($status !== 'ativo' && $status !== 'active') {
@@ -65,7 +51,7 @@ class User extends BaseModelDB {
      */
     public function emailExists($email, $excludeId = null) {
         $stmt = $this->query(
-            "SELECT COUNT(*) as total FROM Usuario WHERE email = ? AND idusuario != ?",
+            "SELECT COUNT(*) as total FROM usuario WHERE email = ? AND idusuario != ?",
             [$email, $excludeId ?? 0]
         );
         $result = $stmt->fetch();
@@ -90,16 +76,17 @@ class User extends BaseModelDB {
         }
         
         if (empty($data['password']) || !validatePassword($data['password'])) {
-            throw new Exception('Senha deve ter pelo menos 6 caracteres');
+            throw new Exception(passwordValidationMessage());
         }
         
-        // Mapear campos para banco (sem created_at/updated_at)
+        // Mapear campos para banco
         $dbData = [
             'nome' => $data['name'],
             'email' => $data['email'],
-            'Senha' => password_hash($data['password'], PASSWORD_DEFAULT),
+            'Senha' => PasswordHelper::hash($data['password']),
             'nivel' => $data['role'] ?? 'funcionario',
-            'status' => $data['status'] ?? 'Ativo'
+            'status' => $data['status'] ?? 'Ativo',
+            'created_at' => $data['created_at'] ?? date('Y-m-d H:i:s')
         ];
         
         $result = $this->create($dbData);
@@ -148,9 +135,9 @@ class User extends BaseModelDB {
         
         if (isset($data['password']) && !empty($data['password'])) {
             if (!validatePassword($data['password'])) {
-                throw new Exception('Senha deve ter pelo menos 6 caracteres');
+                throw new Exception(passwordValidationMessage());
             }
-            $dbData['Senha'] = password_hash($data['password'], PASSWORD_DEFAULT);
+            $dbData['Senha'] = PasswordHelper::hash($data['password']);
         }
         
         if (isset($data['role'])) {

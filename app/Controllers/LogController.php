@@ -11,7 +11,7 @@ class LogController extends BaseController {
     
     public function __construct() {
         parent::__construct();
-        $this->logModel = new LogDB();
+        $this->logModel = new Log();
         $this->userModel = new User();
         
         // Verificar se está autenticado
@@ -24,11 +24,23 @@ class LogController extends BaseController {
         }
     }
     
+    private function renderLogsView($view, array $data, $title, $pageTitle = null) {
+        $data['title'] = htmlspecialchars($title . ' - Associação Criança Feliz', ENT_QUOTES, 'UTF-8');
+        $data['pageTitle'] = htmlspecialchars($pageTitle ?? $title, ENT_QUOTES, 'UTF-8');
+        $data['messages'] = $this->getFlashMessages();
+
+        $this->renderWithLayout('main', $view, $data);
+    }
+
+    private function setFlash($type, $message) {
+        $_SESSION['flash_' . $type] = $message;
+    }
+
     /**
      * Dashboard principal de logs
      */
     public function index() {
-        $page = $_GET['page'] ?? 1;
+        $page = max(1, (int)($_GET['page'] ?? 1));
         $perPage = 50;
         
         // Obter logs com paginação
@@ -58,7 +70,7 @@ class LogController extends BaseController {
             'usuarios' => $this->userModel->all()
         ];
         
-        return view('logs/index', $data);
+        $this->renderLogsView('logs/index', $data, 'Sistema de Logs');
     }
     
     /**
@@ -66,7 +78,7 @@ class LogController extends BaseController {
      */
     public function byTable() {
         $table = $_GET['table'] ?? null;
-        $page = $_GET['page'] ?? 1;
+        $page = max(1, (int)($_GET['page'] ?? 1));
         
         if (!$table) {
             redirect('logs.php');
@@ -83,18 +95,27 @@ class LogController extends BaseController {
                 'per_page' => $logs['per_page']
             ],
             'filtro_tabela' => $table,
+            'filters' => [
+                'tabela' => $table,
+                'acao' => null,
+                'usuario_id' => null,
+                'data_inicio' => null,
+                'data_fim' => null,
+                'busca' => null
+            ],
+            'usuarios' => $this->userModel->all(),
             'stats' => $this->logModel->getStatistics()
         ];
         
-        return view('logs/by_table', $data);
+        $this->renderLogsView('logs/search', $data, 'Logs por Tabela', 'Resultados da Busca de Logs');
     }
     
     /**
      * Filtrar logs por ação
      */
     public function byAction() {
-        $action = $_GET['action'] ?? null;
-        $page = $_GET['page'] ?? 1;
+        $action = $_GET['acao'] ?? null;
+        $page = max(1, (int)($_GET['page'] ?? 1));
         
         if (!in_array($action, ['INSERT', 'UPDATE', 'DELETE'])) {
             redirect('logs.php');
@@ -111,10 +132,19 @@ class LogController extends BaseController {
                 'per_page' => $logs['per_page']
             ],
             'filtro_acao' => $action,
+            'filters' => [
+                'tabela' => null,
+                'acao' => $action,
+                'usuario_id' => null,
+                'data_inicio' => null,
+                'data_fim' => null,
+                'busca' => null
+            ],
+            'usuarios' => $this->userModel->all(),
             'stats' => $this->logModel->getStatistics()
         ];
         
-        return view('logs/by_action', $data);
+        $this->renderLogsView('logs/search', $data, 'Logs por Ação', 'Resultados da Busca de Logs');
     }
     
     /**
@@ -122,7 +152,7 @@ class LogController extends BaseController {
      */
     public function byUser() {
         $userId = $_GET['user_id'] ?? null;
-        $page = $_GET['page'] ?? 1;
+        $page = max(1, (int)($_GET['page'] ?? 1));
         
         if (!$userId) {
             redirect('logs.php');
@@ -145,10 +175,19 @@ class LogController extends BaseController {
                 'per_page' => $logs['per_page']
             ],
             'filtro_usuario' => $user,
+            'filters' => [
+                'tabela' => null,
+                'acao' => null,
+                'usuario_id' => $userId,
+                'data_inicio' => null,
+                'data_fim' => null,
+                'busca' => null
+            ],
+            'usuarios' => $this->userModel->all(),
             'stats' => $this->logModel->getStatistics()
         ];
         
-        return view('logs/by_user', $data);
+        $this->renderLogsView('logs/search', $data, 'Logs por Usuário', 'Resultados da Busca de Logs');
     }
     
     /**
@@ -156,7 +195,7 @@ class LogController extends BaseController {
      */
     public function historicoRegistro() {
         $registroId = $_GET['id'] ?? null;
-        $page = $_GET['page'] ?? 1;
+        $page = max(1, (int)($_GET['page'] ?? 1));
         
         if (!$registroId) {
             redirect('logs.php');
@@ -175,14 +214,14 @@ class LogController extends BaseController {
             'registro_id' => $registroId
         ];
         
-        return view('logs/historico_registro', $data);
+        $this->renderLogsView('logs/historico_registro', $data, 'Histórico do Registro', 'Histórico do Registro #' . $registroId);
     }
     
     /**
      * Busca avançada de logs
      */
     public function search() {
-        $page = $_GET['page'] ?? 1;
+        $page = max(1, (int)($_GET['page'] ?? 1));
         
         $filters = [
             'tabela' => $_GET['tabela'] ?? null,
@@ -208,7 +247,7 @@ class LogController extends BaseController {
             'stats' => $this->logModel->getStatistics()
         ];
         
-        return view('logs/search', $data);
+        $this->renderLogsView('logs/search', $data, 'Busca de Logs', 'Resultados da Busca de Logs');
     }
     
     /**
@@ -239,7 +278,7 @@ class LogController extends BaseController {
             'usuario' => $usuario
         ];
         
-        return view('logs/show', $data);
+        $this->renderLogsView('logs/show', $data, 'Detalhes do Log', 'Detalhes do Log #' . $logId);
     }
     
     /**
@@ -272,6 +311,8 @@ class LogController extends BaseController {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             redirect('logs.php');
         }
+
+        $this->validateCSRF();
         
         $days = (int)($_POST['days'] ?? 90);
         
@@ -297,8 +338,8 @@ class LogController extends BaseController {
     public function apiGetLogs() {
         header('Content-Type: application/json');
         
-        $page = $_GET['page'] ?? 1;
-        $perPage = (int)($_GET['per_page'] ?? 50);
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = min(200, max(1, (int)($_GET['per_page'] ?? 50)));
         
         $logs = $this->logModel->getAllLogs($page, $perPage);
         
@@ -321,8 +362,8 @@ class LogController extends BaseController {
     public function apiSearch() {
         header('Content-Type: application/json');
         
-        $page = $_GET['page'] ?? 1;
-        $perPage = (int)($_GET['per_page'] ?? 50);
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = min(200, max(1, (int)($_GET['per_page'] ?? 50)));
         
         $filters = [
             'tabela' => $_GET['tabela'] ?? null,

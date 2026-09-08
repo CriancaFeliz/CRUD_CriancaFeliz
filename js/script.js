@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validatePassword(password) {
-        return password.length >= 6;
+        return password.trim().length > 0;
     }
 
     function updateButtonState() {
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (!validatePassword(password)) {
-            showMessage('A senha deve ter pelo menos 6 caracteres.', 'error');
+            showMessage('Informe sua senha.', 'error');
             passwordInput.focus();
             return;
         }

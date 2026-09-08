@@ -1,195 +1,257 @@
 <?php
 
 /**
- * Classe base para todos os Models
- * Fornece funcionalidades básicas de CRUD com arquivos JSON
+ * Model Base para MySQL
+ * Substitui BaseModel (JSON) quando banco estiver disponível
  */
-class BaseModel {
-    protected $dataFile;
-    protected $data = [];
+abstract class BaseModel {
     
-    public function __construct($dataFile) {
-        $this->dataFile = DATA_PATH . '/' . $dataFile;
-        $this->loadData();
+    protected $table;
+    protected $primaryKey = 'id';
+    protected $pdo;
+    
+    public function __construct($table, $primaryKey = 'id') {
+        $this->table = $table;
+        $this->primaryKey = $primaryKey;
+        $this->pdo = Database::getConnection();
     }
     
     /**
-     * Carrega dados do arquivo JSON
+     * Buscar todos os registros
      */
-    protected function loadData() {
-        if (!file_exists($this->dataFile)) {
-            file_put_contents($this->dataFile, json_encode([]));
-        }
-        
-        $json = file_get_contents($this->dataFile);
-        $this->data = json_decode($json, true) ?: [];
+    public function all() {
+        $stmt = $this->pdo->query("SELECT * FROM {$this->table}");
+        return $stmt->fetchAll();
     }
     
     /**
-     * Salva dados no arquivo JSON
-     */
-    protected function saveData() {
-        file_put_contents(
-            $this->dataFile, 
-            json_encode(array_values($this->data), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-        );
-    }
-    
-    /**
-     * Busca todos os registros
+     * Alias para all() - compatibilidade
      */
     public function findAll() {
-        return $this->data;
+        return $this->all();
     }
     
     /**
-     * Alias para findAll() - busca todos os registros
+     * Alias para all() - compatibilidade
      */
     public function getAll() {
-        return $this->data;
+        return $this->all();
     }
     
     /**
-     * Busca registro por ID
+     * Buscar por ID
      */
     public function findById($id) {
-        foreach ($this->data as $record) {
-            if ($record['id'] === $id) {
-                return $record;
-            }
-        }
-        return null;
+        $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE {$this->primaryKey} = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
     }
     
     /**
-     * Busca registros por critério
+     * Criar novo registro
      */
-    public function findBy($field, $value) {
-        $results = [];
-        foreach ($this->data as $record) {
-            if (isset($record[$field]) && $record[$field] === $value) {
-                $results[] = $record;
-            }
-        }
-        return $results;
+   // dentro de class BaseModelDB { ... }
+
+private function getTableColumns()
+{
+    // Retorna array com nomes das colunas da tabela (cache simples por instância)
+    static $cache = [];
+    $key = $this->table;
+    if (isset($cache[$key])) return $cache[$key];
+
+    $stmt = $this->pdo->prepare("SHOW COLUMNS FROM {$this->table}");
+    $stmt->execute();
+    $cols = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
+    $cache[$key] = $cols;
+    return $cols;
+}
+
+public function create($data)
+{
+    // Rejeitar divergências de schema em vez de perder dados silenciosamente.
+    $columns = $this->getTableColumns();
+    $unknownColumns = array_values(array_diff(array_keys($data), $columns));
+
+    if (!empty($unknownColumns)) {
+        throw new InvalidArgumentException(
+            'Campos não suportados pelo banco: ' . implode(', ', $unknownColumns)
+        );
     }
-    
-    /**
-     * Busca registros com filtros múltiplos
-     */
-    public function findWhere($criteria) {
-        $results = [];
-        foreach ($this->data as $record) {
-            $match = true;
-            foreach ($criteria as $field => $value) {
-                if (!isset($record[$field]) || $record[$field] !== $value) {
-                    $match = false;
-                    break;
-                }
-            }
-            if ($match) {
-                $results[] = $record;
-            }
-        }
-        return $results;
+
+    if (empty($data)) {
+        throw new Exception("Nenhum dado válido para inserir em {$this->table}");
     }
-    
-    /**
-     * Cria novo registro
-     */
-    public function create($data) {
-        $data['id'] = $this->generateId();
-        $data['created_at'] = date('Y-m-d H:i:s');
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        
-        $this->data[] = $data;
-        $this->saveData();
-        
-        return $data;
+
+    // 2) converter strings vazias para NULL para não quebrar colunas DATE/DATETIME/ENUM
+    foreach ($data as $k => $v) {
+        if ($v === '') $data[$k] = null;
     }
-    
+
+    // 3) montar SQL
+    $fields = array_keys($data);
+    $placeholders = array_fill(0, count($fields), '?');
+
+    $sql = "INSERT INTO {$this->table} (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
+    $stmt = $this->pdo->prepare($sql);
+
+    $ok = $stmt->execute(array_values($data));
+    if (!$ok) {
+        $err = $stmt->errorInfo();
+        throw new Exception("Erro ao inserir em {$this->table}: " . ($err[2] ?? json_encode($err)));
+    }
+
+    $id = $this->pdo->lastInsertId();
+    return $this->findById($id);
+}    
     /**
-     * Atualiza registro existente
+     * Atualizar registro
      */
     public function update($id, $data) {
-        foreach ($this->data as $key => $record) {
-            if ($record['id'] === $id) {
-                $data['id'] = $id;
-                $data['created_at'] = $record['created_at'] ?? date('Y-m-d H:i:s');
-                $data['updated_at'] = date('Y-m-d H:i:s');
-                
-                $this->data[$key] = $data;
-                $this->saveData();
-                
-                return $data;
-            }
+        // Rejeitar divergências de schema em vez de ignorar alterações.
+        $columns = $this->getTableColumns();
+        $unknownColumns = array_values(array_diff(array_keys($data), $columns));
+
+        if (!empty($unknownColumns)) {
+            throw new InvalidArgumentException(
+                'Campos não suportados pelo banco: ' . implode(', ', $unknownColumns)
+            );
         }
-        return null;
+        
+        if (empty($data)) {
+            // Nada para atualizar, retornar registro atual
+            return $this->findById($id);
+        }
+        
+        $fields = [];
+        foreach (array_keys($data) as $field) {
+            $fields[] = "$field = ?";
+        }
+        
+        $sql = "UPDATE {$this->table} SET " . implode(', ', $fields) . " 
+                WHERE {$this->primaryKey} = ?";
+        
+        $values = array_values($data);
+        $values[] = $id;
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($values);
+        
+        return $this->findById($id);
     }
     
     /**
-     * Exclui registro
+     * Deletar registro
      */
     public function delete($id) {
-        foreach ($this->data as $key => $record) {
-            if ($record['id'] === $id) {
-                unset($this->data[$key]);
-                $this->saveData();
-                return true;
-            }
+        $stmt = $this->pdo->prepare("DELETE FROM {$this->table} WHERE {$this->primaryKey} = ?");
+        return $stmt->execute([$id]);
+    }
+    
+    /**
+     * Buscar por campo
+     */
+    public function findBy($field, $value) {
+        $this->assertKnownColumn($field);
+        $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE $field = ?");
+        $stmt->execute([$value]);
+        return $stmt->fetch();
+    }
+    
+    /**
+     * Buscar múltiplos por campo
+     */
+    public function findAllBy($field, $value) {
+        $this->assertKnownColumn($field);
+        $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE $field = ?");
+        $stmt->execute([$value]);
+        return $stmt->fetchAll();
+    }
+    
+    /**
+     * Contar registros
+     */
+    public function count($where = null, $params = []) {
+        $sql = "SELECT COUNT(*) as total FROM {$this->table}";
+        if ($where) {
+            $sql .= " WHERE $where";
         }
-        return false;
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+        return $result['total'];
     }
     
     /**
-     * Conta total de registros
+     * Paginação
      */
-    public function count() {
-        return count($this->data);
-    }
-    
-    /**
-     * Busca com paginação
-     */
-    public function paginate($page = 1, $perPage = 10) {
+    public function paginate($page = 1, $perPage = 10, $where = null, $params = []) {
+        $page = max(1, (int) $page);
+        $perPage = max(1, min(100, (int) $perPage));
         $offset = ($page - 1) * $perPage;
-        $items = array_slice($this->data, $offset, $perPage);
+        
+        $sql = "SELECT * FROM {$this->table}";
+        if ($where) {
+            $sql .= " WHERE $where";
+        }
+        $sql .= " LIMIT $perPage OFFSET $offset";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $data = $stmt->fetchAll();
+        
+        $total = $this->count($where, $params);
         
         return [
-            'data' => $items,
-            'total' => count($this->data),
-            'per_page' => $perPage,
+            'data' => $data,
+            'total' => $total,
             'current_page' => $page,
-            'last_page' => ceil(count($this->data) / $perPage)
+            'last_page' => ceil($total / $perPage),
+            'per_page' => $perPage,
+            // Compatibilidade com código antigo
+            'page' => $page,
+            'perPage' => $perPage,
+            'totalPages' => ceil($total / $perPage)
         ];
     }
     
     /**
-     * Gera ID único
+     * Busca avançada
      */
-    protected function generateId() {
-        return uniqid('', true);
+    public function search($query, $fields = []) {
+        if (empty($fields)) {
+            return [];
+        }
+        
+        $conditions = [];
+        $params = [];
+        
+        foreach ($fields as $field) {
+            $this->assertKnownColumn($field);
+            $conditions[] = "$field LIKE ?";
+            $params[] = "%$query%";
+        }
+        
+        $sql = "SELECT * FROM {$this->table} WHERE " . implode(' OR ', $conditions);
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        return $stmt->fetchAll();
     }
     
     /**
-     * Busca por texto em múltiplos campos
+     * Executar query customizada
      */
-    public function search($query, $fields = []) {
-        $results = [];
-        $query = strtolower($query);
-        
-        foreach ($this->data as $record) {
-            foreach ($fields as $field) {
-                if (isset($record[$field])) {
-                    $value = strtolower($record[$field]);
-                    if (strpos($value, $query) !== false) {
-                        $results[] = $record;
-                        break;
-                    }
-                }
-            }
+    protected function query($sql, $params = []) {
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt;
+    }
+
+    private function assertKnownColumn($field) {
+        if (!is_string($field) || !in_array($field, $this->getTableColumns(), true)) {
+            throw new InvalidArgumentException('Campo de consulta inválido.');
         }
-        
-        return $results;
     }
 }

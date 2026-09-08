@@ -14,6 +14,8 @@ if (isset($_SESSION['flash_error'])) {
     $errorMessage = $_SESSION['flash_error'];
     unset($_SESSION['flash_error']);
 }
+$fieldErrors = $_SESSION['field_errors'] ?? [];
+unset($_SESSION['field_errors']);
 ?>
 
 <?php if (!empty($errorMessage)): ?>
@@ -23,7 +25,7 @@ if (isset($_SESSION['flash_error'])) {
 <?php endif; ?>
 
 <form method="post" enctype="multipart/form-data" class="acolhimento-form" id="acolhimentoForm">
-    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
     <?php if (!empty($editId)): ?>
         <input type="hidden" name="id" value="<?php echo htmlspecialchars($editId); ?>">
     <?php endif; ?>
@@ -34,10 +36,16 @@ if (isset($_SESSION['flash_error'])) {
         <div class="form-grid">
             <div class="form-field">
                 <label>Nome Completo <span class="required">*</span></label>
-                <input type="text" name="nome_completo" value="<?php echo htmlspecialchars($ficha['nome_completo'] ?? ($_SESSION['old_input']['nome_completo'] ?? '')); ?>" required>
-                <?php if (isset($_SESSION['field_errors']['nome_completo'])): ?>
+                <input type="text" 
+                       name="nome_completo" 
+                       id="nome_completo"
+                       value="<?php echo htmlspecialchars($ficha['nome_completo'] ?? ($_SESSION['old_input']['nome_completo'] ?? '')); ?>" 
+                       pattern="^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$"
+                       autocomplete="name"
+                       required>
+                <?php if (isset($fieldErrors['nome_completo']) || isset($_SESSION['field_errors']['nome_completo'])): ?>
                     <div class="error-message" style="color: #dc3545; font-size: 0.875em; margin-top: 4px;">
-                        <?php echo htmlspecialchars($_SESSION['field_errors']['nome_completo']); ?>
+                        <?php echo htmlspecialchars($fieldErrors['nome_completo'] ?? $_SESSION['field_errors']['nome_completo']); ?>
                     </div>
                 <?php endif; ?>
             </div>
@@ -79,18 +87,53 @@ if (isset($_SESSION['flash_error'])) {
             </div>
             <div class="form-field">
                 <label>Encaminhado por</label>
-                <input type="text" name="encaminha_por" value="<?php echo htmlspecialchars($ficha['encaminha_por'] ?? ($_SESSION['old_input']['encaminha_por'] ?? '')); ?>">
-                <?php if (isset($_SESSION['field_errors']['encaminha_por'])): ?>
+                <input type="text" 
+                       name="encaminha_por" 
+                       id="encaminha_por"
+                       value="<?php echo htmlspecialchars($ficha['encaminha_por'] ?? ($_SESSION['old_input']['encaminha_por'] ?? '')); ?>"
+                       pattern="^[A-Za-zÀ-ÖØ-öø-ÿ\s]*$">
+                <?php if (isset($fieldErrors['encaminha_por']) || isset($_SESSION['field_errors']['encaminha_por'])): ?>
                     <div class="error-message" style="color: #dc3545; font-size: 0.875em; margin-top: 4px;">
-                        <?php echo htmlspecialchars($_SESSION['field_errors']['encaminha_por']); ?>
+                        <?php echo htmlspecialchars($fieldErrors['encaminha_por'] ?? $_SESSION['field_errors']['encaminha_por']); ?>
                     </div>
                 <?php endif; ?>
             </div>
-            <div class="form-field" style="grid-column: 1 / 2;">
+
+            <!-- Foto 3x4 -->
+            <div class="form-field photo-upload-field" style="grid-column: 1 / -1;">
                 <label>Foto 3x4</label>
-                <input type="file" name="foto" accept="image/*">
-                <small>Formatos aceitos: JPG, PNG, GIF (máx. 2MB)</small>
+                <div class="cf-photo-upload-container">
+                    <?php 
+                        $hasExistingPhoto = !empty($ficha['photo_url']); 
+                        $currentPhotoSrc = $hasExistingPhoto ? $ficha['photo_url'] : '';
+                    ?>
+                    <div class="cf-photo-frame" id="fotoFrame">
+                        <img id="fotoPreviewImg" 
+                             src="<?php echo $hasExistingPhoto ? htmlspecialchars($currentPhotoSrc) : ''; ?>" 
+                             alt="Foto 3x4" 
+                             class="cf-photo-img <?php echo $hasExistingPhoto ? '' : 'd-none'; ?>">
+                        
+                        <div id="fotoPlaceholder" class="cf-photo-placeholder <?php echo $hasExistingPhoto ? 'd-none' : ''; ?>">
+                            <i class="fas fa-user cf-placeholder-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="cf-photo-actions">
+                        <label for="fotoInput" class="btn-select-photo">
+                            <i class="fas fa-upload"></i>
+                            <span id="fotoBtnText"><?php echo $hasExistingPhoto ? 'Alterar foto' : 'Selecionar foto'; ?></span>
+                        </label>
+                        <input type="file" id="fotoInput" name="foto" accept="image/jpeg,image/png,image/gif,image/webp" class="cf-hidden-file-input">
+                        
+                        <span id="fotoStatus" class="cf-photo-filename"></span>
+
+                        <button type="button" id="fotoResetBtn" class="btn-remove-photo d-none" title="Desfazer seleção">
+                            <i class="fas fa-times"></i> Desfazer
+                        </button>
+                    </div>
+                </div>
             </div>
+
             <div class="form-field" style="grid-column: 1 / -1;">
                 <label>Queixa Principal <span class="required">*</span></label>
                 <textarea name="queixa_principal" required><?php echo htmlspecialchars($ficha['queixa_principal'] ?? ($_SESSION['old_input']['queixa_principal'] ?? '')); ?></textarea>
@@ -206,15 +249,40 @@ if (isset($_SESSION['flash_error'])) {
                 <label>Função</label>
                 <input type="text" name="acolhimento_funcao" value="<?php echo htmlspecialchars($ficha['acolhimento_funcao'] ?? ''); ?>">
             </div>
-            <div class="form-field" style="grid-column: 1 / -1;">
-                <label>Carimbo/Assinatura</label>
-                <input type="file" name="carimbo" accept="image/*">
-                <small>Envie uma imagem do carimbo ou assinatura (JPG, PNG, GIF - máx. 2MB)</small>
-                <?php if (!empty($ficha['carimbo'])): ?>
-                    <div style="margin-top:8px;">
-                        <small>Arquivo atual: <?php echo basename($ficha['carimbo']); ?></small>
+
+            <!-- Carimbo / Assinatura do Profissional -->
+            <div class="form-field carimbo-upload-field" style="grid-column: 1 / -1;">
+                <label>Carimbo / Assinatura do Profissional</label>
+                <div class="cf-photo-upload-container">
+                    <?php 
+                        $hasExistingCarimbo = !empty($ficha['carimbo_url']); 
+                        $currentCarimboSrc = $hasExistingCarimbo ? $ficha['carimbo_url'] : '';
+                    ?>
+                    <div class="cf-carimbo-frame" id="carimboFrame">
+                        <img id="carimboPreviewImg" 
+                             src="<?php echo $hasExistingCarimbo ? htmlspecialchars($currentCarimboSrc) : ''; ?>" 
+                             alt="Carimbo ou Assinatura" 
+                             class="cf-carimbo-img <?php echo $hasExistingCarimbo ? '' : 'd-none'; ?>">
+                        
+                        <div id="carimboPlaceholder" class="cf-carimbo-placeholder <?php echo $hasExistingCarimbo ? 'd-none' : ''; ?>">
+                            <i class="fas fa-signature cf-placeholder-icon"></i>
+                        </div>
                     </div>
-                <?php endif; ?>
+
+                    <div class="cf-photo-actions">
+                        <label for="carimboInput" class="btn-select-photo">
+                            <i class="fas fa-upload"></i>
+                            <span id="carimboBtnText"><?php echo $hasExistingCarimbo ? 'Alterar carimbo' : 'Selecionar carimbo'; ?></span>
+                        </label>
+                        <input type="file" id="carimboInput" name="carimbo" accept="image/jpeg,image/png,image/gif,image/webp" class="cf-hidden-file-input">
+                        
+                        <span id="carimboStatus" class="cf-photo-filename"></span>
+
+                        <button type="button" id="carimboResetBtn" class="btn-remove-photo d-none" title="Desfazer seleção">
+                            <i class="fas fa-times"></i> Desfazer
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -231,4 +299,5 @@ if (isset($_SESSION['flash_error'])) {
     </div>
 </form>
 
-<script src="js/acolhimento-multistep.js"></script>
+<script src="js/acolhimento-wizard.js?v=<?php echo time(); ?>"></script>
+<script src="js/photo-preview.js?v=<?php echo time(); ?>"></script>

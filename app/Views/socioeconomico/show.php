@@ -2,10 +2,58 @@
 $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
 ?>
 
+<style>
+    /* Clean Layout Override */
+    .section {
+        box-shadow: 0 2px 16px rgba(0,0,0,0.04) !important;
+        border: 1px solid #edf1f5 !important;
+    }
+    .section .field {
+        background: transparent !important;
+        padding: 10px 4px !important;
+        border-radius: 0 !important;
+        border-bottom: 1px solid #f1f4f7 !important;
+        transition: none !important;
+    }
+    /* Remover borda do último elemento para ficar limpo */
+    .fields-grid {
+        align-items: end !important;
+    }
+    .section .label {
+        font-size: 11px !important;
+        color: #8d98a0 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        margin-bottom: 4px !important;
+    }
+    .section .value {
+        font-size: 14px !important;
+        color: #2b343a !important;
+        font-weight: 500 !important;
+    }
+    .section h3 {
+        border-bottom: 1px solid #f1f4f7 !important;
+        color: #3e6475 !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        padding-bottom: 16px !important;
+        margin-bottom: 24px !important;
+    }
+    .section h3 i {
+        color: #3e6475 !important;
+        margin-right: 8px;
+    }
+    .photo-container img {
+        border: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    }
+</style>
+
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
     <a href="socioeconomico_list.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
     <?php if ($isAdmin): ?>
-    <a href="socioeconomico_form.php?id=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;"><i class="fas fa-edit"></i> Editar</a>
+    <a href="socioeconomico_form.php?id=<?php echo (int)($ficha['id'] ?? 0); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;"><i class="fas fa-edit"></i> Editar</a>
     <?php endif; ?>
 </div>
 
@@ -26,7 +74,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                 if ($cpf && strlen($cpf) == 11) {
                     echo substr($cpf, 0, 3) . '.' . substr($cpf, 3, 3) . '.' . substr($cpf, 6, 3) . '-' . substr($cpf, 9, 2);
                 } else {
-                    echo $cpf ?: 'Não informado';
+                    echo e($cpf ?: 'Não informado');
                 }
             ?></div>
         </div>
@@ -42,7 +90,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                     $rgFormatado = substr($rgNumeros, 0, 2) . '.' . substr($rgNumeros, 2, 3) . '.' . substr($rgNumeros, 5, 3) . '-' . substr($rgNumeros, 8, 2);
                     echo htmlspecialchars($rgFormatado);
                 } else {
-                    echo $rg ?: 'Não informado';
+                    echo e($rg ?: 'Não informado');
                 }
                 ?>
             </div>
@@ -135,7 +183,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Renda e Benefícios -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">💰 Renda e Benefícios</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-money-bill-wave" style="color: #f0a36b;"></i> Renda e Benefícios</h3>
     
     <div class="fields-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -203,7 +251,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Habitação -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">🏠 Habitação</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-home" style="color: #f0a36b;"></i> Habitação</h3>
     
     <div class="fields-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -218,7 +266,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Número de Cômodos</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['numero_comodos'] ?? 'Não informado'; ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo e($ficha['numero_comodos'] ?? 'Não informado'); ?></div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -278,14 +326,14 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <!-- Status -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">📋 Status</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-clipboard-list" style="color: #f0a36b;"></i> Status</h3>
     
     <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
         <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Status da Ficha</div>
         <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
             <span class="status" style="padding:4px 8px; border-radius:12px; font-size:12px; font-weight:500;
                                    <?php echo ($ficha['status'] ?? 'Ativo') === 'Ativo' ? 'background:#e8f6ea; color:#6fb64f;' : 'background:#f8d7da; color:#721c24;'; ?>">
-                <?php echo $ficha['status'] ?? 'Ativo'; ?>
+                <?php echo e($ficha['status'] ?? 'Ativo'); ?>
             </span>
         </div>
     </div>

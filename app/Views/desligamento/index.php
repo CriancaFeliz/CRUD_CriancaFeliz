@@ -1,162 +1,57 @@
 <!-- Lista de Desligamentos -->
-<style>
-    .stats-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 15px;
-        margin-bottom: 25px;
-    }
-    .stat-card {
-        background: #fff;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        text-align: center;
-    }
-    .stat-card h3 {
-        margin: 0;
-        font-size: 28px;
-        color:#3E6475;
-    }
-    .stat-card p {
-        margin: 8px 0 0 0;
-        color: #666;
-        font-size: 13px;
-    }
-    .filtros-container {
-        background: #fff;
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .filtros-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-    }
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-    .form-group label {
-        font-weight: 600;
-        font-size: 14px;
-    }
-    .form-group select,
-    .form-group input {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-    }
-    .tabela-desligamentos {
-        background: #fff;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .tabela-desligamentos table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .tabela-desligamentos th {
-        background:#3E6475;
-        color: #fff;
-        padding: 15px;
-        text-align: left;
-        font-weight: 600;
-    }
-    .tabela-desligamentos td {
-        padding: 12px 15px;
-        border-bottom: 1px solid #eee;
-    }
-    .tabela-desligamentos tr:hover {
-        background: #f8f9fa;
-    }
-    .badge {
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-    .badge-idade { background: #d1ecf1; color: #0c5460; }
-    .badge-faltas { background: #f8d7da; color: #721c24; }
-    .badge-pedido { background: #d4edda; color: #155724; }
-    .badge-transferencia { background: #fff3cd; color: #856404; }
-    .badge-outros { background: #e2e3e5; color: #383d41; }
-    .btn-reativar {
-        padding: 6px 12px;
-        background: #28a745;
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
-    }
-    .btn-reativar:hover {
-        opacity: 0.9;
-    }
-    .actions-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-</style>
-
 <?php
 if ($_SESSION['user_role'] !== 'admin') { 
-    echo "<h2 style='text-align:center;margin-top:40px;color:red;'>Acesso negado</h2>";
+    echo "<h2 style='text-align:center;margin-top:40px;color:var(--error-text);'>Acesso negado</h2>";
     exit;
 }
 ?>
 
 <!-- Estatísticas -->
-<div class="stats-row">
-    <div class="stat-card">
-        <h3><?php echo $estatisticas['total'] ?? 0; ?></h3>
-        <p>Total</p>
+<div class="stats-row mb-4">
+    <div class="stat-card-glass">
+        <div class="stat-number" style="color: var(--primary-green);"><?php echo $estatisticas['total'] ?? 0; ?></div>
+        <div class="stat-label">Total</div>
     </div>
-    <div class="stat-card">
-        <h3><?php echo $estatisticas['por_idade'] ?? 0; ?></h3>
-        <p>Por Idade</p>
+    <div class="stat-card-glass">
+        <div class="stat-number" style="color: #0ea5e9;"><?php echo $estatisticas['por_idade'] ?? 0; ?></div>
+        <div class="stat-label">Por Idade</div>
     </div>
-    <div class="stat-card">
-        <h3><?php echo $estatisticas['por_faltas'] ?? 0; ?></h3>
-        <p>Excesso Faltas</p>
+    <div class="stat-card-glass">
+        <div class="stat-number" style="color: var(--error-text);"><?php echo $estatisticas['por_faltas'] ?? 0; ?></div>
+        <div class="stat-label">Excesso Faltas</div>
     </div>
-    <div class="stat-card">
-        <h3><?php echo $estatisticas['por_pedido'] ?? 0; ?></h3>
-        <p>Pedido Família</p>
+    <div class="stat-card-glass">
+        <div class="stat-number" style="color: var(--primary-orange);"><?php echo $estatisticas['por_pedido'] ?? 0; ?></div>
+        <div class="stat-label">Pedido Família</div>
     </div>
-    <div class="stat-card">
-        <h3><?php echo $estatisticas['automaticos'] ?? 0; ?></h3>
-        <p>Automáticos</p>
+    <div class="stat-card-glass">
+        <div class="stat-number" style="color: #64748b;"><?php echo $estatisticas['automaticos'] ?? 0; ?></div>
+        <div class="stat-label">Automáticos</div>
     </div>
 </div>
 
 <!-- Ações -->
-<div class="actions-top">
-    <h3 style="margin: 0;"><i class="fas fa-list"></i> Lista de Desligamentos</h3>
-    <div style="display: flex; gap: 10px;">
-        <a href="desligamento.php?action=novo" class="btn" style="background: #dc3545;">
+<div class="actions flex-between flex-wrap gap-2 mb-4">
+    <h2 class="m-0" style="color: var(--text-primary); font-size: 22px;">
+        <i class="fas fa-list text-muted"></i> Lista de Desligamentos
+    </h2>
+    <div class="d-flex gap-2">
+        <a href="desligamento.php?action=novo" class="btn danger">
             <i class="fas fa-user-times"></i> Novo Desligamento
         </a>
-        <button onclick="processarDesligamentoAutomatico()" class="btn">
+        <button onclick="processarDesligamentoAutomatico()" class="btn secondary">
             <i class="fas fa-robot"></i> Processar Automático
         </button>
     </div>
 </div>
 
 <!-- Filtros -->
-<div class="filtros-container">
+<div class="filtros-container card-glass mb-4">
     <form method="GET" action="desligamento.php">
         <div class="filtros-row" style="grid-template-columns: 1fr auto;">
             <div class="form-group">
-                <label>Tipo de Motivo</label>
-                <select name="tipo_motivo" onchange="this.form.submit()">
+                <label class="form-label-bold">Tipo de Motivo</label>
+                <select name="tipo_motivo" class="form-select" onchange="this.form.submit()">
                     <option value="">Todos</option>
                     <option value="idade" <?php echo ($filtros['tipo_motivo'] === 'idade') ? 'selected' : ''; ?>>Idade</option>
                     <option value="excesso_faltas" <?php echo ($filtros['tipo_motivo'] === 'excesso_faltas') ? 'selected' : ''; ?>>Excesso de Faltas</option>
@@ -165,9 +60,8 @@ if ($_SESSION['user_role'] !== 'admin') {
                     <option value="outros" <?php echo ($filtros['tipo_motivo'] === 'outros') ? 'selected' : ''; ?>>Outros</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>&nbsp;</label>
-                <button type="submit" class="btn">
+            <div>
+                <button type="submit" class="btn primary">
                     <i class="fas fa-filter"></i> Filtrar
                 </button>
             </div>
@@ -176,8 +70,8 @@ if ($_SESSION['user_role'] !== 'admin') {
 </div>
 
 <!-- Tabela -->
-<div class="tabela-desligamentos">
-    <table>
+<div class="table-responsive card-glass p-0">
+    <table class="table-glass">
         <thead>
             <tr>
                 <th>Atendido</th>
@@ -192,18 +86,22 @@ if ($_SESSION['user_role'] !== 'admin') {
         <tbody>
             <?php if (empty($desligamentos)): ?>
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
-                        Nenhum desligamento encontrado
+                    <td colspan="7">
+                        <div class="empty-state text-center p-4 text-muted">
+                            <i class="fas fa-inbox" style="font-size: 40px; margin-bottom: 12px; display: block;"></i>
+                            <p class="m-0">Nenhum desligamento encontrado</p>
+                        </div>
                     </td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($desligamentos as $desl): ?>
+                    <?php $tipoMotivo = array_key_exists(($desl['tipo_motivo'] ?? ''), ['idade' => true, 'faltas' => true, 'pedido' => true, 'transferencia' => true, 'outros' => true]) ? $desl['tipo_motivo'] : 'outros'; ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($desl['atendido_nome']); ?></strong></td>
-                        <td><?php echo htmlspecialchars($desl['cpf'] ?? 'N/A'); ?></td>
+                        <td class="text-muted"><?php echo htmlspecialchars($desl['cpf'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars($desl['motivo']); ?></td>
                         <td>
-                            <span class="badge badge-<?php echo $desl['tipo_motivo']; ?>">
+                            <span class="badge badge-info">
                                 <?php 
                                     $tipos = [
                                         'idade' => 'Idade',
@@ -212,7 +110,7 @@ if ($_SESSION['user_role'] !== 'admin') {
                                         'transferencia' => 'Transferência',
                                         'outros' => 'Outros'
                                     ];
-                                    echo $tipos[$desl['tipo_motivo']] ?? 'N/A';
+                                    echo e($tipos[$tipoMotivo] ?? 'N/A');
                                 ?>
                             </span>
                         </td>
@@ -223,18 +121,18 @@ if ($_SESSION['user_role'] !== 'admin') {
                             // Verificar se o atendido ainda está desligado
                             $isStillDisconnected = true;
                             try {
-                                $desligamentoDB = new DesligamentoDB();
+                                $desligamentoDB = new Desligamento();
                                 $isStillDisconnected = $desligamentoDB->isDesligado($desl['id_atendido']);
                             } catch (Exception $e) {
                                 // Em caso de erro, assumir que está desligado
                             }
                             
                             if ($isStillDisconnected && $desl['pode_retornar']): ?>
-                                <button onclick="reativarAtendido(<?php echo $desl['id_atendido']; ?>)" class="btn-reativar">
+                                <button onclick="reativarAtendido(<?php echo (int)($desl['id_atendido'] ?? 0); ?>)" class="btn success btn-sm">
                                     <i class="fas fa-undo"></i> Reativar
                                 </button>
                             <?php else: ?>
-                                <span style="color: #999; font-size: 13px;">
+                                <span class="text-muted" style="font-size: 13px;">
                                     <?php echo $isStillDisconnected ? 'Não permitido' : 'Já reativado'; ?>
                                 </span>
                             <?php endif; ?>
@@ -246,93 +144,169 @@ if ($_SESSION['user_role'] !== 'admin') {
     </table>
 </div>
 
+<!-- Modal Moderno de Confirmação Padronizado Criança Feliz -->
+<div id="modalConfirmacaoCustom" class="modal-confirm-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modalConfirmacaoTitle">
+    <div class="modal-confirm-dialog" style="max-width: 440px; text-align: center;">
+        <img src="img/logo.png" class="modal-confirm-logo" alt="Criança Feliz">
+        <h3 id="modalConfirmacaoTitle" class="modal-confirm-title">Confirmação</h3>
+        <p id="modalConfirmacaoDesc" class="modal-confirm-desc">
+            Deseja continuar?
+        </p>
+        
+        <div class="modal-confirm-btn-group" style="margin-top: 24px;">
+            <button type="button" class="btn-confirm-cancel" onclick="fecharModalConfirmacao()">Cancelar</button>
+            <button type="button" id="btnConfirmarAcao" class="btn primary" style="flex: 1; height: 44px; border-radius: 10px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fas fa-check"></i> Confirmar
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
-const csrfToken = '<?php echo $csrf_token ?? ''; ?>';
+const csrfToken = <?php echo json_encode($csrf_token ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
+let confirmacaoCallback = null;
+
+function abrirModalConfirmacao(titulo, descricao, textoBotao, callback) {
+    document.getElementById('modalConfirmacaoTitle').textContent = titulo;
+    document.getElementById('modalConfirmacaoDesc').textContent = descricao;
+    document.getElementById('btnConfirmarAcao').innerHTML = `<i class="fas fa-check"></i> ${textoBotao}`;
+    
+    confirmacaoCallback = callback;
+    
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+}
+
+function fecharModalConfirmacao() {
+    const modal = document.getElementById('modalConfirmacaoCustom');
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+    confirmacaoCallback = null;
+}
+
+document.getElementById('btnConfirmarAcao').addEventListener('click', () => {
+    if (confirmacaoCallback) {
+        confirmacaoCallback();
+    }
+});
+
+function showToastDesligamento(message, type) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 14px 20px;
+        border-radius: 10px;
+        color: #fff;
+        font-weight: 500;
+        z-index: 9999;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        animation: fadeIn 0.3s ease;
+        background: ${type === 'success' ? 'var(--gradient-green)' : 'linear-gradient(135deg, #ef4444, #dc2626)'};
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 function reativarAtendido(idAtendido) {
-    if (!confirm('Deseja realmente reativar este atendido?')) return;
-    
-    const formData = new FormData();
-    formData.append('csrf_token', csrfToken);
-    formData.append('id_atendido', idAtendido);
-    
-    fetch('desligamento.php?action=reativar', {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(async response => {
-        // Tentar fazer parse do JSON mesmo se status não for ok
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || data.message || 'Erro na requisição');
-            }
-            return data;
-        } else {
-            // Se não for JSON, pegar texto para debug
-            const text = await response.text();
-            console.error('Resposta não é JSON:', text.substring(0, 200));
-            throw new Error('Resposta inválida do servidor. Status: ' + response.status);
+    abrirModalConfirmacao(
+        'Reativar Atendido', 
+        'Deseja realmente reativar este atendido?', 
+        'Sim, Reativar',
+        () => {
+            fecharModalConfirmacao();
+            
+            const formData = new FormData();
+            formData.append('csrf_token', csrfToken);
+            formData.append('id_atendido', idAtendido);
+            
+            fetch('desligamento.php?action=reativar', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(async response => {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || data.message || 'Erro na requisição');
+                    }
+                    return data;
+                } else {
+                    throw new Error('Resposta inválida do servidor.');
+                }
+            })
+            .then(data => {
+                if (data.success) {
+                    showToastDesligamento(data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToastDesligamento(data.error || 'Erro ao reativar', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro completo:', error);
+                showToastDesligamento('Erro ao processar: ' + error.message, 'error');
+            });
         }
-    })
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert(data.error || 'Erro ao reativar');
-        }
-    })
-    .catch(error => {
-        console.error('Erro completo:', error);
-        alert('Erro ao processar requisição: ' + error.message + '\n\nTente recarregar a página.');
-    });
+    );
 }
 
 function processarDesligamentoAutomatico() {
-    if (!confirm('Deseja processar desligamentos automáticos por excesso de faltas?')) return;
-    
-    const formData = new FormData();
-    formData.append('csrf_token', csrfToken);
-    
-    fetch('desligamento.php?action=automatico', {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(async response => {
-        // Tentar fazer parse do JSON mesmo se status não for ok
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || data.message || 'Erro na requisição');
-            }
-            return data;
-        } else {
-            // Se não for JSON, pegar texto para debug
-            const text = await response.text();
-            console.error('Resposta não é JSON:', text.substring(0, 200));
-            throw new Error('Resposta inválida do servidor. Status: ' + response.status);
+    abrirModalConfirmacao(
+        'Processar Automático', 
+        'Deseja processar os desligamentos automáticos por excesso de faltas?', 
+        'Sim, Processar',
+        () => {
+            fecharModalConfirmacao();
+            
+            const formData = new FormData();
+            formData.append('csrf_token', csrfToken);
+            
+            fetch('desligamento.php?action=automatico', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(async response => {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || data.message || 'Erro na requisição');
+                    }
+                    return data;
+                } else {
+                    throw new Error('Resposta inválida do servidor.');
+                }
+            })
+            .then(data => {
+                if (data.success) {
+                    showToastDesligamento(data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToastDesligamento(data.error || 'Erro ao processar', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro completo:', error);
+                showToastDesligamento('Erro ao processar: ' + error.message, 'error');
+            });
         }
-    })
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert(data.error || 'Erro ao processar');
-        }
-    })
-    .catch(error => {
-        console.error('Erro completo:', error);
-        alert('Erro ao processar requisição: ' + error.message + '\n\nTente recarregar a página.');
-    });
+    );
 }
 </script>

@@ -7,16 +7,16 @@ class SocioeconomicoService {
     private $socioeconomicoModel;
     
     public function __construct() {
-        $this->socioeconomicoModel = App::getSocioeconomicoModel();
+        $this->socioeconomicoModel = new Socioeconomico();
     }
     
     /**
      * Lista todas as fichas com paginação
      */
-    public function listFichas($page = 1, $perPage = 10) {
+    public function listFichas($page = 1, $perPage = 10, $filters = []) {
         // Chamar o método específico do SocioeconomicoDB
         if (method_exists($this->socioeconomicoModel, 'listFichas')) {
-            return $this->socioeconomicoModel->listFichas($page, $perPage);
+            return $this->socioeconomicoModel->listFichas($page, $perPage, $filters);
         }
         // Fallback para método genérico
         return $this->socioeconomicoModel->paginate($page, $perPage);
@@ -65,7 +65,7 @@ class SocioeconomicoService {
      */
     private function categorizeSituacao($rendaFamiliar, $numeroMembros = 1) {
         $rendaPerCapita = $rendaFamiliar / max($numeroMembros, 1);
-        $salarioMinimo = 1320;
+        $salarioMinimo = socialIncomeReference();
         
         if ($rendaPerCapita < $salarioMinimo * 0.5) {
             return 'Extrema Pobreza';
@@ -144,11 +144,13 @@ class SocioeconomicoService {
 
     
     public function searchFichas($query, $filters = []) {
-    $results = $this->socioeconomicoModel->searchByName($query);
-        
-        // Aplicar filtros adicionais
-        if (!empty($filters)) {
-            $results = $this->applyFilters($results, $filters);
+        if (method_exists($this->socioeconomicoModel, 'searchAdvanced')) {
+            $results = $this->socioeconomicoModel->searchAdvanced($query, $filters);
+        } else {
+            $results = $this->socioeconomicoModel->searchByName($query);
+            if (!empty($filters)) {
+                $results = $this->applyFilters($results, $filters);
+            }
         }
         
         // Adicionar dados calculados
@@ -184,6 +186,23 @@ class SocioeconomicoService {
      * Valida dados da ficha
      */
     private function validateFichaData($data, $excludeId = null) {
+        // Validar nomes (apenas letras e espaços)
+        $nameFields = [
+            'nome_entrevistado' => 'O nome do entrevistado',
+            'nome_menor' => 'O nome do menor',
+            'assistente_social' => 'O campo Assistente Social'
+        ];
+        foreach ($nameFields as $field => $label) {
+            if (!empty($data[$field])) {
+                if (preg_match('/[0-9]/', $data[$field])) {
+                    throw new Exception("$label não pode conter números");
+                }
+                if (!preg_match('/^[\p{L}\s]+$/u', $data[$field])) {
+                    throw new Exception("$label deve conter apenas letras e espaços (sem números, emojis ou caracteres especiais)");
+                }
+            }
+        }
+
         // Validar CPF
         if (!empty($data['cpf'])) {
             $cpf = preg_replace('/\D+/', '', $data['cpf']);
@@ -390,46 +409,30 @@ class SocioeconomicoService {
      * Log de ações
      */
     private function logAction($action, $fichaId, $description) {
-        $logFile = DATA_PATH . '/socioeconomico_log.json';
+        require_once APP_PATH . '/Models/Log.php';
+        $logModel = new Log();
         
-        if (!file_exists($logFile)) {
-            file_put_contents($logFile, json_encode([]));
-        }
+        $acaoBd = 'UPDATE';
+        if ($action === 'create') $acaoBd = 'INSERT';
+        if ($action === 'delete') $acaoBd = 'DELETE';
         
-        $logs = json_decode(file_get_contents($logFile), true) ?: [];
-        
-        $logs[] = [
-            'id' => uniqid(),
-            'action' => $action,
-            'ficha_id' => $fichaId,
-            'description' => $description,
-            'user_id' => $_SESSION['user_id'] ?? null,
-            'user_name' => $_SESSION['user_name'] ?? 'Sistema',
-            'timestamp' => date('Y-m-d H:i:s'),
-            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
-        ];
-        
-        // Manter apenas os últimos 1000 logs
-        if (count($logs) > 1000) {
-            $logs = array_slice($logs, -1000);
-        }
-        
-        file_put_contents($logFile, json_encode($logs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $logModel->logAction(
+            $acaoBd,
+            'ficha_socioeconomico',
+            "Ficha ID: $fichaId - $description",
+            null,
+            null,
+            $fichaId
+        );
     }
     
     /**
      * Obtém logs de ações
      */
     public function getLogs($limit = 50) {
-        $logFile = DATA_PATH . '/socioeconomico_log.json';
-        
-        if (!file_exists($logFile)) {
-            return [];
-        }
-        
-        $logs = json_decode(file_get_contents($logFile), true) ?: [];
-        
-        // Retornar os mais recentes
-        return array_slice(array_reverse($logs), 0, $limit);
+        require_once APP_PATH . '/Models/Log.php';
+        $logModel = new Log();
+        $result = $logModel->getLogsByTable('ficha_socioeconomico', 1, $limit);
+        return $result['data'] ?? [];
     }
 }

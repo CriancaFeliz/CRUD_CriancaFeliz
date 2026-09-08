@@ -35,24 +35,54 @@ class AuthController extends BaseController {
         if (!$this->isPost()) {
             redirect('index.php');
         }
-        
+
+        $email = '';
+        $rateLimiter = null;
+        $recordFailedAttempt = false;
+
         try {
             $this->validateCSRF();
-            
-            $email = $this->getParam('email', '');
+
+            $email = strtolower(trim((string) $this->getParam('email', '')));
             $password = $this->getParam('password', '');
-            
+
+            $rateLimiter = new RateLimitService();
+            $maxAttempts = $this->configInt('LOGIN_MAX_ATTEMPTS', 5, 2, 20);
+            $windowSeconds = $this->configInt('LOGIN_WINDOW_SECONDS', 900, 60, 86400);
+            $clientIp = getClientIp();
+
+            if (
+                !$rateLimiter->isAllowed('login_email', $email ?: 'empty', $maxAttempts, $windowSeconds)
+                || !$rateLimiter->isAllowed('login_ip', $clientIp, $maxAttempts * 3, $windowSeconds)
+            ) {
+                throw new Exception('Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.');
+            }
+
+            $recordFailedAttempt = true;
             $user = $this->authService->login($email, $password);
-            
+
+            $rateLimiter->clear('login_email', $email);
+
             // Login bem-sucedido
             redirect('dashboard.php');
-            
-        } catch (Exception $e) {
-            
+
+        } catch (Throwable $e) {
+            if ($recordFailedAttempt && $rateLimiter instanceof RateLimitService) {
+                try {
+                    $maxAttempts = $maxAttempts ?? 5;
+                    $windowSeconds = $windowSeconds ?? 900;
+                    $blockSeconds = $this->configInt('LOGIN_BLOCK_SECONDS', 900, 60, 86400);
+                    $rateLimiter->hit('login_email', $email ?: 'empty', $maxAttempts, $windowSeconds, $blockSeconds);
+                    $rateLimiter->hit('login_ip', $clientIp ?? getClientIp(), $maxAttempts * 3, $windowSeconds, $blockSeconds);
+                } catch (Throwable $rateLimitError) {
+                    reportException($rateLimitError, 'login-rate-limit');
+                }
+            }
+
             // Armazenar erro e dados do formulário na sessão
-            $_SESSION['login_errors'] = [$e->getMessage()];
-            $_SESSION['form_data'] = ['email' => $email ?? ''];
-            
+            $_SESSION['login_errors'] = [$this->safeLoginError($e)];
+            $_SESSION['form_data'] = ['email' => $email];
+
             redirect('index.php');
         }
     }
@@ -61,6 +91,11 @@ class AuthController extends BaseController {
      * Processa logout
      */
     public function logout() {
+        if (!$this->isPost()) {
+            $this->redirectWithError('dashboard.php', 'Solicitação de saída inválida.', false);
+        }
+
+        $this->validateCSRF();
         $this->authService->logout();
         redirect('index.php');
     }
@@ -79,7 +114,7 @@ class AuthController extends BaseController {
             'messages' => $this->getFlashMessages()
         ];
         
-        $this->render('auth/forgot', $data);
+        $this->renderWithLayout('auth', 'auth/forgot', $data);
     }
     
     /**
@@ -98,9 +133,20 @@ class AuthController extends BaseController {
             if (empty($email) || !validateEmail($email)) {
                 throw new Exception('Email válido é obrigatório');
             }
-            
-            // Simular envio de email (implementar SMTP conforme memória)
-            $this->sendPasswordResetEmail($email);
+            $rateLimiter = new RateLimitService();
+            $windowSeconds = $this->configInt('PASSWORD_RESET_WINDOW_SECONDS', 3600, 300, 86400);
+            $emailMax = $this->configInt('PASSWORD_RESET_EMAIL_MAX_ATTEMPTS', 3, 1, 20);
+            $ipMax = $this->configInt('PASSWORD_RESET_IP_MAX_ATTEMPTS', 10, 2, 100);
+            $clientIp = getClientIp();
+
+            $emailAllowed = $rateLimiter->isAllowed('password_reset_email', strtolower($email), $emailMax, $windowSeconds);
+            $ipAllowed = $rateLimiter->isAllowed('password_reset_ip', $clientIp, $ipMax, $windowSeconds);
+
+            if ($emailAllowed && $ipAllowed) {
+                $rateLimiter->hit('password_reset_email', strtolower($email), $emailMax, $windowSeconds, $windowSeconds);
+                $rateLimiter->hit('password_reset_ip', $clientIp, $ipMax, $windowSeconds, $windowSeconds);
+                $this->sendPasswordResetEmail($email);
+            }
             
             $this->redirectWithSuccess('forgot.php', 'Se o email existir no sistema, você receberá instruções para redefinir sua senha.');
             
@@ -131,7 +177,7 @@ class AuthController extends BaseController {
             'messages' => $this->getFlashMessages()
         ];
         
-        $this->render('auth/reset', $data);
+        $this->renderWithLayout('auth', 'auth/reset', $data);
     }
     
     /**
@@ -158,7 +204,7 @@ class AuthController extends BaseController {
             }
             
             if (empty($password) || !validatePassword($password)) {
-                throw new Exception('Senha deve ter pelo menos 6 caracteres');
+                throw new Exception(passwordValidationMessage());
             }
             
             if ($password !== $confirmPassword) {
@@ -197,7 +243,7 @@ class AuthController extends BaseController {
             }
             
             if (empty($newPassword) || !validatePassword($newPassword)) {
-                throw new Exception('Nova senha deve ter pelo menos 6 caracteres');
+                throw new Exception(passwordValidationMessage());
             }
             
             if ($newPassword !== $confirmPassword) {
@@ -225,78 +271,72 @@ class AuthController extends BaseController {
      * Envia email de recuperação de senha
      */
     private function sendPasswordResetEmail($email) {
+        $userModel = new User();
+        if (!$userModel->findByEmail($email)) {
+            debugLog('Solicitacao de reset para email inexistente', ['email_hash' => hash('sha256', strtolower($email))]);
+            return;
+        }
+
         // Gerar token
         $token = bin2hex(random_bytes(32));
         $expiry = time() + 3600; // 1 hora
         
-        // Salvar token (implementar conforme memória)
         $this->saveResetToken($email, $token, $expiry);
-        
-        // Montar URL de reset
-        $resetUrl = 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/reset_password.php?token=' . $token;
-        
-        // Enviar email (implementar SMTP conforme memória)
-        $this->sendEmail($email, 'Recuperação de Senha - Criança Feliz', $resetUrl);
+
+        $baseUrl = rtrim((string) (getenv('APP_BASE_URL') ?: ''), '/');
+        $appEnvironment = strtolower((string) (getenv('APP_ENV') ?: 'production'));
+        $isAllowedUrl = filter_var($baseUrl, FILTER_VALIDATE_URL)
+            && ($appEnvironment !== 'production' || strpos($baseUrl, 'https://') === 0);
+
+        if (!$isAllowedUrl) {
+            $this->invalidateResetToken($token);
+            reportException(new RuntimeException('APP_BASE_URL ausente ou insegura.'), 'password-reset');
+            return;
+        }
+
+        $resetUrl = $baseUrl . '/reset_password.php?token=' . rawurlencode($token);
+
+        if (!$this->sendEmail($email, 'Recuperação de Senha - Criança Feliz', $resetUrl)) {
+            $this->invalidateResetToken($token);
+        }
     }
     
     /**
      * Salva token de reset
      */
     private function saveResetToken($email, $token, $expiry) {
-        $tokensFile = DATA_PATH . '/reset_tokens.json';
-        
-        if (!file_exists($tokensFile)) {
-            file_put_contents($tokensFile, json_encode([]));
-        }
-        
-        $tokens = json_decode(file_get_contents($tokensFile), true) ?: [];
-        
-        $tokens[$token] = [
-            'email' => $email,
-            'expiry' => $expiry,
-            'used' => false
-        ];
-        
-        file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT));
+        $tokenHash = hash('sha256', $token);
+        $resetTokenModel = new PasswordResetToken();
+        $resetTokenModel->createToken($email, $tokenHash, date('Y-m-d H:i:s', $expiry));
+    }
+
+    private function invalidateResetToken($token) {
+        $tokenHash = hash('sha256', $token);
+        (new PasswordResetToken())->markUsed($tokenHash);
     }
     
     /**
      * Valida token de reset
      */
     private function isValidResetToken($token) {
-        $tokensFile = DATA_PATH . '/reset_tokens.json';
-        
-        if (!file_exists($tokensFile)) {
-            return false;
-        }
-        
-        $tokens = json_decode(file_get_contents($tokensFile), true) ?: [];
-        
-        if (!isset($tokens[$token])) {
-            return false;
-        }
-        
-        $tokenData = $tokens[$token];
-        
-        if ($tokenData['used'] || $tokenData['expiry'] < time()) {
-            return false;
-        }
-        
-        return true;
+        $tokenHash = hash('sha256', $token);
+        $resetTokenModel = new PasswordResetToken();
+
+        return (bool) $resetTokenModel->findValidByHash($tokenHash);
     }
     
     /**
      * Atualiza senha por token
      */
     private function updatePasswordByToken($token, $password) {
-        $tokensFile = DATA_PATH . '/reset_tokens.json';
-        $tokens = json_decode(file_get_contents($tokensFile), true) ?: [];
-        
-        if (!isset($tokens[$token])) {
+        $tokenHash = hash('sha256', $token);
+        $resetTokenModel = new PasswordResetToken();
+        $tokenData = $resetTokenModel->findValidByHash($tokenHash);
+
+        if (!$tokenData) {
             throw new Exception('Token inválido');
         }
         
-        $tokenData = $tokens[$token];
         $email = $tokenData['email'];
         
         // Atualizar senha do usuário
@@ -304,20 +344,112 @@ class AuthController extends BaseController {
         $user = $userModel->findByEmail($email);
         
         if ($user) {
-            $userModel->updateUser($user['id'], ['password' => $password]);
+            $userId = $user['idusuario'] ?? $user['id'] ?? null;
+            if ($userId) {
+                $userModel->updateUser($userId, ['password' => $password]);
+            }
         }
         
-        // Marcar token como usado
-        $tokens[$token]['used'] = true;
-        file_put_contents($tokensFile, json_encode($tokens, JSON_PRETTY_PRINT));
+        $resetTokenModel->markUsed($tokenHash);
     }
     
-    /**
-     * Envia email (implementar SMTP conforme memória)
-     */
     private function sendEmail($to, $subject, $resetUrl) {
-        // Implementar conforme sistema SMTP da memória
-        // Por enquanto, apenas log
-        error_log("Email enviado para $to: $subject - URL: $resetUrl");
+        if (!filter_var(getenv('MAIL_ENABLED'), FILTER_VALIDATE_BOOLEAN)) {
+            debugLog('Envio de recuperação desabilitado por configuração.');
+            return false;
+        }
+
+        $from = trim((string) (getenv('MAIL_FROM') ?: ''));
+        if (!validateEmail($from) || !validateEmail($to)) {
+            reportException(new RuntimeException('Configuração de email inválida.'), 'password-reset-mail');
+            return false;
+        }
+
+        $message = "Recebemos uma solicitação para redefinir sua senha.\n\n"
+            . "Use o link abaixo em até uma hora:\n{$resetUrl}\n\n"
+            . "Se você não fez essa solicitação, ignore esta mensagem.";
+        $headers = [
+            'From: ' . $from,
+            'Content-Type: text/plain; charset=UTF-8',
+            'X-Mailer: Criança Feliz'
+        ];
+
+        $sent = @mail($to, $subject, $message, implode("\r\n", $headers));
+        if (!$sent) {
+            reportException(new RuntimeException('O transporte de email recusou a mensagem.'), 'password-reset-mail');
+        }
+
+        return $sent;
+    }
+
+    private function configInt($name, $default, $minimum, $maximum) {
+        $value = getenv($name);
+        $value = $value === false ? $default : (int) $value;
+        return max($minimum, min($maximum, $value));
+    }
+
+    private function safeLoginError(Throwable $exception) {
+        $msg = $exception->getMessage();
+
+        // 1. Mensagens diretas de validação
+        if ($msg === 'Email é obrigatório') {
+            return 'Por favor, informe seu e-mail para acessar.';
+        }
+        if ($msg === 'Email inválido') {
+            return 'O formato do e-mail informado é inválido. Exemplo: usuario@dominio.com';
+        }
+        if ($msg === 'Senha é obrigatória') {
+            return 'Por favor, digite sua senha de acesso.';
+        }
+        if ($msg === 'Email ou senha incorretos' || strpos($msg, 'incorretos') !== false) {
+            return 'E-mail ou senha incorretos. Verifique os dados digitados e tente novamente.';
+        }
+        if (strpos($msg, 'inativo') !== false || strpos($msg, 'bloqueado') !== false) {
+            return 'Este usuário está inativo ou bloqueado. Entre em contato com a administração.';
+        }
+        if (strpos($msg, 'Muitas tentativas') !== false) {
+            return 'Muitas tentativas consecutivas de login. Por segurança, aguarde alguns minutos antes de tentar novamente.';
+        }
+        if (strpos($msg, 'CSRF') !== false) {
+            return 'A sessão do formulário expirou. Por favor, recarregue a página e tente novamente.';
+        }
+
+        // 2. Erros de Banco de Dados / Conexão (PDO / MySQL / Drivers)
+        if ($exception instanceof PDOException || strpos($msg, 'SQLSTATE') !== false || strpos($msg, 'mysql') !== false || strpos($msg, 'Banco de dados') !== false) {
+            // Acesso negado (usuário ou senha do banco errados no .env)
+            if (strpos($msg, 'Access denied') !== false || strpos($msg, '1045') !== false) {
+                return 'Erro no Banco de Dados: Usuário ou senha do banco inválidos. Verifique as credenciais no arquivo .env (DB_USER e DB_PASS).';
+            }
+            // Banco de dados não existe
+            if (strpos($msg, 'Unknown database') !== false || strpos($msg, '1049') !== false) {
+                return 'Erro no Banco de Dados: O banco de dados informado não existe. Verifique a variável DB_NAME no arquivo .env.';
+            }
+            // Tabela de usuários não encontrada
+            if (strpos($msg, "doesn't exist") !== false || strpos($msg, '1146') !== false) {
+                $tableName = '';
+                if (preg_match("/Table ['`]([^'`]+)['`]/i", $msg, $matches)) {
+                    $tableName = " '" . $matches[1] . "'";
+                }
+                return 'Erro no Banco de Dados: A tabela' . $tableName . ' não foi encontrada. Certifique-se de importar o arquivo database/schema_completo.sql no phpMyAdmin (Verifique maiúsculas/minúsculas caso o servidor seja Linux).';
+            }
+            // Falha de host / porta / conexão recusada
+            if (strpos($msg, 'Connection refused') !== false || strpos($msg, '2002') !== false || strpos($msg, 'getaddrinfo') !== false) {
+                return 'Erro de Conexão: Não foi possível conectar ao servidor MySQL. Verifique o DB_HOST e DB_PORT no arquivo .env (em hospedagens compartilhadas use localhost).';
+            }
+            // Extensão PDO MySQL ausente
+            if (strpos($msg, 'pdo_mysql') !== false) {
+                return 'A extensão PHP pdo_mysql não está habilitada no servidor. Ative-a no painel da hospedagem.';
+            }
+
+            return 'Erro no Banco de Dados: ' . (appDebugEnabled() ? $msg : 'Falha ao conectar com o banco. Verifique as variáveis no arquivo .env.');
+        }
+
+        // 3. Demais exceções com detalhes claros
+        $errorId = reportException($exception, 'login');
+        if (appDebugEnabled() || getenv('APP_ENV') === 'development') {
+            return 'Erro no login: ' . $msg;
+        }
+
+        return 'Erro ao tentar autenticar: ' . $msg;
     }
 }

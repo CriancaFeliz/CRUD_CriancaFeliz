@@ -23,7 +23,7 @@ class ProfileController extends BaseController {
             }
             
             // Carregar dados do usuário do MySQL
-            $userModel = App::getUserModel();
+            $userModel = new User();
             $userData = $userModel->findById($userId);
             
             if (!$userData) {
@@ -34,6 +34,10 @@ class ProfileController extends BaseController {
             $userData['id'] = $userData['id'] ?? $userData['idusuario'];
             $userData['name'] = $userData['name'] ?? $userData['nome'];
             $userData['role'] = $userData['role'] ?? $userData['nivel'];
+            $storedPhoto = $userData['foto_perfil'] ?? ($_SESSION['user_photo'] ?? '');
+            $userData['photo'] = $storedPhoto !== ''
+                ? 'profile.php?action=photo&id=' . (int)$userId
+                : '';
             
             $data = [
                 'title' => 'Meu Perfil - Associação Criança Feliz',
@@ -41,6 +45,7 @@ class ProfileController extends BaseController {
                 'userEmail' => $_SESSION['user_email'] ?? '',
                 'userRole' => $_SESSION['user_role'] ?? 'user',
                 'userData' => $userData,
+                'csrf_token' => $this->generateCSRF(),
                 'messages' => $this->getFlashMessages()
             ];
             
@@ -62,6 +67,8 @@ class ProfileController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
+
             $userId = $_SESSION['user_id'] ?? null;
             
             if (!$userId) {
@@ -76,8 +83,20 @@ class ProfileController extends BaseController {
             $file = $_FILES['photo'];
             
             // Validar tipo de arquivo
-            $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!in_array($file['type'], $allowedTypes)) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo ? finfo_file($finfo, $file['tmp_name']) : null;
+            if ($finfo) {
+                finfo_close($finfo);
+            }
+
+            $allowedTypes = [
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp'
+            ];
+
+            if (!$mimeType || !isset($allowedTypes[$mimeType])) {
                 throw new Exception('Tipo de arquivo não permitido. Use JPG, PNG, GIF ou WEBP');
             }
             
@@ -86,15 +105,16 @@ class ProfileController extends BaseController {
                 throw new Exception('Arquivo muito grande. Tamanho máximo: 2MB');
             }
             
-            // Criar diretório de uploads se não existir
-            $uploadDir = ROOT_PATH . '/uploads/profiles';
-            if (!file_exists($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
+            $uploadDir = BASE_PATH . '/var/private/profiles';
+            if (!is_dir($uploadDir)) {
+                if (!mkdir($uploadDir, 0750, true) && !is_dir($uploadDir)) {
+                    throw new Exception('Não foi possível preparar a área segura de fotos');
+                }
             }
             
             // Gerar nome único para o arquivo
-            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-            $fileName = $userId . '_' . time() . '.' . $extension;
+            $extension = $allowedTypes[$mimeType];
+            $fileName = $userId . '_' . bin2hex(random_bytes(16)) . '.' . $extension;
             $filePath = $uploadDir . '/' . $fileName;
             
             // Mover arquivo
@@ -102,13 +122,110 @@ class ProfileController extends BaseController {
                 throw new Exception('Erro ao salvar arquivo');
             }
             
-            // Atualizar apenas a sessão (não precisa salvar no JSON)
-            $_SESSION['user_photo'] = '/uploads/profiles/' . $fileName;
+            $privatePath = 'var/private/profiles/' . $fileName;
+
+            $userModel = new User();
+            $currentUser = $userModel->findById($userId);
+            $previousPath = (string)($currentUser['foto_perfil'] ?? '');
+
+            try {
+                $userModel->update($userId, [
+                    'foto_perfil' => $privatePath
+                ]);
+            } catch (Throwable $exception) {
+                @unlink($filePath);
+                throw $exception;
+            }
+
+            $_SESSION['user_photo'] = $privatePath;
+            $this->removeManagedPhoto($previousPath, $privatePath);
+
+            $photoUrl = 'profile.php?action=photo&id=' . (int)$userId;
             
-            $this->json(['success' => 'Foto atualizada com sucesso', 'photo' => '/uploads/profiles/' . $fileName]);
+            $this->json(['success' => true, 'message' => 'Foto atualizada com sucesso', 'photo' => $photoUrl]);
             
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    public function viewPhoto() {
+        $this->requireAuth();
+
+        $currentUserId = (int)($_SESSION['user_id'] ?? 0);
+        $requestedUserId = (int)($_GET['id'] ?? $currentUserId);
+        if ($requestedUserId <= 0
+            || ($requestedUserId !== $currentUserId && !$this->authService->hasPermission('manage_users'))) {
+            http_response_code(403);
+            exit;
+        }
+
+        try {
+            $user = (new User())->findById($requestedUserId);
+            $filePath = $this->resolveManagedPhoto((string)($user['foto_perfil'] ?? ''));
+            if (!$filePath) {
+                http_response_code(404);
+                exit;
+            }
+
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo ? finfo_file($finfo, $filePath) : 'application/octet-stream';
+            if ($finfo) {
+                finfo_close($finfo);
+            }
+
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            header('Content-Type: ' . $mimeType);
+            header('Content-Length: ' . filesize($filePath));
+            header('Content-Disposition: inline; filename="profile-image"');
+            header('X-Content-Type-Options: nosniff');
+            header('Cache-Control: private, no-store, max-age=0');
+            header('Pragma: no-cache');
+            readfile($filePath);
+            exit;
+        } catch (Throwable $exception) {
+            reportException($exception, 'ProfileController::viewPhoto');
+            http_response_code(404);
+            exit;
+        }
+    }
+
+    private function resolveManagedPhoto($relativePath) {
+        $relativePath = ltrim((string)$relativePath, '/\\');
+        if ($relativePath === '') {
+            return null;
+        }
+
+        $filePath = realpath(BASE_PATH . '/' . $relativePath);
+        if (!$filePath || !is_file($filePath)) {
+            return null;
+        }
+
+        $allowedDirectories = [
+            realpath(BASE_PATH . '/var/private/profiles'),
+            realpath(BASE_PATH . '/uploads/profiles')
+        ];
+
+        foreach (array_filter($allowedDirectories) as $allowedDirectory) {
+            if (strpos($filePath, $allowedDirectory . DIRECTORY_SEPARATOR) === 0) {
+                return $filePath;
+            }
+        }
+
+        return null;
+    }
+
+    private function removeManagedPhoto($relativePath, $exceptPath = '') {
+        if ($relativePath === '' || $relativePath === $exceptPath) {
+            return;
+        }
+
+        $filePath = $this->resolveManagedPhoto($relativePath);
+        if ($filePath) {
+            @unlink($filePath);
         }
     }
     
@@ -119,10 +236,11 @@ class ProfileController extends BaseController {
         $this->requireAuth();
         
         if (!$this->isPost()) {
-            $this->redirect('profile.php');
+            redirect('profile.php');
         }
         
         try {
+            $this->validateCSRF();
             $userId = $_SESSION['user_id'] ?? null;
             
             if (!$userId) {
@@ -142,8 +260,8 @@ class ProfileController extends BaseController {
                 throw new Exception('Nova senha é obrigatória');
             }
             
-            if (strlen($newPassword) < 6) {
-                throw new Exception('A nova senha deve ter no mínimo 6 caracteres');
+            if (!validatePassword($newPassword)) {
+                throw new Exception(passwordValidationMessage());
             }
             
             if ($newPassword !== $confirmPassword) {
@@ -151,7 +269,7 @@ class ProfileController extends BaseController {
             }
             
             // Carregar usuário do MySQL
-            $userModel = App::getUserModel();
+            $userModel = new User();
             $user = $userModel->findById($userId);
             
             if (!$user) {
@@ -159,13 +277,13 @@ class ProfileController extends BaseController {
             }
             
             // Verificar senha atual
-            if (!password_verify($currentPassword, $user['Senha'])) {
+            if (!PasswordHelper::verify($currentPassword, $user['Senha'])) {
                 throw new Exception('Senha atual incorreta');
             }
             
             // Atualizar senha no banco
             $userModel->update($userId, [
-                'Senha' => password_hash($newPassword, PASSWORD_DEFAULT)
+                'Senha' => PasswordHelper::hash($newPassword)
             ]);
             
             $this->redirectWithSuccess('profile.php', 'Senha alterada com sucesso!');

@@ -13,7 +13,6 @@ class NotificationSystem {
     init() {
         // Criar container de notificações
         this.createContainer();
-        console.log('Sistema de Notificações inicializado');
     }
 
     createContainer() {
@@ -53,18 +52,30 @@ class NotificationSystem {
 
     createNotification(message, type, duration) {
         const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        
-        // Definir cores e ícones por tipo
-        const config = this.getTypeConfig(type);
-        
-        notification.innerHTML = `
-            <div class="notification-icon">${config.icon}</div>
-            <div class="notification-content">
-                <div class="notification-message">${message}</div>
-            </div>
-            <button class="notification-close" onclick="window.notificationSystem.remove(this.parentElement)">×</button>
-        `;
+        const allowedTypes = ['success', 'error', 'warning', 'info', 'save', 'edit', 'delete'];
+        const safeType = allowedTypes.includes(type) ? type : 'info';
+        notification.className = `notification notification-${safeType}`;
+
+        const config = this.getTypeConfig(safeType);
+        const icon = document.createElement('div');
+        icon.className = 'notification-icon';
+        icon.textContent = config.icon;
+
+        const content = document.createElement('div');
+        content.className = 'notification-content';
+        const messageElement = document.createElement('div');
+        messageElement.className = 'notification-message';
+        messageElement.textContent = String(message ?? '');
+        content.appendChild(messageElement);
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'notification-close';
+        closeButton.textContent = '×';
+        closeButton.setAttribute('aria-label', 'Fechar notificação');
+        closeButton.addEventListener('click', () => this.remove(notification));
+
+        notification.append(icon, content, closeButton);
 
         notification.style.cssText = `
             background: ${config.background};

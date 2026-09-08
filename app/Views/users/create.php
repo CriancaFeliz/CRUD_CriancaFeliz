@@ -1,59 +1,39 @@
-<div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
-    <a href="users.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">
-        ← Voltar
-    </a>
+<div class="actions flex-between mb-4">
+    <div></div>
+    <div class="d-flex gap-2">
+        <a href="users.php" class="btn secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
 </div>
 
-<form method="post" style="max-width: 800px;">
-    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+<form method="post" class="user-form" style="max-width: 800px;">
+    <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token ?? ''); ?>">
     
-    <div class="form-section" style="background:#fff; border-radius:12px; padding:24px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-        <h3 style="margin:0 0 20px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">
-            👤 Informações do Usuário
+    <div class="card-glass form-section p-4 mb-4">
+        <h3 class="form-section-title mb-3">
+            <i class="fas fa-user-circle text-orange"></i> Informações do Usuário
         </h3>
         
         <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
             <div>
-                <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:8px;">
-                    Nome Completo *
-                </label>
-                <input type="text" 
-                       name="name" 
-                       required
-                       style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;"
-                       placeholder="Digite o nome completo">
+                <label class="form-label-bold">Nome Completo *</label>
+                <input type="text" name="name" required class="form-control" placeholder="Digite o nome completo">
             </div>
             
             <div>
-                <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:8px;">
-                    Email *
-                </label>
-                <input type="email" 
-                       name="email" 
-                       required
-                       style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;"
-                       placeholder="exemplo@email.com">
+                <label class="form-label-bold">Email *</label>
+                <input type="email" name="email" required class="form-control" placeholder="exemplo@email.com">
             </div>
             
             <div>
-                <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:8px;">
-                    Senha *
-                </label>
-                <input type="password" 
-                       name="password" 
-                       required
-                       minlength="6"
-                       style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;"
-                       placeholder="Mínimo 6 caracteres">
+                <label class="form-label-bold">Senha *</label>
+                <input type="password" name="password" required minlength="12" class="form-control" placeholder="Mínimo 12 caracteres">
             </div>
             
             <div>
-                <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:8px;">
-                    Nível de Acesso *
-                </label>
-                <select name="role" 
-                        required
-                        style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
+                <label class="form-label-bold">Nível de Acesso *</label>
+                <select name="role" required class="form-select">
                     <option value="">Selecione o nível de acesso</option>
                     <option value="admin">Administrador</option>
                     <option value="psicologo">Psicólogo - Assistente Social</option>
@@ -63,118 +43,89 @@
         </div>
     </div>
     
-    <div class="permissions-info" style="background:#f8f9fa; border-radius:12px; padding:20px; margin-bottom:20px; border-left:4px solid #17a2b8;">
-        <h4 style="margin:0 0 16px 0; color:#495057; display:flex; align-items:center; gap:8px;">
-            🔒 Permissões por Nível de Acesso
+    <div class="card-glass p-4 mb-4" style="border-left:4px solid var(--primary-blue, #17a2b8);">
+        <h4 class="mb-3" style="color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-lock text-blue"></i> Permissões por Nível de Acesso
         </h4>
         
         <div class="permission-grid" style="display:grid; gap:16px;">
-            <div class="permission-item" style="background:white; padding:16px; border-radius:8px; border-left:4px solid #dc3545;">
-                <div style="font-weight:600; color:#dc3545; margin-bottom:8px;">👑 Administrador</div>
-                <div style="font-size:14px; color:#6c757d; line-height:1.5;">
+            <div class="permission-item card-glass p-3" style="border-left:4px solid var(--primary-red, #dc3545);">
+                <div style="font-weight:700; color:var(--primary-red, #dc3545); margin-bottom:8px;">
+                    <i class="fas fa-crown"></i> Administrador
+                </div>
+                <div class="text-muted" style="font-size:14px; line-height:1.5;">
                     • Acesso total ao sistema<br>
                     • Gerenciamento de usuários<br>
                     • Criação, edição e exclusão de fichas<br>
                     • Visualização de relatórios<br>
                     • Configurações do sistema<br>
-                    <strong style="color:#dc3545;">⚠️ NÃO tem acesso à área psicológica</strong>
+                    <strong style="color:var(--primary-red, #dc3545);"><i class="fas fa-exclamation-triangle"></i> NÃO tem acesso à área psicológica</strong>
                 </div>
             </div>
             
-            <div class="permission-item" style="background:white; padding:16px; border-radius:8px; border-left:4px solid #17a2b8;">
-                <div style="font-weight:600; color:#17a2b8; margin-bottom:8px;">🧠 Psicólogo - Assistente Social</div>
-                <div style="font-size:14px; color:#6c757d; line-height:1.5;">
+            <div class="permission-item card-glass p-3" style="border-left:4px solid var(--primary-blue, #17a2b8);">
+                <div style="font-weight:700; color:var(--primary-blue, #17a2b8); margin-bottom:8px;">
+                    <i class="fas fa-brain"></i> Psicólogo - Assistente Social
+                </div>
+                <div class="text-muted" style="font-size:14px; line-height:1.5;">
                     • Visualização de todas as fichas<br>
                     • Acesso exclusivo à área psicológica<br>
                     • Criação e edição de anotações psicológicas<br>
                     • Avaliações e evolução das crianças<br>
-                    <strong style="color:#17a2b8;">🔐 Área psicológica é privada e exclusiva</strong>
+                    <strong style="color:var(--primary-blue, #17a2b8);"><i class="fas fa-shield-alt"></i> Área psicológica é privada e exclusiva</strong>
                 </div>
             </div>
             
-            <div class="permission-item" style="background:white; padding:16px; border-radius:8px; border-left:4px solid #28a745;">
-                <div style="font-weight:600; color:#28a745; margin-bottom:8px;">👥 Funcionário</div>
-                <div style="font-size:14px; color:#6c757d; line-height:1.5;">
+            <div class="permission-item card-glass p-3" style="border-left:4px solid var(--primary-green, #28a745);">
+                <div style="font-weight:700; color:var(--primary-green, #28a745); margin-bottom:8px;">
+                    <i class="fas fa-user-friends"></i> Funcionário
+                </div>
+                <div class="text-muted" style="font-size:14px; line-height:1.5;">
                     • Apenas visualização de informações<br>
                     • Não pode criar ou editar fichas<br>
                     • Não pode criar anotações na agenda<br>
                     • Acesso limitado para consulta<br>
-                    <strong style="color:#28a745;">📖 Somente leitura</strong>
+                    <strong style="color:var(--primary-green, #28a745);"><i class="fas fa-book-open"></i> Somente leitura</strong>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="actions" style="display:flex; gap:10px; justify-content:flex-end;">
-        <a href="users.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:12px 20px; border-radius:8px; cursor:pointer; text-decoration:none;">
+    <div class="actions d-flex gap-2 justify-content-end">
+        <a href="users.php" class="btn secondary">
             Cancelar
         </a>
-        <button type="submit" class="btn" style="background:#6fb64f; color:#fff; border:none; padding:12px 20px; border-radius:8px; cursor:pointer;">
-            👤 Criar Usuário
+        <button type="submit" class="btn success">
+            <i class="fas fa-user-plus"></i> Criar Usuário
         </button>
     </div>
 </form>
 
 <script>
-// Validação em tempo real
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
     const emailInput = document.querySelector('input[name="email"]');
     const passwordInput = document.querySelector('input[name="password"]');
     
-    // Validação de email
-    emailInput.addEventListener('blur', function() {
-        const email = this.value;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
-        if (email && !emailRegex.test(email)) {
-            this.style.borderColor = '#dc3545';
-            showFieldError(this, 'Email inválido');
-        } else {
-            this.style.borderColor = '#f0a36b';
-            hideFieldError(this);
-        }
-    });
-    
-    // Validação de senha
-    passwordInput.addEventListener('input', function() {
-        const password = this.value;
-        
-        if (password.length > 0 && password.length < 6) {
-            this.style.borderColor = '#dc3545';
-            showFieldError(this, 'Senha deve ter pelo menos 6 caracteres');
-        } else {
-            this.style.borderColor = '#f0a36b';
-            hideFieldError(this);
-        }
-    });
-    
-    function showFieldError(field, message) {
-        hideFieldError(field);
-        const error = document.createElement('div');
-        error.className = 'field-error';
-        error.style.cssText = 'color:#dc3545; font-size:12px; margin-top:4px;';
-        error.textContent = message;
-        field.parentNode.appendChild(error);
+    if (emailInput) {
+        emailInput.addEventListener('blur', function() {
+            const email = this.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (email && !emailRegex.test(email)) {
+                this.classList.add('input-error');
+            } else {
+                this.classList.remove('input-error');
+            }
+        });
     }
     
-    function hideFieldError(field) {
-        const existing = field.parentNode.querySelector('.field-error');
-        if (existing) {
-            existing.remove();
-        }
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            if (this.value.length > 0 && this.value.length < 12) {
+                this.classList.add('input-error');
+            } else {
+                this.classList.remove('input-error');
+            }
+        });
     }
 });
 </script>
-
-<style>
-@media (max-width: 768px) {
-    .form-grid {
-        grid-template-columns: 1fr !important;
-    }
-    
-    .permission-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
-</style>

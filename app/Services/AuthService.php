@@ -7,7 +7,15 @@ class AuthService {
     private $userModel;
     
     public function __construct() {
-        $this->userModel = new User();
+        $this->userModel = null;
+    }
+
+    private function users() {
+        if ($this->userModel === null) {
+            $this->userModel = new User();
+        }
+
+        return $this->userModel;
     }
     
     /**
@@ -27,12 +35,8 @@ class AuthService {
             throw new Exception('Senha é obrigatória');
         }
         
-        if (!validatePassword($password)) {
-            throw new Exception('A senha deve ter pelo menos 6 caracteres');
-        }
-        
         // Verificar se usuário existe
-        $userExists = $this->userModel->findByEmail($email);
+        $userExists = $this->users()->findByEmail($email);
         
         if (!$userExists) {
             throw new Exception('Email ou senha incorretos');
@@ -41,11 +45,11 @@ class AuthService {
         // Verificar se está ativo
         $status = strtolower($userExists['status'] ?? 'inativo');
         if ($status !== 'ativo' && $status !== 'active') {
-            throw new Exception('Usuário inativo');
+            throw new Exception('Usuário inativo ou bloqueado');
         }
         
         // Tentar autenticar
-        $user = $this->userModel->authenticate($email, $password);
+        $user = $this->users()->authenticate($email, $password);
         
         if (!$user) {
             throw new Exception('Email ou senha incorretos');
@@ -54,7 +58,7 @@ class AuthService {
         // Verificar status (aceita 'Ativo' ou 'active')
         $status = strtolower($user['status'] ?? '');
         if ($status !== 'ativo' && $status !== 'active') {
-            throw new Exception('Usuário inativo');
+            throw new Exception('Usuário inativo ou bloqueado');
         }
         
         // Criar sessão
@@ -70,9 +74,11 @@ class AuthService {
     $_SESSION['user_id'] = $user['idusuario'];
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_name'] = $user['nome'];
+    $_SESSION['user_photo'] = $user['foto_perfil'] ?? '';
 
     // Usa 'nivel' do banco como role
     $_SESSION['user_role'] = $user['nivel'] ?? 'funcionario';
+
 
     $_SESSION['login_time'] = time();
     session_regenerate_id(true);
@@ -114,15 +120,33 @@ class AuthService {
         if (!$this->isLoggedIn()) {
             return null;
         }
+
+        if (empty($_SESSION['user_name']) && !empty($_SESSION['user_id'])) {
+            try {
+                $userData = $this->users()->findById($_SESSION['user_id']);
+                if ($userData) {
+                    $_SESSION['user_name'] = $userData['nome'] ?? $userData['name'] ?? '';
+                    if (!empty($userData['foto_perfil']) && empty($_SESSION['user_photo'])) {
+                        $_SESSION['user_photo'] = $userData['foto_perfil'];
+                    }
+                }
+            } catch (Throwable $e) {
+                // Silenciosamente mantém fallback de sessão
+            }
+        }
         
+        $hasPhoto = !empty($_SESSION['user_photo']);
+
         return [
             'id' => $_SESSION['user_id'],
-            'email' => $_SESSION['user_email'],
-            'name' => $_SESSION['user_name'],
-            'role' => $_SESSION['user_role']
+            'email' => $_SESSION['user_email'] ?? '',
+            'name' => $_SESSION['user_name'] ?? '',
+            'role' => $_SESSION['user_role'] ?? 'funcionario',
+            'photo' => $hasPhoto
+                ? 'profile.php?action=photo&id=' . (int)$_SESSION['user_id']
+                : ''
         ];
     }
-    
     /**
      * Verifica se usuário tem permissão
      */
@@ -131,7 +155,7 @@ class AuthService {
             return false;
         }
         
-        $role = $_SESSION['user_role'];
+        $role = $_SESSION['user_role'] ?? '';
         
         // Definir permissões por role
         $permissions = [
@@ -162,20 +186,24 @@ class AuthService {
             ]
         ];
         
+        // Admin tem acesso total, exceto permissões da área psicológica.
+        if ($role === 'admin') {
+            $psychologyPermissions = [
+                'psychological_notes',
+                'view_psychological_area',
+                'edit_psychological_notes',
+                'add_psychological_note',
+                'delete_psychological_note'
+            ];
+
+            return !in_array($permission, $psychologyPermissions, true);
+        }
+
         if (!isset($permissions[$role])) {
             return false;
         }
-        
-        // Admin tem todas as permissões exceto área psicológica
-        if ($role === 'admin' && $permission === 'psychological_notes') {
-            return false;
-        }
-        
-        if ($role === 'admin' && $permission === 'view_psychological_area') {
-            return false;
-        }
-        
-        return in_array($permission, $permissions[$role]);
+
+        return in_array($permission, $permissions[$role], true);
     }
     
     /**
@@ -211,7 +239,7 @@ class AuthService {
      * Registra novo usuário
      */
     public function register($data) {
-        return $this->userModel->createUser($data);
+        return $this->users()->createUser($data);
     }
     
     /**
@@ -219,11 +247,11 @@ class AuthService {
      */
     public function updateProfile($id, $data) {
         // Verificar se é o próprio usuário ou admin
-        if ($_SESSION['user_id'] !== $id && !$this->hasPermission('manage_users')) {
+        if ((string) $_SESSION['user_id'] !== (string) $id && !$this->hasPermission('manage_users')) {
             throw new Exception('Acesso negado');
         }
         
-        return $this->userModel->updateUser($id, $data);
+        return $this->users()->updateUser($id, $data);
     }
     
     /**
@@ -231,24 +259,26 @@ class AuthService {
      */
     public function changePassword($currentPassword, $newPassword) {
         $userId = $_SESSION['user_id'];
-        $user = $this->userModel->findById($userId);
+        $user = $this->users()->findById($userId);
         
         if (!$user) {
             throw new Exception('Usuário não encontrado');
         }
         
         // Verificar senha atual
-        if (!password_verify($currentPassword, $user['password'])) {
+        $passwordHash = $user['Senha'] ?? $user['password'] ?? null;
+
+        if (!$passwordHash || !PasswordHelper::verify($currentPassword, $passwordHash)) {
             throw new Exception('Senha atual incorreta');
         }
         
         // Validar nova senha
         if (!validatePassword($newPassword)) {
-            throw new Exception('Nova senha deve ter pelo menos 6 caracteres');
+            throw new Exception(passwordValidationMessage());
         }
         
         // Atualizar senha
-        return $this->userModel->updateUser($userId, [
+        return $this->users()->updateUser($userId, [
             'password' => $newPassword
         ]);
     }

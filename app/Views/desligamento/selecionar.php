@@ -21,7 +21,7 @@
     .tabela-atendidos {
         background: #fff;
         border-radius: 12px;
-        overflow: hidden;
+        overflow-x: auto;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .tabela-atendidos table {
@@ -61,6 +61,23 @@
         padding: 60px 20px;
         color: #999;
     }
+    @media (max-width: 768px) {
+        .busca-row {
+            flex-direction: column;
+        }
+        .busca-input {
+            width: 100%;
+        }
+        .tabela-atendidos th, .tabela-atendidos td {
+            white-space: nowrap;
+            padding: 10px;
+            font-size: 13px;
+        }
+        .btn-desligar {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+    }
 </style>
 
 <!-- Busca -->
@@ -70,7 +87,7 @@
         <div class="busca-row">
             <input type="text" name="search" class="busca-input" 
                    placeholder="Buscar por nome ou CPF..." 
-                   value="<?php echo htmlspecialchars($search); ?>">
+                   value="<?php echo htmlspecialchars($search ?? ''); ?>">
             <button type="submit" class="btn">
                 <i class="fas fa-search"></i> Buscar
             </button>
@@ -101,7 +118,7 @@
                 </tr>
             <?php else: ?>
                 <?php foreach ($atendidos as $atendido): ?>
-                    <?php $id = $atendido['idatendido'] ?? $atendido['id']; ?>
+                    <?php $id = (int)($atendido['idatendido'] ?? $atendido['id'] ?? 0); ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($atendido['nome']); ?></strong></td>
                         <td><?php echo htmlspecialchars($atendido['cpf'] ?? 'N/A'); ?></td>

@@ -18,6 +18,7 @@ class BaseController {
         $data['currentUser'] = $this->authService->getCurrentUser();
         $data['isLoggedIn'] = $this->authService->isLoggedIn();
         $data['old_input'] = $_SESSION['old_input'] ?? [];
+        $data['csrf_token'] = $data['csrf_token'] ?? $this->generateCSRF();
         
         view($view, $data);
     }
@@ -30,6 +31,7 @@ class BaseController {
         $data['currentUser'] = $this->authService->getCurrentUser();
         $data['isLoggedIn'] = $this->authService->isLoggedIn();
         $data['old_input'] = $_SESSION['old_input'] ?? [];
+        $data['csrf_token'] = $data['csrf_token'] ?? $this->generateCSRF();
         
         // Limpar old_input após usar (para não aparecer em próximas páginas)
         if (isset($_SESSION['old_input'])) {
@@ -58,7 +60,7 @@ class BaseController {
         
         // Redirecionar
         if (!headers_sent()) {
-            header('Location: ' . $url, true, 302);
+            header('Location: ' . safeLocalRedirectTarget($url), true, 302);
         }
         exit;
     }
@@ -81,7 +83,7 @@ class BaseController {
         
         // Redirecionar
         if (!headers_sent()) {
-            header('Location: ' . $url, true, 302);
+            header('Location: ' . safeLocalRedirectTarget($url), true, 302);
         }
         exit;
     }
@@ -165,7 +167,15 @@ class BaseController {
      * Verifica permissão específica
      */
     protected function requirePermission($permission) {
-        $this->authService->requirePermission($permission);
+        try {
+            $this->authService->requirePermission($permission);
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                throw $e;
+            }
+
+            $this->redirectWithError('dashboard.php', 'Acesso negado.', false);
+        }
     }
     
     /**
@@ -238,16 +248,42 @@ class BaseController {
     }
     
     /**
-     * Trata exceções
+     * Trata exceções de forma descritiva e compreensível
      */
-    protected function handleException(Exception $e) {
-        error_log("Erro no controller: " . $e->getMessage());
+    protected function handleException(Throwable $e) {
+        $errorId = reportException($e, static::class);
+        $msg = $e->getMessage();
+
+        // 1. Diagnóstico de erros de Banco de Dados / MySQL / PDO
+        if ($e instanceof PDOException || strpos($msg, 'SQLSTATE') !== false || strpos($msg, 'mysql') !== false || strpos($msg, 'Table') !== false) {
+            $tableName = '';
+            if (preg_match("/Table ['`]([^'`]+)['`]/i", $msg, $matches)) {
+                $tableName = " '" . $matches[1] . "'";
+            }
+            if (strpos($msg, "doesn't exist") !== false || strpos($msg, '1146') !== false) {
+                $message = "Erro no Banco de Dados: A tabela{$tableName} não foi encontrada. Certifique-se de que todas as tabelas foram criadas e renomeadas para minúsculo no phpMyAdmin.";
+            } elseif (strpos($msg, 'Unknown column') !== false || strpos($msg, '1054') !== false) {
+                $message = "Erro no Banco de Dados: Coluna não encontrada na tabela. Detalhes: " . $msg;
+            } elseif (strpos($msg, 'Access denied') !== false || strpos($msg, '1045') !== false) {
+                $message = "Erro de Conexão: Usuário ou senha do banco inválidos no arquivo .env.";
+            } else {
+                $message = "Erro no Banco de Dados: " . $msg;
+            }
+        } elseif (!empty($msg) && !str_starts_with($msg, 'Não foi possível')) {
+            $message = $msg;
+        } else {
+            $message = 'Não foi possível concluir a operação (' . $msg . '). Código do log: ' . $errorId;
+        }
         
         if ($this->isAjaxRequest()) {
-            $this->json(['error' => $e->getMessage()], 500);
+            $this->json(['error' => $message, 'error_id' => $errorId], 500);
         } else {
-            $this->redirectWithError($_SERVER['HTTP_REFERER'] ?? 'index.php', $e->getMessage());
+            $this->redirectWithError($this->safeReferrer('index.php'), $message);
         }
+    }
+
+    protected function safeReferrer($fallback = 'index.php') {
+        return safeLocalRedirectTarget($_SERVER['HTTP_REFERER'] ?? '', $fallback);
     }
     
     /**
@@ -273,24 +309,38 @@ class BaseController {
             throw new Exception('Arquivo muito grande. Máximo: ' . ($maxSize / 1024 / 1024) . 'MB');
         }
         
-        // Verificar tipo
-        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($extension, $allowedTypes)) {
+        $mimeMap = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp'
+        ];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo ? finfo_file($finfo, $file['tmp_name']) : '';
+        if ($finfo) {
+            finfo_close($finfo);
+        }
+
+        $extension = $mimeMap[$mimeType] ?? '';
+        $normalizedAllowedTypes = array_map('strtolower', $allowedTypes);
+        if ($extension === '' || !in_array($extension, $normalizedAllowedTypes, true)) {
             throw new Exception('Tipo de arquivo não permitido. Permitidos: ' . implode(', ', $allowedTypes));
         }
         
         // Gerar nome único
-        $fileName = uniqid() . '.' . $extension;
-        $uploadDir = BASE_PATH . '/uploads/';
+        $fileName = bin2hex(random_bytes(16)) . '.' . $extension;
+        $uploadDir = BASE_PATH . '/var/private/children';
         
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
+            if (!mkdir($uploadDir, 0750, true) && !is_dir($uploadDir)) {
+                throw new Exception('Não foi possível preparar a área segura de fotos');
+            }
         }
         
-        $uploadPath = $uploadDir . $fileName;
+        $uploadPath = $uploadDir . DIRECTORY_SEPARATOR . $fileName;
         
         if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
-            return 'uploads/' . $fileName;
+            return 'var/private/children/' . $fileName;
         }
         
         throw new Exception('Erro ao fazer upload do arquivo');

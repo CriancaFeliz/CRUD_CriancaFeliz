@@ -1,73 +1,60 @@
 <?php
 
 /**
- * Model para fichas socioeconômicas
+ * Model para fichas socioeconômicas - MYSQL COMPLETO
  */
 class Socioeconomico extends BaseModel {
     
     public function __construct() {
-        parent::__construct('socioeconomico.json');
+        parent::__construct('atendido', 'idatendido');
     }
     
     /**
-     * Cria nova ficha socioeconômica com validação
+     * Converter data dd/mm/yyyy para yyyy-mm-dd
      */
-    public function createFicha($data) {
-        // Normalizar dados (validação de campos obrigatórios é feita no frontend)
-        $data = $this->normalizeData($data);
+    private function convertDate($date) {
+        if (empty($date)) return null;
         
-        // TEMPORÁRIO: Validação de CPF duplicado desabilitada (sem banco de dados)
-        // Quando implementar banco, reativar esta validação
-        // if ($this->cpfExists($data['cpf'])) {
-        //     throw new Exception('CPF já cadastrado no sistema');
-        // }
-        
-        // Definir status padrão
-        $data['status'] = $data['status'] ?? 'Ativo';
-        
-        return $this->create($data);
-    }
-    
-    /**
-     * Atualiza ficha socioeconômica
-     */
-    public function updateFicha($id, $data) {
-        $ficha = $this->findById($id);
-        if (!$ficha) {
-            throw new Exception('Ficha não encontrada');
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date, $matches)) {
+            return "{$matches[3]}-{$matches[2]}-{$matches[1]}";
         }
         
-        // Normalizar dados
-        $data = $this->normalizeData($data);
-        
-        // Verificar se CPF já existe (excluindo o próprio registro)
-        if (isset($data['cpf']) && $this->cpfExists($data['cpf'], $id)) {
-            throw new Exception('CPF já cadastrado no sistema');
-        }
-        
-        return $this->update($id, $data);
+        return $date;
     }
     
     /**
-     * Normaliza dados da ficha
+     * Formatar data yyyy-mm-dd para dd/mm/yyyy
+     */
+    private function formatDate($date) {
+        if (empty($date)) return '';
+        
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches)) {
+            return "{$matches[3]}/{$matches[2]}/{$matches[1]}";
+        }
+        
+        return $date;
+    }
+    
+    /**
+     * Normalizar dados
      */
     private function normalizeData($data) {
-        // Normalizar CPF (apenas números)
+        // Normalizar CPF
         if (isset($data['cpf'])) {
             $data['cpf'] = preg_replace('/\D+/', '', $data['cpf']);
         }
         
-        // Normalizar RG (apenas números)
+        // Normalizar RG
         if (isset($data['rg'])) {
             $data['rg'] = preg_replace('/\D+/', '', $data['rg']);
         }
         
-        // Normalizar CEP (apenas números)
+        // Normalizar CEP
         if (isset($data['cep'])) {
             $data['cep'] = preg_replace('/\D+/', '', $data['cep']);
         }
         
-        // Normalizar telefones (apenas números)
+        // Normalizar telefones
         $telefoneFields = ['telefone', 'celular', 'contato_emergencia'];
         foreach ($telefoneFields as $field) {
             if (isset($data[$field])) {
@@ -77,151 +64,975 @@ class Socioeconomico extends BaseModel {
         
         return $data;
     }
+
+    private function parseMoney($value) {
+        $value = str_replace(['R$', ' '], '', (string) $value);
+        if (strpos($value, ',') !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        }
+
+        return is_numeric($value) ? (float) $value : 0.0;
+    }
+
+    private function booleanFlag($value) {
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'sim', 'yes', 'true', 'on'], true) ? 1 : 0;
+    }
     
     /**
-     * Verifica se CPF já existe
+     * Calcular idade
      */
-    public function cpfExists($cpf, $excludeId = null) {
-        $cpf = preg_replace('/\D+/', '', $cpf);
+    public function calculateAge($dataNascimento) {
+        if (empty($dataNascimento)) return 0;
         
-        foreach ($this->data as $record) {
-            if ($record['cpf'] === $cpf && $record['id'] !== $excludeId) {
-                return true;
+        $date = $this->convertDate($dataNascimento);
+        $birthDate = new DateTime($date);
+        $today = new DateTime();
+        return $birthDate->diff($today)->y;
+    }
+
+    public function calculateRendaFamiliar($data) {
+        $renda = floatval($data['renda_familiar'] ?? 0);
+
+        if ($renda <= 0 && !empty($data['familia_json'])) {
+            $familia = json_decode($data['familia_json'], true);
+            if (is_array($familia)) {
+                foreach ($familia as $membro) {
+                    if (!empty($membro['renda'])) {
+                        $renda += floatval(str_replace(['.', ','], ['', '.'], $membro['renda']));
+                    }
+                }
             }
         }
-        return false;
+
+        return $renda;
+    }
+
+    public function categorizeSituacao($rendaFamiliar, $numeroMembros = 1) {
+        $rendaPerCapita = floatval($rendaFamiliar) / max(intval($numeroMembros), 1);
+        $salarioMinimo = socialIncomeReference();
+
+        if ($rendaPerCapita < $salarioMinimo * 0.5) return 'Extrema Pobreza';
+        if ($rendaPerCapita < $salarioMinimo) return 'Pobreza';
+        if ($rendaPerCapita < $salarioMinimo * 3) return 'Baixa Renda';
+        if ($rendaPerCapita < $salarioMinimo * 6) return 'Média Renda';
+        return 'Alta Renda';
     }
     
     /**
-     * Busca por CPF
+     * Categorizar por idade
      */
-    public function findByCpf($cpf) {
-        $cpf = preg_replace('/\D+/', '', $cpf);
-        return $this->findBy('cpf', $cpf);
+    public function categorizeByAge($age) {
+        if ($age < 12) return 'Criança';
+        if ($age < 18) return 'Adolescente';
+        return 'Adulto';
     }
     
+    /**
+     * Criar ficha socioeconômica
+     */
+    public function createFicha($data) {
+        try {
+            Database::beginTransaction();
+            
+            // Normalizar dados
+            $data = $this->normalizeData($data);
+            
+            // 1. Criar atendido (se não existir)
+            $atendidoData = [
+                'nome' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
+                'cpf' => $data['cpf'] ?? '',
+                'rg' => $data['rg'] ?? '',
+                'data_nascimento' => $this->convertDate($data['data_nascimento'] ?? ''),
+                'data_acolhimento' => $this->convertDate($data['data_acolhimento'] ?? ''),
+                'data_cadastro' => date('Y-m-d'),
+                'endereco' => $data['endereco'] ?? null,
+                'numero' => $data['numero'] ?? null,
+                'complemento' => $data['complemento'] ?? null,
+                'bairro' => $data['bairro'] ?? null,
+                'cidade' => $data['cidade'] ?? null,
+                'cep' => $data['cep'] ?? null,
+                'status' => 'Ativo',
+                'faixa_etaria' => $this->calculateAge($data['data_nascimento'] ?? '')
+            ];
+            
+            $atendido = $this->create($atendidoData);
+            $atendidoId = $atendido['idatendido'];
+            
+            // 2. Criar Ficha Socioeconômica
+            // Converter renda_familiar para número (remover R$, pontos de milhar, converter vírgula em ponto)
+            $rendaSalario = $this->parseMoney($data['renda_salario'] ?? 0);
+            $rendaBolsa = $this->parseMoney($data['renda_bolsa'] ?? 0);
+            $rendaFamiliar = $this->parseMoney($data['renda_familiar'] ?? 0);
+            if ($rendaFamiliar <= 0) {
+                $rendaFamiliar = $rendaSalario + $rendaBolsa;
+            }
+            
+            // Determinar flags de benefícios a partir dos campos disponíveis
+            $bolsa = (!empty($data['bolsa_familia'])) ? 1 : 0;
+            $auxilio = (!empty($data['auxilio_brasil'])) ? 1 : 0;
+            $bpc = (!empty($data['bpc'])) ? 1 : 0;
+            $auxEmerg = (!empty($data['auxilio_emergencial'])) ? 1 : 0;
+            $seguro = (!empty($data['seguro_desemprego'])) ? 1 : 0;
+            $aposentadoria = (!empty($data['aposentadoria'])) ? 1 : 0;
+
+            if (!$bolsa && !empty($data['renda_bolsa'])) {
+                $val = floatval(str_replace([',','R$','.'],['','.',''],$data['renda_bolsa']));
+                if ($val > 0) $bolsa = 1;
+            }
+
+            // Preparar dados da ficha para inserção (mapa coluna => valor)
+            $fichaData = [
+                'id_atendido' => $atendidoId,
+                'agua' => !empty($data['agua']) ? 1 : 0,
+                'esgoto' => !empty($data['esgoto']) ? 1 : 0,
+                'energia' => !empty($data['energia']) ? 1 : 0,
+                'tipo_agua' => $data['agua'] ?? null,
+                'tipo_esgoto' => $data['esgoto'] ?? null,
+                'tipo_energia' => $data['energia'] ?? null,
+                'renda_familiar' => $rendaFamiliar,
+                'renda_salario' => $rendaSalario,
+                'renda_bolsa' => $rendaBolsa,
+                'qtd_pessoas' => $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
+                'cond_residencia' => $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
+                'moradia' => $data['tipo_moradia'] ?? $data['moradia'] ?? null,
+                'residencia' => $data['residencia'] ?? null,
+                'nr_veiculos' => $data['nr_veiculos'] ?? 0,
+                'observacoes' => $data['observacoes'] ?? null,
+                'entrevistado' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
+                'numero_comodos' => $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
+                'quartos' => $data['quartos'] ?? 0,
+                'banheiros' => $data['banheiro'] ?? $data['banheiros'] ?? 0,
+                'construcao' => $data['construcao'] ?? null,
+                'nome_menor' => $data['nome_menor'] ?? null,
+                'assistente_social' => $data['assistente_social'] ?? null,
+                'cadunico' => $data['cadunico'] ?? null,
+                'renda_per_capita' => isset($data['renda_per_capita']) ? $this->parseMoney($data['renda_per_capita']) : ( ($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0) ? ($rendaFamiliar / max(1, intval($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0))) : null ),
+                'veiculos_motocicleta' => $data['veiculos_motocicleta'] ?? 0,
+                'veiculos_automovel' => $data['veiculos_automovel'] ?? 0,
+                'veiculos_caminhonete' => $data['veiculos_caminhonete'] ?? 0,
+                'veiculos_caminhao' => $data['veiculos_caminhao'] ?? 0,
+                'veiculos_outros' => $data['veiculos_outros'] ?? 0,
+                'trabalho_clt' => $this->booleanFlag($data['trabalho_clt'] ?? 0),
+                'trabalho_clt_qual' => $data['trabalho_clt_qual'] ?? null,
+                'convenio_medico' => $this->booleanFlag($data['convenio_medico'] ?? 0),
+                'bolsa_familia' => $bolsa,
+                'auxilio_brasil' => $auxilio,
+                'bpc' => $bpc,
+                'auxilio_emergencial' => $auxEmerg,
+                'seguro_desemprego' => $seguro,
+                'aposentadoria' => $aposentadoria
+            ];
+
+            $insertCols = array_keys($fichaData);
+            $insertVals = array_values($fichaData);
+
+            $placeholders = implode(', ', array_fill(0, count($insertCols), '?'));
+            $colsList = implode(', ', $insertCols);
+            $sql = "INSERT INTO ficha_socioeconomico ({$colsList}) VALUES ({$placeholders})";
+
+            try {
+                $this->query($sql, $insertVals);
+                $fichaId = (int)Database::lastInsertId();
+                debugLog('Ficha criada com idficha: ' . $fichaId);
+            } catch (Exception $e) {
+                reportException($e, 'socioeconomico:create');
+                throw $e;
+            }
+            
+            // 3. Salvar Família (se houver)
+            // Aceitar tanto familia_json quanto familia array
+            debugLog('=== INICIANDO SALVAMENTO DE FAMÍLIA ===');
+            debugLog('familia_json presente: ' . (isset($data['familia_json']) ? 'SIM' : 'NÃO'));
+            debugLog('familia array presente: ' . (isset($data['familia']) && is_array($data['familia']) ? 'SIM (' . count($data['familia']) . ' itens)' : 'NÃO'));
+            
+            $familia = [];
+            if (!empty($data['familia_json'])) {
+                debugLog('Decodificando familia_json...');
+                $familia = json_decode($data['familia_json'], true);
+                if (json_last_error() !== JSON_ERROR_NONE || !is_array($familia)) {
+                    debugLog('ERRO ao decodificar familia_json: ' . json_last_error_msg());
+                    debugLog('familia_json recebido', ['length' => strlen($data['familia_json'])]);
+                    $familia = [];
+                } else {
+                    debugLog('familia_json decodificado com sucesso: ' . count($familia) . ' membros');
+                }
+            } elseif (!empty($data['familia']) && is_array($data['familia'])) {
+                debugLog('Usando array familia diretamente: ' . count($data['familia']) . ' membros');
+                $familia = $data['familia'];
+            } else {
+                debugLog('NENHUM dado de família encontrado (nem familia_json nem familia array)');
+            }
+            
+            if (!empty($familia) && is_array($familia)) {
+                debugLog('Inserindo ' . count($familia) . ' membros da família na tabela familia com id_ficha = ' . $fichaId);
+                $familiaInseridos = 0;
+                foreach ($familia as $idx => $membro) {
+                    debugLog("Processando membro {$idx}", ['fields' => array_keys($membro)]);
+                    
+                    // Validar membro antes de inserir
+                    if (empty($membro['nome']) || empty($membro['parentesco'])) {
+                        debugLog("Membro da família #{$idx} ignorado - falta nome ou parentesco");
+                        continue;
+                    }
+                    
+                    $renda = 0;
+                    if (!empty($membro['renda'])) {
+                        // Converter renda para float
+                        $renda = is_numeric($membro['renda']) ? floatval($membro['renda']) : 0;
+                    }
+                    
+                    try {
+                        $this->query(
+                            "INSERT INTO familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                            [
+                                $fichaId, // id_ficha (FK) recebe idficha (PK)
+                                trim($membro['nome'] ?? ''),
+                                trim($membro['parentesco'] ?? ''),
+                                $this->convertDate($membro['dataNasc'] ?? $membro['data_nasc'] ?? ''),
+                                trim($membro['formacao'] ?? ''),
+                                $renda
+                            ]
+                        );
+                        $familiaInseridos++;
+                        debugLog("Membro #{$idx} inserido com sucesso");
+                    } catch (Exception $e) {
+                        reportException($e, 'Socioeconomico::createFamilyMember');
+                        throw $e;
+                    }
+                }
+                debugLog("Família: {$familiaInseridos} membros inseridos com sucesso");
+            } else {
+                debugLog('Nenhum membro da família para inserir (array vazio ou inválido)');
+            }
+            
+            // 4. Salvar despesas (se houver)
+            // Aceitar tanto despesas_json quanto despesas array
+            debugLog('=== INICIANDO SALVAMENTO DE DESPESAS ===');
+            debugLog('despesas_json presente: ' . (isset($data['despesas_json']) ? 'SIM' : 'NÃO'));
+            debugLog('despesas array presente: ' . (isset($data['despesas']) && is_array($data['despesas']) ? 'SIM (' . count($data['despesas']) . ' itens)' : 'NÃO'));
+            
+            $despesas = [];
+            if (!empty($data['despesas_json'])) {
+                debugLog('Decodificando despesas_json...');
+                $despesas = json_decode($data['despesas_json'], true);
+                if (json_last_error() !== JSON_ERROR_NONE || !is_array($despesas)) {
+                    debugLog('ERRO ao decodificar despesas_json: ' . json_last_error_msg());
+                    debugLog('despesas_json recebido', ['length' => strlen($data['despesas_json'])]);
+                    $despesas = [];
+                } else {
+                    debugLog('despesas_json decodificado com sucesso: ' . count($despesas) . ' itens');
+                }
+            } elseif (!empty($data['despesas']) && is_array($data['despesas'])) {
+                debugLog('Usando array despesas diretamente: ' . count($data['despesas']) . ' itens');
+                $despesas = $data['despesas'];
+            } else {
+                debugLog('NENHUM dado de despesas encontrado (nem despesas_json nem despesas array)');
+            }
+            
+            if (!empty($despesas) && is_array($despesas)) {
+                debugLog('Inserindo ' . count($despesas) . ' despesas na tabela despesas com id_ficha = ' . $fichaId);
+                $despesasInseridas = 0;
+                foreach ($despesas as $idx => $despesa) {
+                    debugLog("Processando despesa {$idx}", ['fields' => array_keys($despesa)]);
+                    
+                    // Normalizar valor
+                    $valor = 0;
+                    if (!empty($despesa['valor'])) {
+                        $valorStr = is_string($despesa['valor']) ? str_replace(',', '.', $despesa['valor']) : $despesa['valor'];
+                        $valor = floatval($valorStr);
+                    } elseif (!empty($despesa['valor_despesa'])) {
+                        $valorStr = is_string($despesa['valor_despesa']) ? str_replace(',', '.', $despesa['valor_despesa']) : $despesa['valor_despesa'];
+                        $valor = floatval($valorStr);
+                    }
+                    
+                    // Normalizar tipo/nome
+                    $tipo = trim($despesa['tipo'] ?? $despesa['tipo_renda'] ?? $despesa['nome'] ?? '');
+                    
+                    // Normalizar renda
+                    $renda = 0;
+                    if (!empty($despesa['renda'])) {
+                        $rendaStr = is_string($despesa['renda']) ? str_replace(',', '.', $despesa['renda']) : $despesa['renda'];
+                        $renda = floatval($rendaStr);
+                    } elseif (!empty($despesa['valor_renda'])) {
+                        $rendaStr = is_string($despesa['valor_renda']) ? str_replace(',', '.', $despesa['valor_renda']) : $despesa['valor_renda'];
+                        $renda = floatval($rendaStr);
+                    }
+                    
+                    // Inserir se tiver pelo menos valor ou tipo
+                    if ($valor > 0 || !empty($tipo)) {
+                        try {
+                            $this->query(
+                                "INSERT INTO despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                                [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
+                            );
+                            $despesasInseridas++;
+                            debugLog("Despesa #{$idx} inserida com sucesso");
+                        } catch (Exception $e) {
+                            reportException($e, 'Socioeconomico::createExpense');
+                            throw $e;
+                        }
+                    } else {
+                        debugLog("Despesa #{$idx} ignorada (sem valor e sem tipo)");
+                    }
+                }
+                debugLog("despesas: {$despesasInseridas} itens inseridos com sucesso");
+            } else {
+                debugLog('Nenhuma despesa para inserir (array vazio ou inválido)');
+            }
+            
+            Database::commit();
+            
+            return $this->getFicha($atendidoId);
+            
+        } catch (Exception $e) {
+            Database::rollback();
+            reportException($e, 'Socioeconomico::create');
+            throw $e;
+        }
+    }
+    
+    /**
+     * Buscar ficha completa
+     */
+    public function getFicha($id) {
+        $stmt = $this->query("
+            SELECT 
+                a.*,
+                f.*
+            FROM atendido a
+            LEFT JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+            WHERE a.idatendido = ?
+        ", [$id]);
+        
+        $ficha = $stmt->fetch();
+        
+        if ($ficha) {
+            // Mapear campos
+            $ficha['id'] = $ficha['idatendido'];
+            $ficha['nome_entrevistado'] = $ficha['nome'];
+            $ficha['nome_completo'] = $ficha['nome'];
+            $ficha['data_nascimento'] = $this->formatDate($ficha['data_nascimento']);
+            $ficha['idade'] = $this->calculateAge($ficha['data_nascimento']);
+            $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
+            
+            // Usar idficha corretamente (pode ser idficha ou id_ficha dependendo do schema)
+            $fichaId = $ficha['idficha'] ?? $ficha['id_ficha'] ?? null;
+            
+            // Buscar família se ficha existe
+            if ($fichaId) {
+                $stmt = $this->query("SELECT * FROM familia WHERE id_ficha = ?", [$fichaId]);
+                $ficha['familia'] = $stmt->fetchAll();
+                
+                // Buscar despesas
+                $stmt = $this->query("SELECT * FROM despesas WHERE id_ficha = ?", [$fichaId]);
+                $ficha['despesas'] = $stmt->fetchAll();
+            } else {
+                $ficha['familia'] = [];
+                $ficha['despesas'] = [];
+            }
+            
+            // Garantir campos numéricos
+            $ficha['renda_familiar'] = floatval($ficha['renda_familiar'] ?? 0);
+            $ficha['qtd_pessoas'] = intval($ficha['qtd_pessoas'] ?? 0);
+            $ficha['numero_membros'] = $ficha['qtd_pessoas'];
+            $ficha['numero_comodos'] = intval($ficha['numero_comodos'] ?? 0);
+            $ficha['nr_comodos'] = $ficha['numero_comodos'];
+            $ficha['nr_veiculos'] = intval($ficha['nr_veiculos'] ?? 0);
+
+            // Mapear nomes compatíveis com as views
+            $ficha['tipo_moradia'] = $ficha['tipo_moradia'] ?? $ficha['moradia'] ?? null;
+            $ficha['situacao_moradia'] = $ficha['situacao_moradia'] ?? $ficha['cond_residencia'] ?? null;
+            $ficha['nome_menor'] = $ficha['nome_menor'] ?? null;
+            $ficha['assistente_social'] = $ficha['assistente_social'] ?? null;
+            $ficha['cadunico'] = $ficha['cadunico'] ?? null;
+
+            // Calcular renda per capita se não estiver presente
+            if (empty($ficha['renda_per_capita'])) {
+                $ficha['renda_per_capita'] = ($ficha['qtd_pessoas'] > 0) ? ($ficha['renda_familiar'] / max(1, $ficha['qtd_pessoas'])) : 0;
+            }
+
+            // Preparar mapa de despesas por tipo (facilita exibição de Agua/Energia)
+            $despesasMap = [];
+            if (!empty($ficha['despesas']) && is_array($ficha['despesas'])) {
+                foreach ($ficha['despesas'] as $d) {
+                    $tipo = mb_strtolower(trim($d['tipo'] ?? ($d['tipo_renda'] ?? '')));
+                    $valor = floatval($d['valor_despesa'] ?? $d['valor'] ?? $d['valor_renda'] ?? 0);
+                    if (!isset($despesasMap[$tipo])) $despesasMap[$tipo] = 0;
+                    $despesasMap[$tipo] += $valor;
+                }
+            }
+            $ficha['despesas_map'] = $despesasMap;
+            // Expor despesas específicas de interesse
+            $ficha['despesa_agua'] = $despesasMap['agua'] ?? ($despesasMap['água'] ?? null);
+            $ficha['despesa_energia'] = $despesasMap['energia'] ?? null;
+        }
+        
+        return $ficha;
+    }
+    
+    /**
+     * Listar todas as fichas com suporte a filtros de busca
+     */
+    public function listFichas($page = 1, $perPage = 10, $filters = []) {
+        $offset = ($page - 1) * $perPage;
+        
+        $conditions = [];
+        $params = [];
+        $countParams = [];
+
+        $q = trim($filters['q'] ?? '');
+        $cpf = trim($filters['cpf'] ?? '');
+
+        if ($q !== '') {
+            $conditions[] = "(a.nome LIKE ? OR f.nome_menor LIKE ?)";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+            $countParams[] = "%$q%";
+            $countParams[] = "%$q%";
+        }
+
+        if ($cpf !== '') {
+            $cpfDigits = preg_replace('/\D+/', '', $cpf);
+            if ($cpfDigits !== '') {
+                $conditions[] = "(REPLACE(REPLACE(REPLACE(a.cpf, '.', ''), '-', ''), '/', '') LIKE ? OR a.cpf LIKE ?)";
+                $params[] = "%$cpfDigits%";
+                $params[] = "%$cpf%";
+                $countParams[] = "%$cpfDigits%";
+                $countParams[] = "%$cpf%";
+            } else {
+                $conditions[] = "a.cpf LIKE ?";
+                $params[] = "%$cpf%";
+                $countParams[] = "%$cpf%";
+            }
+        }
+
+        $whereSql = !empty($conditions) ? " WHERE " . implode(" AND ", $conditions) : "";
+
+        // Contar total respeitando filtros
+        $countStmt = $this->query("
+            SELECT COUNT(*) as total 
+            FROM atendido a
+            INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+            $whereSql
+        ", $countParams);
+        $countResult = $countStmt->fetch();
+        $total = (int)($countResult['total'] ?? 0);
+        
+        $queryParams = array_merge($params, [$perPage, $offset]);
+
+        // Try to select with all benefit columns, fallback gracefully if columns don't exist
+        try {
+            $stmt = $this->query("
+                SELECT 
+                    a.idatendido as id,
+                    a.idatendido,
+                    a.nome,
+                    a.nome as nome_entrevistado,
+                    a.nome as nome_completo,
+                    a.cpf,
+                    COALESCE(a.data_acolhimento, a.data_cadastro) as data_acolhimento,
+                    a.data_nascimento,
+                    a.status,
+                    COALESCE(f.renda_familiar, 0) as renda_familiar,
+                    COALESCE(f.qtd_pessoas, 0) as qtd_pessoas,
+                    COALESCE(f.numero_comodos, 0) as numero_comodos,
+                    COALESCE(f.nome_menor, '') as nome_menor,
+                    COALESCE(f.bolsa_familia, 0) as bolsa_familia,
+                    COALESCE(f.auxilio_brasil, 0) as auxilio_brasil,
+                    COALESCE(f.bpc, 0) as bpc,
+                    COALESCE(f.auxilio_emergencial, 0) as auxilio_emergencial,
+                    COALESCE(f.seguro_desemprego, 0) as seguro_desemprego,
+                    COALESCE(f.aposentadoria, 0) as aposentadoria
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+                $whereSql
+                ORDER BY a.data_cadastro DESC
+                LIMIT ? OFFSET ?
+            ", $queryParams);
+        } catch (Exception $e) {
+            // Fallback: Select only columns that definitely exist
+            reportException($e, 'Socioeconomico::listFichasFallback');
+            $stmt = $this->query("
+                SELECT 
+                    a.idatendido as id,
+                    a.idatendido,
+                    a.nome,
+                    a.nome as nome_entrevistado,
+                    a.nome as nome_completo,
+                    a.cpf,
+                    COALESCE(a.data_acolhimento, a.data_cadastro) as data_acolhimento,
+                    a.data_nascimento,
+                    a.status,
+                    f.renda_familiar,
+                    f.qtd_pessoas
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+                $whereSql
+                ORDER BY a.data_cadastro DESC
+                LIMIT ? OFFSET ?
+            ", $queryParams);
+        }
+        
+        $fichas = $stmt->fetchAll();
+        
+        // Formatar datas e adicionar dados calculados
+        foreach ($fichas as &$ficha) {
+            $ficha['data_nascimento'] = $this->formatDate($ficha['data_nascimento']);
+            $ficha['data_acolhimento'] = $this->formatDate($ficha['data_acolhimento'] ?? '');
+            $ficha['idade'] = $this->calculateAge($ficha['data_nascimento']);
+            $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
+
+            // Construir lista de benefícios a partir das flags
+            $beneficios = [];
+            if (!empty($ficha['bolsa_familia'])) $beneficios[] = 'Bolsa Família';
+            if (!empty($ficha['auxilio_brasil'])) $beneficios[] = 'Auxílio Brasil';
+            if (!empty($ficha['bpc'])) $beneficios[] = 'BPC';
+            if (!empty($ficha['auxilio_emergencial'])) $beneficios[] = 'Auxílio Emergencial';
+            if (!empty($ficha['seguro_desemprego'])) $beneficios[] = 'Seguro Desemprego';
+            if (!empty($ficha['aposentadoria'])) $beneficios[] = 'Aposentadoria';
+            $ficha['beneficios_list'] = $beneficios;
+            
+            // Garantir que nome_completo exista (compatibilidade com view)
+            if (empty($ficha['nome_completo'])) {
+                $ficha['nome_completo'] = $ficha['nome_entrevistado'];
+            }
+        }
+        
+        return [
+            'data' => $fichas,
+            'total' => $total,
+            'current_page' => $page,
+            'last_page' => max(1, (int)ceil($total / $perPage)),
+            'per_page' => $perPage,
+            // Compatibilidade
+            'page' => $page,
+            'perPage' => $perPage,
+            'totalPages' => max(1, (int)ceil($total / $perPage))
+        ];
+    }
+    
+    /**
+     * Atualizar ficha
+     */
+    public function updateFicha($id, $data) {
+        try {
+            Database::beginTransaction();
+            
+            // Normalizar dados
+            $data = $this->normalizeData($data);
+            
+            // 1. Atualizar atendido
+            $atendidoData = [
+                'nome' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
+                'cpf' => $data['cpf'] ?? '',
+                'rg' => $data['rg'] ?? ''
+            ];
+
+            if (!empty($data['data_nascimento'])) {
+                $atendidoData['data_nascimento'] = $this->convertDate($data['data_nascimento']);
+            }
+            
+            $this->update($id, $atendidoData);
+            
+            // 2. Atualizar Ficha Socioeconômica
+            // Converter renda_familiar para número (remover R$, pontos de milhar, converter vírgula em ponto)
+            $rendaSalario = $this->parseMoney($data['renda_salario'] ?? 0);
+            $rendaBolsa = $this->parseMoney($data['renda_bolsa'] ?? 0);
+            $rendaFamiliar = $this->parseMoney($data['renda_familiar'] ?? 0);
+            if ($rendaFamiliar <= 0) {
+                $rendaFamiliar = $rendaSalario + $rendaBolsa;
+            }
+            
+            $bolsa = (!empty($data['bolsa_familia'])) ? 1 : 0;
+            $auxilio = (!empty($data['auxilio_brasil'])) ? 1 : 0;
+            $bpc = (!empty($data['bpc'])) ? 1 : 0;
+            $auxEmerg = (!empty($data['auxilio_emergencial'])) ? 1 : 0;
+            $seguro = (!empty($data['seguro_desemprego'])) ? 1 : 0;
+            $aposentadoria = (!empty($data['aposentadoria'])) ? 1 : 0;
+            if (!$bolsa && !empty($data['renda_bolsa'])) {
+                $val = floatval(str_replace([',','R$','.'],['','.',''],$data['renda_bolsa']));
+                if ($val > 0) $bolsa = 1;
+            }
+
+            // Preparar dados para UPDATE (mapa coluna => valor)
+            $updateData = [
+                'agua' => !empty($data['agua']) ? 1 : 0,
+                'esgoto' => !empty($data['esgoto']) ? 1 : 0,
+                'energia' => !empty($data['energia']) ? 1 : 0,
+                'tipo_agua' => $data['agua'] ?? null,
+                'tipo_esgoto' => $data['esgoto'] ?? null,
+                'tipo_energia' => $data['energia'] ?? null,
+                'renda_familiar' => $rendaFamiliar,
+                'renda_salario' => $rendaSalario,
+                'renda_bolsa' => $rendaBolsa,
+                'qtd_pessoas' => $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
+                'cond_residencia' => $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
+                'moradia' => $data['tipo_moradia'] ?? $data['moradia'] ?? null,
+                'residencia' => $data['residencia'] ?? null,
+                'nr_veiculos' => $data['nr_veiculos'] ?? 0,
+                'observacoes' => $data['observacoes'] ?? null,
+                'numero_comodos' => $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
+                'quartos' => $data['quartos'] ?? 0,
+                'banheiros' => $data['banheiro'] ?? $data['banheiros'] ?? 0,
+                'construcao' => $data['construcao'] ?? null,
+                'nome_menor' => $data['nome_menor'] ?? null,
+                'assistente_social' => $data['assistente_social'] ?? null,
+                'cadunico' => $data['cadunico'] ?? null,
+                'renda_per_capita' => isset($data['renda_per_capita']) ? $this->parseMoney($data['renda_per_capita']) : ( ($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0) ? ($rendaFamiliar / max(1, intval($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0))) : null ),
+                'veiculos_motocicleta' => $data['veiculos_motocicleta'] ?? 0,
+                'veiculos_automovel' => $data['veiculos_automovel'] ?? 0,
+                'veiculos_caminhonete' => $data['veiculos_caminhonete'] ?? 0,
+                'veiculos_caminhao' => $data['veiculos_caminhao'] ?? 0,
+                'veiculos_outros' => $data['veiculos_outros'] ?? 0,
+                'trabalho_clt' => $this->booleanFlag($data['trabalho_clt'] ?? 0),
+                'trabalho_clt_qual' => $data['trabalho_clt_qual'] ?? null,
+                'convenio_medico' => $this->booleanFlag($data['convenio_medico'] ?? 0),
+                'bolsa_familia' => $bolsa,
+                'auxilio_brasil' => $auxilio,
+                'bpc' => $bpc,
+                'auxilio_emergencial' => $auxEmerg,
+                'seguro_desemprego' => $seguro,
+                'aposentadoria' => $aposentadoria
+            ];
+
+            $setParts = [];
+            $values = [];
+            foreach ($updateData as $col => $val) {
+                $setParts[] = "$col = ?";
+                if (is_bool($val)) $val = $val ? 1 : 0;
+                $values[] = $val;
+            }
+
+            $sql = "UPDATE ficha_socioeconomico SET " . implode(', ', $setParts) . " WHERE id_atendido = ?";
+            $values[] = $id;
+            try {
+                $this->query($sql, $values);
+            } catch (Exception $e) {
+                reportException($e, 'socioeconomico:update');
+                throw $e;
+            }
+            
+            // 3. Atualizar Família e despesas (deletar existentes e recriar)
+            // Buscar fichaId primeiro (PK é idficha)
+            $fichaIdStmt = $this->query("SELECT idficha FROM ficha_socioeconomico WHERE id_atendido = ?", [$id]);
+            $fichaExistente = $fichaIdStmt->fetch();
+            $fichaId = $fichaExistente['idficha'] ?? null;
+            
+            if ($fichaId) {
+                debugLog('Atualizando família e despesas para ficha idficha: ' . $fichaId);
+                
+                // Deletar família e despesas existentes
+                $this->query("DELETE FROM familia WHERE id_ficha = ?", [$fichaId]);
+                $this->query("DELETE FROM despesas WHERE id_ficha = ?", [$fichaId]);
+                
+                // Salvar nova família (se houver)
+                debugLog('=== UPDATE: INICIANDO SALVAMENTO DE FAMÍLIA ===');
+                debugLog('familia_json presente: ' . (isset($data['familia_json']) ? 'SIM' : 'NÃO'));
+                debugLog('familia array presente: ' . (isset($data['familia']) && is_array($data['familia']) ? 'SIM (' . count($data['familia']) . ' itens)' : 'NÃO'));
+                
+                $familia = [];
+                if (!empty($data['familia_json'])) {
+                    debugLog('Decodificando familia_json no update...');
+                    $familia = json_decode($data['familia_json'], true);
+                    if (json_last_error() !== JSON_ERROR_NONE || !is_array($familia)) {
+                        debugLog('ERRO ao decodificar familia_json no update: ' . json_last_error_msg());
+                        debugLog('familia_json recebido no update', ['length' => strlen($data['familia_json'])]);
+                        $familia = [];
+                    } else {
+                        debugLog('familia_json decodificado com sucesso no update: ' . count($familia) . ' membros');
+                    }
+                } elseif (!empty($data['familia']) && is_array($data['familia'])) {
+                    debugLog('Usando array familia diretamente no update: ' . count($data['familia']) . ' membros');
+                    $familia = $data['familia'];
+                } else {
+                    debugLog('NENHUM dado de família encontrado no update');
+                }
+                
+                if (!empty($familia) && is_array($familia)) {
+                    debugLog('Inserindo ' . count($familia) . ' membros da família no update com id_ficha = ' . $fichaId);
+                    $familiaInseridos = 0;
+                    foreach ($familia as $idx => $membro) {
+                        // Validar membro antes de inserir
+                        if (empty($membro['nome']) || empty($membro['parentesco'])) {
+                            debugLog("Update - Membro da família #{$idx} ignorado - falta nome ou parentesco");
+                            continue;
+                        }
+                        
+                        $renda = 0;
+                        if (!empty($membro['renda'])) {
+                            $renda = is_numeric($membro['renda']) ? floatval($membro['renda']) : 0;
+                        }
+                        
+                        try {
+                            $this->query(
+                                "INSERT INTO familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                                [
+                                    $fichaId, // id_ficha (FK) recebe idficha (PK)
+                                    trim($membro['nome'] ?? ''),
+                                    trim($membro['parentesco'] ?? ''),
+                                    $this->convertDate($membro['dataNasc'] ?? $membro['data_nasc'] ?? ''),
+                                    trim($membro['formacao'] ?? ''),
+                                    $renda
+                                ]
+                            );
+                            $familiaInseridos++;
+                        } catch (Exception $e) {
+                            reportException($e, 'Socioeconomico::updateFamilyMember');
+                            throw $e;
+                        }
+                    }
+                    debugLog("Update - Família: {$familiaInseridos} membros inseridos com sucesso");
+                } else {
+                    debugLog('Update - Nenhum membro da família para inserir');
+                }
+                
+                // Salvar novas despesas (se houver)
+                debugLog('=== UPDATE: INICIANDO SALVAMENTO DE DESPESAS ===');
+                debugLog('despesas_json presente: ' . (isset($data['despesas_json']) ? 'SIM' : 'NÃO'));
+                debugLog('despesas array presente: ' . (isset($data['despesas']) && is_array($data['despesas']) ? 'SIM (' . count($data['despesas']) . ' itens)' : 'NÃO'));
+                
+                $despesas = [];
+                if (!empty($data['despesas_json'])) {
+                    debugLog('Decodificando despesas_json no update...');
+                    $despesas = json_decode($data['despesas_json'], true);
+                    if (json_last_error() !== JSON_ERROR_NONE || !is_array($despesas)) {
+                        debugLog('ERRO ao decodificar despesas_json no update: ' . json_last_error_msg());
+                        debugLog('despesas_json recebido no update', ['length' => strlen($data['despesas_json'])]);
+                        $despesas = [];
+                    } else {
+                        debugLog('despesas_json decodificado com sucesso no update: ' . count($despesas) . ' itens');
+                    }
+                } elseif (!empty($data['despesas']) && is_array($data['despesas'])) {
+                    debugLog('Usando array despesas diretamente no update: ' . count($data['despesas']) . ' itens');
+                    $despesas = $data['despesas'];
+                } else {
+                    debugLog('NENHUM dado de despesas encontrado no update');
+                }
+                
+                if (!empty($despesas) && is_array($despesas)) {
+                    debugLog('Inserindo ' . count($despesas) . ' despesas no update com id_ficha = ' . $fichaId);
+                    $despesasInseridas = 0;
+                    foreach ($despesas as $idx => $despesa) {
+                        // Normalizar valor
+                        $valor = 0;
+                        if (!empty($despesa['valor'])) {
+                            $valorStr = is_string($despesa['valor']) ? str_replace(',', '.', $despesa['valor']) : $despesa['valor'];
+                            $valor = floatval($valorStr);
+                        } elseif (!empty($despesa['valor_despesa'])) {
+                            $valorStr = is_string($despesa['valor_despesa']) ? str_replace(',', '.', $despesa['valor_despesa']) : $despesa['valor_despesa'];
+                            $valor = floatval($valorStr);
+                        }
+                        
+                        // Normalizar tipo/nome
+                        $tipo = trim($despesa['tipo'] ?? $despesa['tipo_renda'] ?? $despesa['nome'] ?? '');
+                        
+                        // Normalizar renda
+                        $renda = 0;
+                        if (!empty($despesa['renda'])) {
+                            $rendaStr = is_string($despesa['renda']) ? str_replace(',', '.', $despesa['renda']) : $despesa['renda'];
+                            $renda = floatval($rendaStr);
+                        } elseif (!empty($despesa['valor_renda'])) {
+                            $rendaStr = is_string($despesa['valor_renda']) ? str_replace(',', '.', $despesa['valor_renda']) : $despesa['valor_renda'];
+                            $renda = floatval($rendaStr);
+                        }
+                        
+                        // Inserir se tiver pelo menos valor ou tipo
+                        if ($valor > 0 || !empty($tipo)) {
+                            try {
+                                $this->query(
+                                    "INSERT INTO despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                                    [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
+                                );
+                                $despesasInseridas++;
+                            } catch (Exception $e) {
+                                reportException($e, 'Socioeconomico::updateExpense');
+                                throw $e;
+                            }
+                        }
+                    }
+                    debugLog("Update - despesas: {$despesasInseridas} itens inseridos com sucesso");
+                } else {
+                    debugLog('Update - Nenhuma despesa para inserir');
+                }
+            } else {
+                debugLog('Ficha socioeconômica não encontrada para atualização', ['id_atendido' => (int)$id]);
+            }
+            
+            Database::commit();
+            
+            return $this->getFicha($id);
+            
+        } catch (Exception $e) {
+            Database::rollback();
+            reportException($e, 'Socioeconomico::update');
+            throw $e;
+        }
+    }
+    
+    /**
+     * Deletar ficha
+     */
+    public function deleteFicha($id) {
+        try {
+            Database::beginTransaction();
+            
+            // Deletar (CASCADE deletará automaticamente)
+            $this->delete($id);
+            
+            Database::commit();
+            
+            return true;
+            
+        } catch (Exception $e) {
+            Database::rollback();
+            throw $e;
+        }
+    }
+    
+    /**
+     * Busca por nome (compatibilidade)
+     */
+    public function searchByName($nome) {
+        return $this->searchAdvanced($nome);
+    }
+
     /**
      * Busca avançada
      */
-
-public function searchByName($nome)
-{
-    return $this->db->searchByName($nome);
-}
-
-    public function searchAdvanced($query) {
-        $searchFields = [
-            'nome_entrevistado',
-            'nome_menor',
-            'cpf',
-            'rg',
-            'endereco',
-            'bairro',
-            'cidade',
-            'assistente_social'
-        ];
+    public function searchAdvanced($query, $filters = []) {
+        $conditions = [];
+        $params = [];
         
-        return $this->search($query, $searchFields);
-    }
-    
-    /**
-     * Calcula idade baseada na data de nascimento
-     */
-    public function calculateAge($dataNascimento) {
-        if (empty($dataNascimento)) {
-            return null;
+        $query = trim($query);
+        $cpf = trim($filters['cpf'] ?? '');
+
+        if ($query !== '') {
+            $conditions[] = "(a.nome LIKE ? OR f.nome_menor LIKE ? OR a.cpf LIKE ? OR a.rg LIKE ?)";
+            $params[] = "%$query%";
+            $params[] = "%$query%";
+            $params[] = "%$query%";
+            $params[] = "%$query%";
         }
-        
-        // Converter formato brasileiro para DateTime
-        $parts = explode('/', $dataNascimento);
-        if (count($parts) === 3) {
-            $date = DateTime::createFromFormat('d/m/Y', $dataNascimento);
-            if ($date) {
-                $now = new DateTime();
-                return $now->diff($date)->y;
+
+        if ($cpf !== '') {
+            $cpfDigits = preg_replace('/\D+/', '', $cpf);
+            if ($cpfDigits !== '') {
+                $conditions[] = "(REPLACE(REPLACE(REPLACE(a.cpf, '.', ''), '-', ''), '/', '') LIKE ? OR a.cpf LIKE ?)";
+                $params[] = "%$cpfDigits%";
+                $params[] = "%$cpf%";
+            } else {
+                $conditions[] = "a.cpf LIKE ?";
+                $params[] = "%$cpf%";
             }
         }
+
+        if (empty($conditions)) {
+            return [];
+        }
+
+        $whereSql = " WHERE " . implode(" AND ", $conditions);
+
+        $stmt = $this->query("
+            SELECT 
+                a.idatendido as id,
+                a.idatendido,
+                a.nome,
+                a.nome as nome_entrevistado,
+                a.nome as nome_completo,
+                a.cpf,
+                a.rg,
+                a.data_nascimento,
+                a.status,
+                f.renda_familiar,
+                f.qtd_pessoas as numero_membros
+            FROM atendido a
+            INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+            $whereSql
+            ORDER BY a.data_cadastro DESC
+            LIMIT 100
+        ", $params);
         
-        return null;
-    }
-    
-    /**
-     * Calcula renda familiar total
-     */
-    public function calculateRendaFamiliar($data) {
-        $renda = 0;
+        $results = $stmt->fetchAll();
         
-        // Somar rendas dos membros da família
-        for ($i = 1; $i <= 10; $i++) {
-            $rendaMembro = $data["renda_membro_$i"] ?? 0;
-            $renda += floatval(str_replace(['.', ','], ['', '.'], $rendaMembro));
+        // Formatar datas e adicionar dados calculados
+        foreach ($results as &$result) {
+            $result['data_nascimento'] = $this->formatDate($result['data_nascimento']);
+            $result['idade'] = $this->calculateAge($result['data_nascimento']);
+            $result['categoria'] = $this->categorizeByAge($result['idade']);
         }
         
-        return $renda;
+        return $results;
     }
     
     /**
-     * Categoriza situação socioeconômica
-     */
-    public function categorizeSituacao($rendaFamiliar, $numeroMembros = 1) {
-        $rendaPerCapita = $rendaFamiliar / max($numeroMembros, 1);
-        $salarioMinimo = 1320; // Valor aproximado
-        
-        if ($rendaPerCapita < $salarioMinimo * 0.5) {
-            return 'Extrema Pobreza';
-        } elseif ($rendaPerCapita < $salarioMinimo) {
-            return 'Pobreza';
-        } elseif ($rendaPerCapita < $salarioMinimo * 3) {
-            return 'Baixa Renda';
-        } elseif ($rendaPerCapita < $salarioMinimo * 6) {
-            return 'Média Renda';
-        } else {
-            return 'Alta Renda';
-        }
-    }
-    
-    /**
-     * Estatísticas das fichas socioeconômicas
+     * Obter estatísticas
      */
     public function getStatistics() {
-        $total = count($this->data);
-        $ativas = count($this->findBy('status', 'Ativo'));
-        $inativas = $total - $ativas;
-        
-        $situacoes = [
-            'Extrema Pobreza' => 0,
-            'Pobreza' => 0,
-            'Baixa Renda' => 0,
-            'Média Renda' => 0,
-            'Alta Renda' => 0
-        ];
-        
-        $rendaTotal = 0;
-        $contadorRenda = 0;
-        
-        foreach ($this->data as $record) {
-            $rendaFamiliar = $this->calculateRendaFamiliar($record);
-            $numeroMembros = intval($record['numero_membros'] ?? 1);
-            $situacao = $this->categorizeSituacao($rendaFamiliar, $numeroMembros);
+        try {
+            // Total de fichas
+            $stmt = $this->query("
+                SELECT COUNT(*) as total 
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+            ");
+            $total = $stmt->fetch()['total'];
             
-            if (isset($situacoes[$situacao])) {
-                $situacoes[$situacao]++;
+            // Por categoria
+            $stmt = $this->query("
+                SELECT 
+                    CASE 
+                        WHEN TIMESTAMPDIFF(YEAR, a.data_nascimento, CURDATE()) < 12 THEN 'Criança'
+                        WHEN TIMESTAMPDIFF(YEAR, a.data_nascimento, CURDATE()) < 18 THEN 'Adolescente'
+                        ELSE 'Adulto'
+                    END as categoria,
+                    COUNT(*) as total
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+                GROUP BY categoria
+            ");
+            $porCategoria = $stmt->fetchAll();
+            
+            // Por status
+            $stmt = $this->query("
+                SELECT 
+                    a.status,
+                    COUNT(*) as total
+                FROM atendido a
+                INNER JOIN ficha_socioeconomico f ON a.idatendido = f.id_atendido
+                GROUP BY a.status
+            ");
+            $porStatus = $stmt->fetchAll();
+
+            $ativas = 0;
+            foreach ($porStatus as $row) {
+                $status = strtolower($row['status'] ?? '');
+                if ($status === 'ativo' || $status === 'active') {
+                    $ativas += intval($row['total'] ?? 0);
+                }
             }
             
-            if ($rendaFamiliar > 0) {
-                $rendaTotal += $rendaFamiliar;
-                $contadorRenda++;
-            }
+            return [
+                'total' => $total,
+                'ativas' => $ativas,
+                'inativas' => max(0, $total - $ativas),
+                'porCategoria' => $porCategoria,
+                'porStatus' => $porStatus
+            ];
+            
+        } catch (Exception $e) {
+            reportException($e, 'Socioeconomico::statistics');
+            return [
+                'total' => 0,
+                'ativas' => 0,
+                'inativas' => 0,
+                'porCategoria' => [],
+                'porStatus' => []
+            ];
         }
-        
-        $rendaMedia = $contadorRenda > 0 ? $rendaTotal / $contadorRenda : 0;
-        
-        return [
-            'total' => $total,
-            'ativas' => $ativas,
-            'inativas' => $inativas,
-            'situacoes' => $situacoes,
-            'renda_media' => $rendaMedia
-        ];
     }
 }

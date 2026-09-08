@@ -1,0 +1,346 @@
+<p align="center">
+  <img src="img/logo.png" alt="Associação Criança Feliz" width="180">
+</p>
+
+<h1 align="center">Sistema Criança Feliz</h1>
+
+<p align="center">
+  Sistema web em PHP para gerenciamento de atendidos da Associação Criança Feliz.<br>
+  O projeto centraliza acolhimento, fichas socioeconômicas, prontuários,<br>
+  frequência, desligamentos, área psicológica, usuários, perfil e auditoria.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/PHP-7.4%2B-777BB4?logo=php&logoColor=white" alt="PHP 7.4+">
+  <img src="https://img.shields.io/badge/MySQL%2FMariaDB-PDO-4479A1?logo=mysql&logoColor=white" alt="MySQL/MariaDB">
+  <img src="https://img.shields.io/badge/Arquitetura-MVC%20sem%20framework-f0a36b" alt="MVC sem framework">
+  <img src="https://img.shields.io/badge/Licença-MIT-green" alt="MIT License">
+</p>
+
+---
+
+## Índice
+
+- [Funcionalidades](#funcionalidades)
+- [Tecnologias](#tecnologias)
+- [Pré-requisitos](#pré-requisitos)
+- [Instalação](#instalação)
+- [Execução local](#execução-local)
+- [Configuração](#configuração)
+- [Estrutura do projeto](#estrutura-do-projeto)
+- [Rotas principais](#rotas-principais)
+- [Perfis de acesso](#perfis-de-acesso)
+- [Documentação](#documentação)
+- [Observações importantes](#observações-importantes)
+- [Contribuição](#contribuição)
+- [Licença](#licença)
+
+---
+
+## Funcionalidades
+
+| Módulo | Descrição |
+| --- | --- |
+| Dashboard | Painel inicial com indicadores, calendário, notas e alertas operacionais. |
+| Prontuários | Consulta consolidada dos dados dos atendidos por CPF/nome. |
+| Acolhimento | Cadastro, edição, visualização, busca, paginação e exportação CSV. |
+| Socioeconômico | Formulário multi-etapas, família, despesas, cálculo de renda e relatórios. |
+| Controle de faltas | Frequência diária e por oficina, histórico e alertas. |
+| Desligamento | Desligamento manual, processamento automático por faltas e reativação. |
+| Relatórios | Central administrativa com filtros, indicadores, CSV seguro e impressão/PDF. |
+| Área psicológica | Lista de pacientes, prontuário psicológico e anotações por paciente. |
+| Usuários | CRUD de usuários com papéis e ativação/desativação. |
+| Logs | Auditoria com filtros, detalhe de alterações, APIs JSON e exportação CSV. |
+| Perfil | Foto de perfil, dados do usuário e troca de senha. |
+| Recuperação de senha | Tokens de redefinição gravados no banco; integração SMTP ainda deve ser configurada. |
+| Interface | Tema claro/escuro, layout responsivo e chatbot integrado. |
+
+---
+
+## Tecnologias
+
+- Back-end: PHP 7.4+ em arquitetura MVC simples, sem framework externo.
+- Banco de dados: MySQL/MariaDB via PDO.
+- Front-end: HTML5, CSS3 responsivo e JavaScript vanilla.
+- Segurança: sessões PHP, CSRF tokens, prepared statements, headers básicos de segurança e senhas com Argon2id quando disponível.
+- Roteamento: front controller em `index.php`, com `.htaccess` para Apache e `var/dev-router.php` para o servidor embutido do PHP.
+
+---
+
+## Pré-requisitos
+
+- PHP 7.4 ou superior, compatível com PHP 8.x.
+- Extensão PHP `pdo_mysql` habilitada.
+- MySQL 5.7+ ou MariaDB 10.3+.
+- Apache com `mod_rewrite` habilitado, ou servidor embutido do PHP para desenvolvimento.
+- Cliente MySQL ou phpMyAdmin para importar o banco.
+- Opcional: Docker Desktop com Docker Compose, caso queira subir aplicação, MySQL e phpMyAdmin em containers.
+
+---
+
+## Instalação
+
+```bash
+git clone https://github.com/CriancaFeliz/CRUD_CriancaFeliz.git
+cd CRUD_CriancaFeliz
+```
+
+Crie o banco:
+
+```bash
+mysql -u root -e "CREATE DATABASE criancafeliz CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+Importe o schema completo:
+
+```bash
+mysql -u root criancafeliz < database/SETUP_COMPLETO_FINAL.sql
+```
+
+O setup não cria usuário nem distribui senha conhecida. Copie `.env.example` para
+`.env`, configure o banco e preencha temporariamente `INITIAL_ADMIN_EMAIL` e
+`INITIAL_ADMIN_PASSWORD`. Depois crie o primeiro administrador:
+
+```bash
+php tools/maintenance/create_admin.php
+```
+
+Apague os valores `INITIAL_ADMIN_*` do `.env` assim que a conta for criada.
+
+> Em algumas instalações MySQL/Linux, nomes de tabela são sensíveis a maiúsculas e minúsculas. O código atual usa nomes como `Atendido`, `Usuario` e `Ficha_Socioeconomico`, enquanto alguns scripts SQL também preservam nomes em minúsculas. Se o ambiente tiver `lower_case_table_names=0`, valide a importação e os nomes das tabelas antes de usar em produção.
+
+---
+
+## Execução local
+
+### Apache, XAMPP, WAMP ou Laragon
+
+1. Coloque o projeto dentro do webroot, por exemplo `C:\xampp\htdocs\CRUD_CriancaFeliz`.
+2. Habilite `mod_rewrite`.
+3. Mantenha o arquivo `.htaccess` na raiz.
+4. Acesse:
+
+```text
+http://localhost/CRUD_CriancaFeliz/
+```
+
+### Servidor embutido do PHP
+
+Para desenvolvimento, use o roteador local:
+
+```bash
+php -S localhost:8000 var/dev-router.php
+```
+
+Depois acesse:
+
+```text
+http://localhost:8000/
+```
+
+### Docker Compose
+
+Para subir um ambiente local isolado com Apache/PHP, MySQL e phpMyAdmin:
+
+```bash
+docker compose up --build
+```
+
+Acesse:
+
+| Serviço | URL / conexão |
+| --- | --- |
+| Aplicação | `http://localhost:8080/` |
+| phpMyAdmin | `http://localhost:8081/` |
+| MySQL pelo host | `localhost:3307` |
+
+Credenciais do MySQL no Docker:
+
+| Usuário | Senha | Uso |
+| --- | --- | --- |
+| `root` | `root_dev` | administração/phpMyAdmin |
+| `criancafeliz` | `criancafeliz_dev` | aplicação |
+
+Essas senhas são apenas padrões de desenvolvimento e podem ser substituídas no
+arquivo `.env` por `MYSQL_ROOT_PASSWORD` e `MYSQL_APP_PASSWORD`. Na primeira
+subida, o container importa o schema canônico
+`database/SETUP_COMPLETO_FINAL.sql`. O volume `db_data` preserva o banco entre
+execuções; para recriar somente o ambiente local do zero:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+Para parar sem apagar o banco:
+
+```bash
+docker compose down
+```
+
+---
+
+## Configuração
+
+O sistema exige que host, banco e usuário sejam configurados no ambiente ou no
+arquivo `.env` local:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=criancafeliz
+DB_USER=usuario_da_aplicacao
+DB_PASS=senha_forte
+DB_CHARSET=utf8mb4
+APP_ENV=development
+APP_DEBUG=false
+APP_BASE_URL=http://localhost/CRUD_CriancaFeliz
+```
+
+No Docker Compose, o host do banco dentro da rede é `db`. Em produção, use
+`APP_ENV=production`, `APP_DEBUG=false`, HTTPS e credenciais exclusivas.
+
+---
+
+## Estrutura do projeto
+
+```text
+CRUD_CriancaFeliz/
+├── app/
+│   ├── Config/          # Configurações de aplicação e banco
+│   ├── Controllers/     # Controllers MVC
+│   ├── Helpers/         # Helpers transversais
+│   ├── Models/          # Models MySQL
+│   ├── Services/        # Regras de negócio
+│   └── Views/           # Layouts e telas
+├── assets/samples/      # Arquivos de amostra para testes manuais
+├── css/                 # Estilos globais
+├── data/                # Arquivos runtime locais não versionados
+├── database/            # Setup, migrações e diagnósticos de banco
+├── docker/              # Scripts de inicialização do MySQL em container
+├── docs/                # Documentação técnica e histórico do projeto
+├── img/                 # Imagens públicas
+├── js/                  # Scripts de interface
+├── tests/automated/     # Testes automatizados mínimos
+├── tests/manual/        # Testes manuais
+├── tools/               # Diagnósticos, manutenção e legado
+├── var/                 # Roteador, logs e documentos privados
+├── Dockerfile           # Imagem PHP/Apache da aplicação
+├── docker-compose.yml   # Ambiente local com app, MySQL e phpMyAdmin
+├── .htaccess            # Rewrite para o front controller
+└── index.php            # Front controller e roteador central
+```
+
+---
+
+## Rotas principais
+
+O sistema aceita rotas amigáveis e equivalentes com `.php` por compatibilidade. As principais são:
+
+| Rota | Descrição |
+| --- | --- |
+| `/` ou `/index.php` | Login. |
+| `/forgot.php` | Solicitação de recuperação de senha. |
+| `/reset_password.php?token=...` | Redefinição de senha. |
+| `/dashboard.php` | Dashboard e calendário. |
+| `/prontuarios.php` | Consulta consolidada de prontuários. |
+| `/prontuarios.php?action=show&cpf=...` | Prontuário consolidado com documentos anexados. |
+| `/prontuarios.php?action=upload_document` | Upload de documentos do prontuário por admin. |
+| `/prontuarios.php?action=document&id=...` | Abertura autenticada de documento anexado. |
+| `/acolhimento_list.php` | Lista de fichas de acolhimento. |
+| `/acolhimento_form.php` | Cadastro/edição de acolhimento. |
+| `/acolhimento_view.php?id=...` | Visualização de acolhimento. |
+| `/socioeconomico_list.php` | Lista de fichas socioeconômicas. |
+| `/socioeconomico_form.php` | Cadastro/edição socioeconômica. |
+| `/socioeconomico_view.php?id=...` | Visualização socioeconômica. |
+| `/faltas.php` | Frequência diária. |
+| `/faltas.php?action=oficina` | Frequência por oficina. |
+| `/faltas.php?action=historico&id=...` | Histórico de frequência. |
+| `/faltas.php?action=alertas` | Alertas de faltas. |
+| `/desligamento.php` | Lista e gestão de desligamentos. |
+| `/reports.php` | Central administrativa de relatórios e exportações. |
+| `/psychology.php` | Dashboard da área psicológica. |
+| `/psychology.php?action=patients` | Lista de pacientes da psicologia. |
+| `/psychology.php?action=report` | Relatório psicológico com impressão/PDF e CSV compatível com Excel. |
+| `/users.php` | Gestão de usuários. |
+| `/logs.php` | Auditoria do sistema. |
+| `/profile.php` | Perfil do usuário. |
+| `/logout.php` | Encerrar sessão. |
+
+---
+
+## Perfis de acesso
+
+| Perfil | Acesso principal |
+| --- | --- |
+| `admin` | Administração do sistema, usuários, logs, fichas, frequência e desligamentos. Por regra atual, não acessa a área psicológica. |
+| `funcionario` | Consulta geral de registros e módulos operacionais liberados por autenticação. |
+| `psicologo` | Área psicológica, pacientes e anotações psicológicas. |
+
+---
+
+## Documentação
+
+- [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md): fonte principal do estado realmente entregue e das pendências externas.
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): instalação nova, atualização legada e checklist seguro.
+- [docs/ERD.md](docs/ERD.md): DER atual do schema canônico, cardinalidades e regras de integridade.
+- [docs/UML.md](docs/UML.md): arquitetura, sequências dos fluxos principais e diagrama de classes da aplicação.
+- [docs/ARCHITECTURAL_CLEANUP_REPORT.md](docs/ARCHITECTURAL_CLEANUP_REPORT.md): relatório da higienização e organização do repositório.
+- [docs/PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md): arquitetura, rotas, controllers, services, models, banco e pendências.
+- [docs/GAP_REMEDIATION_PLAN.md](docs/GAP_REMEDIATION_PLAN.md): plano das lacunas prioritárias.
+- [docs/LGPD_AND_DATA_GOVERNANCE.md](docs/LGPD_AND_DATA_GOVERNANCE.md): plano técnico-operacional de LGPD e governança de dados.
+- [docs/TEST_PLAN.md](docs/TEST_PLAN.md): suíte automatizada, CI e próximos testes.
+- [docs/TEST_AUTOMATION.md](docs/TEST_AUTOMATION.md): automação Docker para integração com banco, smoke HTTP e bloqueios operacionais.
+- [docs/BACKUP_RESTORE_RUNBOOK.md](docs/BACKUP_RESTORE_RUNBOOK.md): rotina de backup/restauracao e insumos pendentes para producao.
+- [docs/DOCUMENT_GOVERNANCE_DRAFT.md](docs/DOCUMENT_GOVERNANCE_DRAFT.md): rascunho de politica para documentos anexados.
+- [docs/SMTP_SETUP.md](docs/SMTP_SETUP.md): insumos para configurar envio SMTP real.
+- [docs/DATABASE_NORMALIZATION_PLAN.md](docs/DATABASE_NORMALIZATION_PLAN.md): plano para nomes de tabelas e ambientes Linux.
+- [docs/LEGACY_TABLE_STRATEGY.md](docs/LEGACY_TABLE_STRATEGY.md): estratégia para tabelas legadas.
+- [docs/REPORTING_ROADMAP.md](docs/REPORTING_ROADMAP.md): evolução dos relatórios.
+- [docs/REQUIREMENTS_TRACEABILITY.md](docs/REQUIREMENTS_TRACEABILITY.md): rastreabilidade dos requisitos da monografia.
+- [docs/MAINTENANCE_AND_TESTING.md](docs/MAINTENANCE_AND_TESTING.md): scripts auxiliares, comandos de validação e checklist operacional.
+- [database/README_SETUP.md](database/README_SETUP.md): guia específico do setup do banco.
+- [docs/STYLING_UPGRADE.md](docs/STYLING_UPGRADE.md): padrões visuais e guia de CSS.
+- [docs/RELACAO_GERAL_DE_ALTERACOES.md](docs/RELACAO_GERAL_DE_ALTERACOES.md): histórico do ciclo de modernização.
+- [docs/archive/](docs/archive/): documentos antigos preservados para referência.
+- [00 - Painel do Projeto Criança Feliz.md](00%20-%20Painel%20do%20Projeto%20Crian%C3%A7a%20Feliz.md): painel Obsidian para navegação do projeto.
+
+---
+
+## Observações importantes
+
+- `tools/maintenance/create_admin.php` funciona somente em linha de comando e exige senha forte fornecida pelo ambiente.
+- O fluxo de recuperação de senha guarda hashes de tokens em `password_reset_tokens` e registra a URL no log do PHP enquanto não há SMTP real. Para produção, implemente envio SMTP real.
+- A pasta `data/` guarda dados locais/runtime e não deve ser usada como fonte principal de persistência.
+- O módulo atual de frequência é `faltas.php`; acessos legados a `attendance.php` são redirecionados para as rotas atuais.
+- A área psicológica usa a tabela `anotacao_psicologica`, criada pelo setup completo.
+- A foto de perfil persiste em `usuario.foto_perfil`, também criada pelo setup completo.
+- Novos documentos de prontuário ficam em `var/private/documents/` e só abrem por rota autenticada. A leitura de caminhos legados em `uploads/documents/` foi mantida para migração.
+- Novas fotos de perfil ficam em `var/private/profiles/` e são entregues
+  pela rota autenticada `profile.php?action=photo`.
+- Novas fotos de acolhimento ficam em `var/private/children/`; fotos antigas
+  continuam disponíveis apenas pela rota autenticada de compatibilidade.
+- Testes rápidos rodam com `php tests/run.php`; a suíte completa roda com `powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run_all.ps1` e cobre banco, integração, smoke HTTP, perfis, relatórios, uploads privados e backup/restauração.
+- A imagem de login em `img/84ee2f859c98cde210228f9cf472d03b4932ff8c.jpg` foi otimizada para reduzir clone/carregamento mantendo o mesmo caminho.
+
+---
+
+## Contribuição
+
+1. Faça um fork do projeto.
+2. Crie uma branch para sua alteração: `git checkout -b feature/minha-feature`.
+3. Faça commits pequenos e descritivos.
+4. Envie sua branch: `git push origin feature/minha-feature`.
+5. Abra um Pull Request.
+
+---
+
+## Licença
+
+Este projeto está sob a licença MIT. Consulte [LICENSE](LICENSE) para mais detalhes.
+
+---
+
+<p align="center">
+  Feito com carinho para a <strong>Associação Criança Feliz</strong>
+</p>

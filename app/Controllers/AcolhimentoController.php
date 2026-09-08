@@ -20,8 +20,12 @@ class AcolhimentoController extends BaseController {
         try {
             $page = intval($this->getParam('page', 1));
             $perPage = 10;
+            $filters = [
+                'q' => trim($this->getParam('q', '')),
+                'cpf' => trim($this->getParam('cpf', ''))
+            ];
             
-            $result = $this->acolhimentoService->listFichas($page, $perPage);
+            $result = $this->acolhimentoService->listFichas($page, $perPage, $filters);
             
             // Adicionar dados calculados
             foreach ($result['data'] as &$ficha) {
@@ -56,11 +60,12 @@ class AcolhimentoController extends BaseController {
      */
     public function create() {
         $this->requireAuth();
-        $this->requirePermission('create_records');
         
         // Verificar se é edição
         $editId = $_GET['id'] ?? null;
         $ficha = null;
+
+        $this->requirePermission($editId ? 'edit_records' : 'create_records');
         
         if ($editId) {
             try {
@@ -88,45 +93,57 @@ class AcolhimentoController extends BaseController {
      */
     public function store() {
         $this->requireAuth();
-        $this->requirePermission('create_records');
-        
         if (!$this->isPost()) {
             redirect('acolhimento_form.php');
         }
+
+        $uploadedPhotoPath = null;
+        $previousPhotoPath = null;
         
         try {
-            $this->validateCSRF();
-            
             $data = $this->getPostData();
             
             // Verificar se é edição
             $id = $data['id'] ?? null;
+
+            $this->requirePermission(!empty($id) ? 'edit_records' : 'create_records');
+            $this->validateCSRF();
+
+            if (!empty($id)) {
+                $currentFicha = $this->acolhimentoService->getFicha($id);
+                $previousPhotoPath = (string)($currentFicha['foto'] ?? '');
+            }
             
-            error_log('=== ACOLHIMENTO STORE ===');
-            error_log('ID recebido: ' . ($id ?? 'NENHUM'));
-            error_log('Dados POST: ' . json_encode($data));
+            debugLog('=== ACOLHIMENTO STORE ===');
+            debugLog('ID recebido: ' . ($id ?? 'NENHUM'));
+            debugLog('Dados POST', ['fields' => array_keys($data)]);
             
             // Upload de foto se fornecida
             if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
                 $data['foto'] = $this->uploadFile('foto', ['jpg', 'jpeg', 'png', 'gif'], 2097152);
+                $uploadedPhotoPath = $data['foto'];
             }
             
             if (!empty($id)) {
                 // EDIÇÃO
-                error_log('EDITANDO ficha ID: ' . $id);
+                debugLog('EDITANDO ficha ID: ' . $id);
                 $ficha = $this->acolhimentoService->updateFicha($id, $data);
+                if ($uploadedPhotoPath) {
+                    $this->removeManagedChildPhoto($previousPhotoPath, $uploadedPhotoPath);
+                }
                 $this->redirectWithSuccess('acolhimento_list.php', 'Ficha de acolhimento atualizada com sucesso!');
                 return; // IMPORTANTE: Para execução aqui
             } else {
                 // CRIAÇÃO
-                error_log('CRIANDO nova ficha');
+                debugLog('CRIANDO nova ficha');
                 $ficha = $this->acolhimentoService->createFicha($data);
                 $this->redirectWithSuccess('acolhimento_list.php', 'Ficha de acolhimento cadastrada com sucesso!');
                 return;
             }
             
         } catch (Exception $e) {
-            error_log('ERRO no store: ' . $e->getMessage());
+            $this->removeManagedChildPhoto($uploadedPhotoPath);
+            reportException($e, 'AcolhimentoController::store');
             // Se estava editando, manter o id na URL para voltar ao modo edição
             $backId = $_POST['id'] ?? null;
             $target = 'acolhimento_form.php' . ($backId ? ('?id=' . urlencode($backId)) : '');
@@ -142,6 +159,9 @@ class AcolhimentoController extends BaseController {
         
         try {
             $ficha = $this->acolhimentoService->getFicha($id);
+            $ficha['photo_url'] = !empty($ficha['foto'])
+                ? 'acolhimento_view.php?action=photo&id=' . (int)$id
+                : '';
             
             $data = [
                 'title' => 'Visualizar Ficha de Acolhimento',
@@ -164,15 +184,20 @@ class AcolhimentoController extends BaseController {
         
         try {
             $ficha = $this->acolhimentoService->getFicha($id);
+            $ficha['photo_url'] = !empty($ficha['foto'])
+                ? 'acolhimento_view.php?action=photo&id=' . (int)$id
+                : '';
             
             $data = [
                 'title' => 'Editar Ficha de Acolhimento',
+                'pageTitle' => 'Editar Ficha de Acolhimento',
                 'ficha' => $ficha,
+                'editId' => $id,
                 'csrf_token' => $this->generateCSRF(),
                 'messages' => $this->getFlashMessages()
             ];
             
-            $this->renderWithLayout('main', 'acolhimento/edit', $data);
+            $this->renderWithLayout('main', 'acolhimento/create', $data);
             
         } catch (Exception $e) {
             $this->handleException($e);
@@ -190,22 +215,107 @@ class AcolhimentoController extends BaseController {
             redirect("acolhimento_view.php?id=$id");
         }
         
+        $uploadedPhotoPath = null;
+        $previousPhotoPath = null;
+
         try {
             $this->validateCSRF();
             
             $data = $this->getPostData();
+            $currentFicha = $this->acolhimentoService->getFicha($id);
+            $previousPhotoPath = (string)($currentFicha['foto'] ?? '');
             
             // Upload de nova foto se fornecida
             if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
                 $data['foto'] = $this->uploadFile('foto', ['jpg', 'jpeg', 'png', 'gif'], 2097152);
+                $uploadedPhotoPath = $data['foto'];
             }
             
             $ficha = $this->acolhimentoService->updateFicha($id, $data);
+            if ($uploadedPhotoPath) {
+                $this->removeManagedChildPhoto($previousPhotoPath, $uploadedPhotoPath);
+            }
             
             $this->redirectWithSuccess('acolhimento_list.php', 'Ficha de acolhimento atualizada com sucesso!');
             
         } catch (Exception $e) {
+            $this->removeManagedChildPhoto($uploadedPhotoPath);
             $this->redirectWithError("acolhimento_view.php?id=$id", $e->getMessage());
+        }
+    }
+
+    public function viewPhoto($id) {
+        $this->requirePermission('view_all_records');
+
+        try {
+            $ficha = $this->acolhimentoService->getFicha($id);
+            $filePath = $this->resolveManagedChildPhoto((string)($ficha['foto'] ?? ''));
+            if (!$filePath) {
+                http_response_code(404);
+                exit;
+            }
+
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo ? finfo_file($finfo, $filePath) : 'application/octet-stream';
+            if ($finfo) {
+                finfo_close($finfo);
+            }
+            if (strpos((string)$mimeType, 'image/') !== 0) {
+                http_response_code(404);
+                exit;
+            }
+
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            header('Content-Type: ' . $mimeType);
+            header('Content-Length: ' . filesize($filePath));
+            header('Content-Disposition: inline; filename="child-photo"');
+            header('X-Content-Type-Options: nosniff');
+            header('Cache-Control: private, no-store, max-age=0');
+            header('Pragma: no-cache');
+            readfile($filePath);
+            exit;
+        } catch (Throwable $exception) {
+            reportException($exception, 'AcolhimentoController::viewPhoto');
+            http_response_code(404);
+            exit;
+        }
+    }
+
+    private function resolveManagedChildPhoto($relativePath) {
+        $relativePath = ltrim((string)$relativePath, '/\\');
+        if ($relativePath === '') {
+            return null;
+        }
+
+        $filePath = realpath(BASE_PATH . '/' . $relativePath);
+        if (!$filePath || !is_file($filePath)) {
+            return null;
+        }
+
+        $privateDirectory = realpath(BASE_PATH . '/var/private/children');
+        if ($privateDirectory && strpos($filePath, $privateDirectory . DIRECTORY_SEPARATOR) === 0) {
+            return $filePath;
+        }
+
+        $legacyDirectory = realpath(BASE_PATH . '/uploads');
+        if ($legacyDirectory && dirname($filePath) === $legacyDirectory) {
+            return $filePath;
+        }
+
+        return null;
+    }
+
+    private function removeManagedChildPhoto($relativePath, $exceptPath = '') {
+        if (!$relativePath || $relativePath === $exceptPath) {
+            return;
+        }
+
+        $filePath = $this->resolveManagedChildPhoto($relativePath);
+        if ($filePath) {
+            @unlink($filePath);
         }
     }
     
@@ -222,8 +332,13 @@ class AcolhimentoController extends BaseController {
         
         try {
             $this->validateCSRF();
-            
+            $ficha = $this->acolhimentoService->getFicha($id);
+            $photoPath = (string)($ficha['foto'] ?? '');
             $result = $this->acolhimentoService->deleteFicha($id);
+
+            if ($result) {
+                $this->removeManagedChildPhoto($photoPath);
+            }
             
             if ($this->isAjaxRequest()) {
                 $this->json(['success' => 'Ficha excluída com sucesso']);
@@ -247,10 +362,12 @@ class AcolhimentoController extends BaseController {
         $this->requireAuth();
         
         try {
-            $query = $this->getParam('q', '');
+            $query = trim($this->getParam('q', ''));
             $filters = $this->getGetData();
+            $cpf = trim($filters['cpf'] ?? $this->getParam('cpf', ''));
+            $filters['cpf'] = $cpf;
             
-            if (empty($query)) {
+            if (empty($query) && empty($cpf)) {
                 $this->json([]);
                 return;
             }
@@ -286,6 +403,7 @@ class AcolhimentoController extends BaseController {
      */
     public function export() {
         $this->requireAuth();
+        $this->requirePermission('view_reports');
         
         try {
             $filters = $this->getGetData();

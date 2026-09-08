@@ -1,79 +1,27 @@
-<?php
-    // Se for requisição AJAX, retorna só os resultados e encerra
-    if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
-
-        $query = $_GET['q'] ?? '';
-        $categoria = $_GET['categoria'] ?? '';
-
-        if (strlen($query) < 2) {
-            echo json_encode([]);
-            exit;
-        }
-
-        // limpa o CPF (aceita com ou sem máscara)
-        $cpfLimpo = preg_replace('/[^0-9]/', '', $query);
-
-        $sqlAcolhimento = "
-            SELECT 
-                nome_completo AS nome,
-                cpf,
-                'acolhimento' AS categoria,
-                data_nascimento
-            FROM ficha_acolhimento
-            WHERE nome_completo LIKE :query
-            OR REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), '/', '') LIKE :cpf
-        ";
-
-        $sqlSocio = "
-            SELECT 
-                nome_completo AS nome,
-                cpf,
-                'socioeconomico' AS categoria,
-                data_nascimento
-            FROM ficha_socioeconomico
-            WHERE nome_completo LIKE :query
-            OR REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), '/', '') LIKE :cpf
-        ";
-
-        $stmt = $pdo->prepare($sqlAcolhimento);
-        $stmt->bindValue(':query', "%$query%");
-        $stmt->bindValue(':cpf', "%$cpfLimpo%");
-        $stmt->execute();
-        $resultAcolhimento = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $stmt = $pdo->prepare($sqlSocio);
-        $stmt->bindValue(':query', "%$query%");
-        $stmt->bindValue(':cpf', "%$cpfLimpo%");
-        $stmt->execute();
-        $resultSocio = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        echo json_encode(array_merge($resultAcolhimento, $resultSocio));
-        exit;
-
-
-        if (!empty($categoria)) {
-            $sql .= " AND categoria = :categoria";
-        }
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindValue(':query', "%$query%");
-        $stmt->bindValue(':cpf', "%$cpfLimpo%");
-
-        if (!empty($categoria)) {
-            $stmt->bindValue(':categoria', $categoria);
-        }
-
-        $stmt->execute();
-
-        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-        exit;
-    }
-?>
+<!-- BARRA DE PESQUISA -->
+<div class="card-glass mb-4">
+    <div class="search-bar-container" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <div style="flex-grow: 1; min-width: 200px;">
+            <input type="text" id="searchInput" class="form-control" placeholder="Digite o Nome ou CPF do atendido..." style="width: 100%;">
+        </div>
+        <div>
+            <select id="categoryFilter" class="form-control" style="width: auto; min-width: 150px;">
+                <option value="">Todas as Categorias</option>
+                <option value="acolhimento">Acolhimento</option>
+                <option value="socioeconomico">Socioeconômico</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 5px;">
+            <button type="button" id="searchBtn" class="btn primary"><i class="fas fa-search"></i> Buscar</button>
+            <button type="button" id="clearBtn" class="btn secondary" title="Limpar busca"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+</div>
 
 <div id="searchResults" style="display:none;">
-    <div class="results-header" style="background:#fff; border-radius:12px; padding:16px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-        <h3 style="margin:0; color:#495057;"><i class="fas fa-clipboard-list"></i> Resultados da Busca</h3>
-        <div id="resultsCount" style="color:#6c757d; font-size:14px; margin-top:4px;"></div>
+    <div class="results-header card-glass mb-4">
+        <h3 class="m-0"><i class="fas fa-clipboard-list"></i> Resultados da Busca</h3>
+        <div id="resultsCount" class="text-muted font-sm mt-1"></div>
     </div>
     
     <div id="resultsContainer"></div>
@@ -81,30 +29,30 @@
 
 <div id="defaultView">
     <!-- Estatísticas -->
-    <div class="stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:20px; margin-bottom:30px;">
-        <div class="stat-card" style="background:#fff; border-radius:12px; padding:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:48px; height:48px; background:#e8f6ea; border-radius:12px; display:grid; place-items:center; font-size:24px; color:#6fb64f;"><i class="fas fa-clipboard-list"></i></div>
+    <div class="stats-grid grid-auto-fit mb-4">
+        <div class="stat-card-glass">
+            <div class="flex-align-center gap-3">
+                <div class="icon-wrapper green"><i class="fas fa-clipboard-list"></i></div>
                 <div>
-                    <div style="font-size:24px; font-weight:700; color:#495057;"><?php echo count($acolhimentos); ?></div>
-                    <div style="color:#6c757d; font-size:14px;">Fichas de Acolhimento</div>
+                    <div class="stat-number"><?php echo count($acolhimentos); ?></div>
+                    <div class="stat-label">Fichas de Acolhimento</div>
                 </div>
             </div>
         </div>
         
-        <div class="stat-card" style="background:#fff; border-radius:12px; padding:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:48px; height:48px; background:#fff3e0; border-radius:12px; display:grid; place-items:center; font-size:24px; color:#f0a36b;"><i class="fas fa-home"></i></div>
+        <div class="stat-card-glass">
+            <div class="flex-align-center gap-3">
+                <div class="icon-wrapper orange"><i class="fas fa-home"></i></div>
                 <div>
-                    <div style="font-size:24px; font-weight:700; color:#495057;"><?php echo count($socioeconomicos); ?></div>
-                    <div style="color:#6c757d; font-size:14px;">Fichas Socioeconômicas</div>
+                    <div class="stat-number"><?php echo count($socioeconomicos); ?></div>
+                    <div class="stat-label">Fichas Socioeconômicas</div>
                 </div>
             </div>
         </div>
         
-        <div class="stat-card" style="background:#fff; border-radius:12px; padding:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:48px; height:48px; background:#e3f2fd; border-radius:12px; display:grid; place-items:center; font-size:24px; color:#2196f3;"><i class="fas fa-users"></i></div>
+        <div class="stat-card-glass">
+            <div class="flex-align-center gap-3">
+                <div class="icon-wrapper blue"><i class="fas fa-users"></i></div>
                 <div>
                     <?php 
                     $totalProntuarios = count(array_unique(array_merge(
@@ -112,110 +60,57 @@
                         array_column($socioeconomicos, 'cpf')
                     )));
                     ?>
-                    <div style="font-size:24px; font-weight:700; color:#495057;"><?php echo $totalProntuarios; ?></div>
-                    <div style="color:#6c757d; font-size:14px;">Total de Prontuários</div>
+                    <div class="stat-number"><?php echo $totalProntuarios; ?></div>
+                    <div class="stat-label">Total de Prontuários</div>
                 </div>
             </div>
         </div>
     </div>
     
     <!-- Ações Rápidas -->
-<div class="quick-actions" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:30px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057;"><i class="fas fa-bolt"></i> Ações Rápidas</h3>
-    
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+    <div class="card-glass mb-4">
+        <h3 class="card-title mb-3"><i class="fas fa-bolt"></i> Ações Rápidas</h3>
         
-        <?php if ($_SESSION['user_role'] === 'admin'): ?>
-        
-            <!-- BOTÃO VISÍVEL APENAS PARA ADMIN -->
-            <a href="acolhimento_form.php" class="action-card" style="display:flex; align-items:center; gap:12px; padding:16px; border:2px solid #e8f6ea; border-radius:12px; text-decoration:none; color:#495057;">
-                <div style="width:40px; height:40px; background:#6fb64f; border-radius:10px; display:grid; place-items:center; color:#fff; font-size:20px;">
-                    <i class="fas fa-clipboard-list"></i>
-                </div>
+        <div class="grid-actions">
+            <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                <!-- BOTÃO VISÍVEL APENAS PARA ADMIN -->
+                <a href="acolhimento_form.php" class="action-card green-card">
+                    <div class="action-icon"><i class="fas fa-clipboard-list"></i></div>
+                    <div>
+                        <div class="action-title">Nova Ficha de Acolhimento</div>
+                        <div class="action-desc">Cadastrar nova ficha</div>
+                    </div>
+                </a>
+
+                <!-- BOTÃO VISÍVEL APENAS PARA ADMIN -->
+                <a href="socioeconomico_form.php" class="action-card orange-card">
+                    <div class="action-icon"><i class="fas fa-home"></i></div>
+                    <div>
+                        <div class="action-title">Nova Ficha Socioeconômica</div>
+                        <div class="action-desc">Cadastrar nova ficha</div>
+                    </div>
+                </a>
+            <?php endif; ?>
+
+            <!-- Estes dois TODOS PODEM VER -->
+            <a href="acolhimento_list.php" class="action-card blue-card">
+                <div class="action-icon"><i class="fas fa-file-alt"></i></div>
                 <div>
-                    <div style="font-weight:600;">Nova Ficha de Acolhimento</div>
-                    <div style="font-size:12px; color:#6c757d;">Cadastrar nova ficha</div>
+                    <div class="action-title">Listar Acolhimentos</div>
+                    <div class="action-desc">Ver todas as fichas</div>
                 </div>
             </a>
 
-            <!-- BOTÃO VISÍVEL APENAS PARA ADMIN -->
-            <a href="socioeconomico_form.php" class="action-card" style="display:flex; align-items:center; gap:12px; padding:16px; border:2px solid #fff3e0; border-radius:12px; text-decoration:none; color:#495057;">
-                <div style="width:40px; height:40px; background:#f0a36b; border-radius:10px; display:grid; place-items:center; color:#fff; font-size:20px;">
-                    <i class="fas fa-home"></i>
-                </div>
+            <a href="socioeconomico_list.php" class="action-card purple-card">
+                <div class="action-icon"><i class="fas fa-chart-bar"></i></div>
                 <div>
-                    <div style="font-weight:600;">Nova Ficha Socioeconômica</div>
-                    <div style="font-size:12px; color:#6c757d;">Cadastrar nova ficha</div>
+                    <div class="action-title">Listar Socioeconômicas</div>
+                    <div class="action-desc">Ver todas as fichas</div>
                 </div>
             </a>
-
-        <?php endif; ?>
-
-        <!-- Estes dois TODOS PODEM VER -->
-        <a href="acolhimento_list.php" class="action-card" style="display:flex; align-items:center; gap:12px; padding:16px; border:2px solid #e3f2fd; border-radius:12px; text-decoration:none; color:#495057;">
-            <div style="width:40px; height:40px; background:#2196f3; border-radius:10px; display:grid; place-items:center; color:#fff; font-size:20px;">
-                <i class="fas fa-file-alt"></i>
-            </div>
-            <div>
-                <div style="font-weight:600;">Listar Acolhimentos</div>
-                <div style="font-size:12px; color:#6c757d;">Ver todas as fichas</div>
-            </div>
-        </a>
-
-        <a href="socioeconomico_list.php" class="action-card" style="display:flex; align-items:center; gap:12px; padding:16px; border:2px solid #f3e5f5; border-radius:12px; text-decoration:none; color:#495057;">
-            <div style="width:40px; height:40px; background:#9c27b0; border-radius:10px; display:grid; place-items:center; color:#fff; font-size:20px;">
-                <i class="fas fa-chart-bar"></i>
-            </div>
-            <div>
-                <div style="font-weight:600;">Listar Socioeconômicas</div>
-                <div style="font-size:12px; color:#6c757d;">Ver todas as fichas</div>
-            </div>
-        </a>
-
+        </div>
     </div>
 </div>
-
-<style>
-    .action-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    
-    .search-form input:focus,
-    .search-form select:focus {
-        outline: none;
-        border-color: #6fb64f;
-        box-shadow: 0 0 0 3px rgba(111, 182, 79, 0.1);
-    }
-    
-    .btn:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-    }
-    
-    /* Responsividade */
-    @media (max-width: 768px) {
-        .search-form {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        
-        .search-form input,
-        .search-form select,
-        .search-form button {
-            width: 100%;
-            min-width: auto;
-        }
-        
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .quick-actions > div {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -231,25 +126,58 @@ document.addEventListener('DOMContentLoaded', function() {
     function showResults(data) {
         defaultView.style.display = 'none';
         searchResults.style.display = 'block';
-        resultsContainer.innerHTML = '';
+        resultsContainer.replaceChildren();
         resultsCount.textContent = `${data.length} resultado(s) encontrado(s)`;
         if (data.length === 0) {
-            resultsContainer.innerHTML = `<div style="padding:20px; background:#fff; border-radius:12px; text-align:center; color:#6c757d;">Nenhum registro encontrado.</div>`;
+            const emptyState = document.createElement('div');
+            emptyState.className = 'card-glass text-center text-muted';
+            emptyState.textContent = 'Nenhum registro encontrado.';
+            resultsContainer.appendChild(emptyState);
             return;
         }
+
+        const createLabel = (label, value) => {
+            const line = document.createElement('div');
+            const strong = document.createElement('strong');
+            strong.textContent = `${label}: `;
+            line.append(strong, document.createTextNode(String(value ?? '-')));
+            return line;
+        };
+
+        const fragment = document.createDocumentFragment();
         data.forEach(item => {
             const nome = item.nome || item.nome_completo || item.nome_entrevistado || '—';
-            resultsContainer.innerHTML += `
-                <div style="background:#fff; padding:16px; border-radius:12px; margin-bottom:12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
-                    <div style="font-size:18px; font-weight:600; color:#495057;">${nome}</div>
-                    <div style="margin-top:6px; color:#6c757d;">
-                        <strong>CPF:</strong> ${item.cpf ?? '-'} <br>
-                        <strong>Categoria:</strong> ${item.categoria ?? '-'} <br>
-                        <strong>Nascimento:</strong> ${item.data_nascimento ?? '-'}
-                    </div>
-                </div>
-            `;
+            const prontuarioUrl = item.cpf ? `prontuarios.php?action=show&cpf=${encodeURIComponent(item.cpf)}` : '#';
+
+            const card = document.createElement('div');
+            card.className = 'card-glass mb-3';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:12px;';
+
+            const nameElement = document.createElement('div');
+            nameElement.style.cssText = 'font-size:18px; font-weight:600; color:var(--text-primary);';
+            nameElement.textContent = String(nome);
+
+            const openLink = document.createElement('a');
+            openLink.href = prontuarioUrl;
+            openLink.className = 'btn';
+            openLink.style.cssText = 'background:#3498db; font-size:12px; padding:8px 12px;';
+            openLink.textContent = 'Abrir';
+            header.append(nameElement, openLink);
+
+            const details = document.createElement('div');
+            details.style.cssText = 'margin-top:6px; color:var(--text-secondary);';
+            details.append(
+                createLabel('CPF', item.cpf),
+                createLabel('Categoria', item.categoria),
+                createLabel('Nascimento', item.data_nascimento)
+            );
+
+            card.append(header, details);
+            fragment.appendChild(card);
         });
+        resultsContainer.appendChild(fragment);
     }
 
     searchBtn.addEventListener('click', function(e) {
@@ -262,10 +190,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Chamar controller (rota padrão do seu projeto)
         const url = `prontuarios.php?action=buscar&ajax=1&q=${encodeURIComponent(query)}&categoria=${encodeURIComponent(category)}`;
 
-        // Opcional: mostrar carregando
         searchBtn.disabled = true;
         searchBtn.textContent = 'Buscando...';
 
@@ -279,7 +205,9 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(err => {
                 console.error('Erro busca:', err);
-                alert('Erro ao buscar. Verifique o console (F12) para detalhes.');
+                alert('Não foi possível realizar a busca. Tente novamente.');
+            })
+            .finally(() => {
             })
             .finally(() => {
                 searchBtn.disabled = false;
@@ -293,5 +221,12 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResults.style.display = 'none';
         defaultView.style.display = 'block';
     });
+
+    // Disparar busca automaticamente se houver parâmetro 'q' na URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('q')) {
+        searchInput.value = urlParams.get('q');
+        searchBtn.click();
+    }
 });
 </script>

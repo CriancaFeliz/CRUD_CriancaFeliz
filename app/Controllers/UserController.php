@@ -87,7 +87,7 @@ class UserController extends BaseController {
             }
             
             if (!validatePassword($data['password'])) {
-                throw new Exception('Senha deve ter pelo menos 6 caracteres');
+                throw new Exception(passwordValidationMessage());
             }
             
             if (empty($data['role'])) {
@@ -176,7 +176,7 @@ class UserController extends BaseController {
             // Se senha foi fornecida, validar
             if (!empty($data['password'])) {
                 if (!validatePassword($data['password'])) {
-                    throw new Exception('Senha deve ter pelo menos 6 caracteres');
+                    throw new Exception(passwordValidationMessage());
                 }
             } else {
                 // Remover senha vazia para não alterar
@@ -204,10 +204,11 @@ class UserController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
             $currentUser = $this->authService->getCurrentUser();
             
             // Não permitir que admin exclua a si mesmo
-            if ($currentUser['id'] === $id) {
+            if ((string) $currentUser['id'] === (string) $id) {
                 throw new Exception('Não é possível excluir seu próprio usuário');
             }
             
@@ -232,10 +233,11 @@ class UserController extends BaseController {
         }
         
         try {
+            $this->validateCSRF();
             $currentUser = $this->authService->getCurrentUser();
             
             // Não permitir que admin desative a si mesmo
-            if ($currentUser['id'] === $id) {
+            if ((string) $currentUser['id'] === (string) $id) {
                 throw new Exception('Não é possível alterar o status do seu próprio usuário');
             }
             
