@@ -21,8 +21,8 @@ cleanup() {
 trap cleanup EXIT
 cleanup
 
-source_user_count="$(mysql_root -N -B "${SOURCE_DB}" -e "SELECT COUNT(*) FROM Usuario;")"
-source_atendidos_count="$(mysql_root -N -B "${SOURCE_DB}" -e "SELECT COUNT(*) FROM Atendido;")"
+source_user_count="$(mysql_root -N -B "${SOURCE_DB}" -e "SELECT COUNT(*) FROM usuario;")"
+source_atendidos_count="$(mysql_root -N -B "${SOURCE_DB}" -e "SELECT COUNT(*) FROM atendido;")"
 
 mysqldump_root --single-transaction --routines --triggers "${SOURCE_DB}" > "${DUMP_FILE}"
 test -s "${DUMP_FILE}"
@@ -31,8 +31,8 @@ mysql_root -e "CREATE DATABASE \`${RESTORE_DB}\` CHARACTER SET utf8mb4 COLLATE u
 mysql_root "${RESTORE_DB}" < "${DUMP_FILE}"
 
 tables="$(mysql_root -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${RESTORE_DB}';")"
-user_count="$(mysql_root -N -B "${RESTORE_DB}" -e "SELECT COUNT(*) FROM Usuario;")"
-atendidos_count="$(mysql_root -N -B "${RESTORE_DB}" -e "SELECT COUNT(*) FROM Atendido;")"
+user_count="$(mysql_root -N -B "${RESTORE_DB}" -e "SELECT COUNT(*) FROM usuario;")"
+atendidos_count="$(mysql_root -N -B "${RESTORE_DB}" -e "SELECT COUNT(*) FROM atendido;")"
 
 test "${tables:-0}" -ge 10
 test "${user_count:-0}" = "${source_user_count:-0}"
