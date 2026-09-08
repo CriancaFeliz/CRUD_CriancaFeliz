@@ -1,26 +1,25 @@
 # Setup do Banco de Dados - Criança Feliz
 
-Atualizado em 2026-06-01.
+Atualizado em 2026-09-08.
 
-Este guia descreve como preparar o banco MySQL/MariaDB do Sistema Criança Feliz usando o script principal `database/SETUP_COMPLETO_FINAL.sql`.
+Este guia descreve como preparar o banco MySQL/MariaDB do Sistema Criança Feliz usando o script principal `database/schema_completo.sql`.
 
-## 1. Arquivo Recomendado
+## 1. Arquivo Oficial
 
-Use este arquivo para um ambiente novo:
+Use este arquivo para criação, documentação e setup em ambientes novos:
 
 ```text
-database/SETUP_COMPLETO_FINAL.sql
+database/schema_completo.sql
 ```
 
-Ele cria a estrutura principal, índices, relacionamentos, triggers/procedures,
-view de alertas e oficinas iniciais. Não cria usuários nem dados de atendidos.
+Ele cria a estrutura principal limpa (16 tabelas ativas, índices, relacionamentos de integridade referencial, triggers de auditoria, view de alertas e oficinas iniciais). Não cria senhas padrão inseguras nem dados fictícios de atendidos.
 
 ## 2. Pré-Requisitos
 
 - MySQL 5.7+ ou MariaDB 10.3+.
-- Banco com charset `utf8mb4`.
-- Usuário com permissão para criar tabelas, índices, foreign keys, triggers e procedures.
-- PHP com `pdo_mysql` habilitado para a aplicação acessar o banco.
+- Banco com charset `utf8mb4` e collation `utf8mb4_unicode_ci` ou `utf8mb4_general_ci`.
+- Usuário com permissão para criar tabelas, índices, foreign keys, triggers e views.
+- PHP 8.0+ com extensão `pdo_mysql` habilitada.
 
 ## 3. Instalação via Terminal
 
@@ -33,32 +32,31 @@ mysql -u root -e "CREATE DATABASE criancafeliz CHARACTER SET utf8mb4 COLLATE utf
 Importe o setup:
 
 ```bash
-mysql -u root criancafeliz < database/SETUP_COMPLETO_FINAL.sql
+mysql -u root criancafeliz < database/schema_completo.sql
 ```
 
-Se seu usuário MySQL tiver senha:
+Se seu usuário MySQL possuir senha:
 
 ```bash
-mysql -u root -p criancafeliz < database/SETUP_COMPLETO_FINAL.sql
+mysql -u root -p criancafeliz < database/schema_completo.sql
 ```
 
 ## 4. Instalação via phpMyAdmin
 
-1. Abra `http://localhost/phpmyadmin`.
-2. Crie o banco `criancafeliz` com charset/collation `utf8mb4`.
-3. Selecione o banco.
-4. Abra a aba SQL ou Importar.
-5. Execute o arquivo `SETUP_COMPLETO_FINAL.sql`.
+1. Acesse o phpMyAdmin do seu servidor/hospedagem.
+2. Crie ou selecione o banco de dados `criancafeliz_db` (ou `criancafeliz`).
+3. Abra a aba **Importar** (ou **SQL**).
+4. Carregue e execute o arquivo `schema_completo.sql`.
 
 ## 4.1 Instalação via Docker Compose
 
-O repositório também inclui um ambiente Docker com aplicação, MySQL e phpMyAdmin:
+O repositório inclui ambiente Docker pronto para desenvolvimento e testes:
 
 ```bash
 docker compose up --build
 ```
 
-Serviços:
+Serviços disponibilizados:
 
 | Serviço | Acesso |
 | --- | --- |
@@ -66,7 +64,7 @@ Serviços:
 | phpMyAdmin | `http://localhost:8081/` |
 | MySQL pelo host | `localhost:3307` |
 
-Credenciais:
+Credenciais padrão do Docker de desenvolvimento:
 
 | Item | Valor |
 | --- | --- |
@@ -76,91 +74,58 @@ Credenciais:
 | Usuário root | `root` |
 | Senha root | `root_dev` |
 
-Na primeira criação do volume `db_data`, o MySQL executa
-`docker/mysql/01-init.sh` e importa
-`database/SETUP_COMPLETO_FINAL.sql`. As senhas podem ser substituídas por
-`MYSQL_APP_PASSWORD` e `MYSQL_ROOT_PASSWORD` no `.env`.
+Na primeira criação do volume `db_data`, o MySQL executa `docker/mysql/01-init.sh` e importa automaticamente `database/schema_completo.sql`.
 
-Se o volume já existir, os scripts de inicialização do MySQL não rodam novamente. Para recriar o banco do zero:
+Para recriar o banco do zero no Docker:
 
 ```bash
 docker compose down -v
 docker compose up --build
 ```
 
-## 5. Dados Iniciais
+## 5. Criação do Primeiro Administrador
 
-Não existe usuário padrão. Após configurar o `.env`, defina
-`INITIAL_ADMIN_NAME`, `INITIAL_ADMIN_EMAIL` e uma
-`INITIAL_ADMIN_PASSWORD` forte, execute
-`php tools/maintenance/create_admin.php` e remova essas variáveis.
+Após configurar as variáveis de ambiente no `.env`, crie o primeiro usuário administrador com senha segura via linha de comando:
 
-## 6. Tabelas Principais
+```bash
+php tools/maintenance/create_admin.php
+```
 
-O setup cria tabelas para:
+## 6. Tabelas Ativas e Views
 
-- agenda/notificações;
-- atendidos;
-- responsáveis;
-- usuários;
-- fichas socioeconômicas;
-- família;
-- despesas;
-- frequência diária;
-- frequência por oficina;
-- oficinas;
-- desligamentos;
-- documentos;
-- encontros;
-- presenças/sessões legadas;
-- logs.
+O schema foi saneado e contém apenas as 16 tabelas e 1 view ativas consumidas pela aplicação:
 
-As tabelas centrais usadas pela aplicação atual são:
+| Tabela / View | Tipo | Descrição e Uso |
+| --- | --- | --- |
+| `usuario` | Tabela | Usuários, login, níveis de acesso e perfis. |
+| `atendido` | Tabela | Crianças e adolescentes acolhidos. |
+| `responsavel` | Tabela | Responsáveis legais vinculados aos atendidos. |
+| `ficha_socioeconomico` | Tabela | Fichas socioeconômicas e dados habitacionais. |
+| `familia` | Tabela | Composição familiar vinculada à ficha socioeconômica. |
+| `despesas` | Tabela | Rendas e despesas da ficha socioeconômica. |
+| `frequencia_dia` | Tabela | Registro de frequência diária geral (P/F/J). |
+| `frequencia_oficina` | Tabela | Registro de frequência por oficina (P/F/J). |
+| `oficina` | Tabela | Oficinas e atividades socioeducativas. |
+| `desligamento` | Tabela | Histórico de desligamentos e reativações. |
+| `documento` | Tabela | Documentos e anexos vinculados aos atendidos. |
+| `anotacao_psicologica` | Tabela | Prontuários e anotações do atendimento psicológico. |
+| `password_reset_tokens` | Tabela | Tokens seguros para recuperação de senha com expiração. |
+| `auth_rate_limits` | Tabela | Controle de taxa e proteção contra ataques de força bruta no login. |
+| `agenda` | Tabela | Notificações e recados do painel. |
+| `log` | Tabela | Auditoria de alterações do sistema. |
+| `atendidos_com_alerta` | View | Visão para detecção e alerta de faltas consecutivas/críticas. |
 
-| Tabela lógica | Uso |
-| --- | --- |
-| `Usuario` / `usuario` | Usuários, login e perfis. |
-| `Atendido` / `atendido` | Crianças/adolescentes atendidos. |
-| `Responsavel` / `responsavel` | Responsáveis vinculados a atendidos. |
-| `Ficha_Socioeconomico` / `ficha_socioeconomico` | Fichas socioeconômicas. |
-| `Familia` / `familia` | Membros da família da ficha. |
-| `Despesas` / `despesas` | Rendas/despesas da ficha. |
-| `Frequencia_Dia` / `frequencia_dia` | Frequência diária. |
-| `Frequencia_Oficina` / `frequencia_oficina` | Frequência por oficina. |
-| `Oficina` / `oficina` | Oficinas disponíveis. |
-| `Desligamento` / `desligamento` | Desligamentos e reativações. |
-| `agenda` | Notas/avisos do dashboard. |
-| `log` | Auditoria. |
-| `anotacao_psicologica` | Anotações da área psicológica. |
+## 7. Auditoria e Triggers
 
-O setup atual cria `anotacao_psicologica` com vínculos para `atendido` e `usuario`, permitindo que a área psicológica funcione em bancos novos.
-
-## 7. Auditoria
-
-O script configura triggers de log para a ficha socioeconômica:
+O script configura triggers de auditoria para a ficha socioeconômica:
 
 - `log_ficha_socioeconomico_insert`
 - `log_ficha_socioeconomico_update`
 - `log_ficha_socioeconomico_delete`
 
-Antes de operações auditadas, a aplicação tenta preencher variáveis de sessão do MySQL:
+Antes de operações auditadas, a aplicação alimenta as variáveis de contexto da sessão MySQL `@usuario_id` e `@ip_usuario` para rastreabilidade completa.
 
-- `@usuario_id`
-- `@ip_usuario`
-
-Essas variáveis são preparadas em `LogHelper` e também em algumas rotas administrativas.
-
-## 8. Arquivos Relacionados
-
-| Arquivo | Uso |
-| --- | --- |
-| `SETUP_COMPLETO_FINAL.sql` | Única fonte oficial de schema para uma instalação nova. |
-| `../docker/mysql/01-init.sh` | Script de importação usado pelo MySQL no Docker. |
-
-## 9. Configuração da Aplicação
-
-Host, banco e usuário são obrigatórios e devem ser fornecidos por variáveis de
-ambiente ou por um arquivo `.env` não versionado:
+## 8. Configuração da Aplicação (`.env`)
 
 ```env
 DB_HOST=localhost
@@ -169,57 +134,15 @@ DB_NAME=criancafeliz
 DB_USER=usuario_da_aplicacao
 DB_PASS=senha_forte
 DB_CHARSET=utf8mb4
-APP_ENV=development
+APP_ENV=production
 APP_DEBUG=false
 ```
 
-No Docker Compose, a aplicação usa `DB_HOST=db`,
-`DB_NAME=criancafeliz` e `DB_USER=criancafeliz`; a senha vem de
-`MYSQL_APP_PASSWORD` ou do padrão exclusivamente local.
+## 9. Checklist Pós-Setup
 
-## 10. Pontos de Atenção
-
-- Há variação de maiúsculas/minúsculas entre alguns nomes usados pelo código e pelos scripts SQL (`Usuario`/`usuario`, `Atendido`/`atendido`, etc.).
-- Em Windows e em algumas configurações MySQL, isso costuma funcionar por configuração do servidor.
-- Em Linux com `lower_case_table_names=0`, nomes diferentes podem quebrar consultas e triggers.
-- Antes de produção, normalize os nomes ou valide a configuração do MySQL/MariaDB.
-- O MySQL do Docker Compose usa `lower_case_table_names=1` para reduzir conflitos locais de caixa, mas isso não substitui a normalização do schema.
-- O schema principal ainda preserva algumas tabelas legadas, como `sessao` e `presenca`, mas o módulo atual de frequência usa `faltas.php`, `Frequencia_Dia` e `Frequencia_Oficina`.
-- A tabela `anotacao_psicologica` já está oficializada no setup completo.
-- Este repositório não inclui uma migração automática para bases antigas. Não importe o setup completo sobre uma base com dados sem antes fazer backup e definir um plano de migração específico.
-- Dumps com dados reais devem permanecer fora do repositório e fora do diretório público; use apenas uma base anonimizada para homologação.
-
-## 11. Troubleshooting
-
-Erro: `A extensao pdo_mysql nao esta habilitada neste PHP.`
-
-- Habilite `pdo_mysql` no `php.ini`.
-- Reinicie Apache/PHP-FPM/servidor local.
-- Rode `php -m` e confirme que `pdo_mysql` aparece.
-
-Erro: `Table already exists`
-
-- O banco já possui tabelas.
-- Use um banco limpo para setup completo ou revise o schema antes de reimportar.
-
-Erro: `Foreign key constraint fails`
-
-- Importe o arquivo completo.
-- Evite executar trechos isolados fora da ordem.
-- Confirme que o engine é InnoDB.
-
-Erro com nomes de tabelas em Linux
-
-- Verifique `lower_case_table_names`.
-- Padronize nomes do schema de acordo com as consultas do código.
-
-## 12. Checklist Pós-Setup
-
-- [ ] Banco `criancafeliz` criado.
-- [ ] `SETUP_COMPLETO_FINAL.sql` importado sem erros.
-- [ ] Primeiro administrador criado por `tools/maintenance/create_admin.php` com senha exclusiva.
-- [ ] `pdo_mysql` habilitado no PHP usado pelo servidor web.
-- [ ] `APP_DEBUG=false` configurado em produção.
-- [ ] Rotas protegidas redirecionam para login quando não há sessão.
-- [ ] Dashboard abre após login.
-- [ ] Módulos de acolhimento, socioeconômico, faltas, relatórios, usuários e logs abrem no ambiente local.
+- [ ] Banco `criancafeliz` criado com charset `utf8mb4`.
+- [ ] `schema_completo.sql` importado com sucesso.
+- [ ] Primeiro administrador criado por `php tools/maintenance/create_admin.php`.
+- [ ] `APP_DEBUG=false` configurado para produção.
+- [ ] Rotas protegidas funcionando e autenticação operacional.
+- [ ] Frequências, Acolhimento, Socioeconômico, Psicologia e Relatórios validados.
