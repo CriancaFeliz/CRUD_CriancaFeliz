@@ -14,35 +14,27 @@ class Database {
     public static function getConnection() {
         if (self::$pdo === null) {
             try {
-                $host = trim((string) ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? getenv('DB_HOST') ?: ''));
+                $host = trim((string) ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost'));
                 $port = (int) ($_ENV['DB_PORT'] ?? $_SERVER['DB_PORT'] ?? getenv('DB_PORT') ?: 3306);
-                $dbname = trim((string) ($_ENV['DB_NAME'] ?? $_SERVER['DB_NAME'] ?? getenv('DB_NAME') ?: ''));
-                $username = trim((string) ($_ENV['DB_USER'] ?? $_SERVER['DB_USER'] ?? getenv('DB_USER') ?: ''));
-                $password = isset($_ENV['DB_PASS']) ? (string)$_ENV['DB_PASS'] : (isset($_SERVER['DB_PASS']) ? (string)$_SERVER['DB_PASS'] : (getenv('DB_PASS') !== false ? (string) getenv('DB_PASS') : ''));
+                $dbname = trim((string) ($_ENV['DB_NAME'] ?? $_ENV['DB_DATABASE'] ?? $_SERVER['DB_NAME'] ?? $_SERVER['DB_DATABASE'] ?? getenv('DB_NAME') ?: (getenv('DB_DATABASE') ?: '')));
+                $username = trim((string) ($_ENV['DB_USER'] ?? $_ENV['DB_USERNAME'] ?? $_SERVER['DB_USER'] ?? $_SERVER['DB_USERNAME'] ?? getenv('DB_USER') ?: (getenv('DB_USERNAME') ?: '')));
+                $password = isset($_ENV['DB_PASS']) ? (string)$_ENV['DB_PASS'] : (isset($_ENV['DB_PASSWORD']) ? (string)$_ENV['DB_PASSWORD'] : (isset($_SERVER['DB_PASS']) ? (string)$_SERVER['DB_PASS'] : (isset($_SERVER['DB_PASSWORD']) ? (string)$_SERVER['DB_PASSWORD'] : (getenv('DB_PASS') !== false ? (string)getenv('DB_PASS') : (getenv('DB_PASSWORD') !== false ? (string)getenv('DB_PASSWORD') : '')))));
                 $charset = trim((string) ($_ENV['DB_CHARSET'] ?? $_SERVER['DB_CHARSET'] ?? getenv('DB_CHARSET') ?: 'utf8mb4'));
 
-                if ($host === '' || $dbname === '' || $username === '') {
-                    throw new RuntimeException('Banco de dados não configurado. Defina DB_HOST, DB_NAME e DB_USER.');
+                if ($dbname === '' || $username === '') {
+                    throw new RuntimeException('Banco de dados não configurado no .env. Defina DB_HOST, DB_NAME (ou DB_DATABASE) e DB_USER (ou DB_USERNAME).');
                 }
 
                 if (!preg_match('/^[A-Za-z0-9._-]+$/', $host)) {
-                    throw new RuntimeException('DB_HOST inválido.');
-                }
-
-                if (!preg_match('/^[A-Za-z0-9_]+$/', $dbname)) {
-                    throw new RuntimeException('DB_NAME inválido.');
+                    throw new RuntimeException("DB_HOST inválido: '{$host}'");
                 }
 
                 if ($port < 1 || $port > 65535) {
-                    throw new RuntimeException('DB_PORT inválido.');
-                }
-
-                if (!in_array($charset, ['utf8mb4', 'utf8'], true)) {
-                    throw new RuntimeException('DB_CHARSET inválido.');
+                    throw new RuntimeException("DB_PORT inválido: {$port}");
                 }
 
                 if (!extension_loaded('pdo_mysql')) {
-                    throw new Exception('A extensao pdo_mysql nao esta habilitada neste PHP.');
+                    throw new Exception('A extensão PHP pdo_mysql não está habilitada neste servidor.');
                 }
 
                 $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
@@ -64,9 +56,10 @@ class Database {
             } catch (Throwable $e) {
                 debugLog('Falha ao conectar ao banco de dados', [
                     'exception' => get_class($e),
+                    'message' => $e->getMessage(),
                     'code' => (string) $e->getCode()
                 ]);
-                throw new RuntimeException('Não foi possível conectar ao banco de dados. Verifique a configuração do ambiente.');
+                throw new RuntimeException($e->getMessage(), (int)$e->getCode(), $e);
             }
         }
         
@@ -96,9 +89,10 @@ class Database {
             return $stmt;
         } catch (PDOException $e) {
             debugLog('Falha ao executar consulta no banco de dados', [
+                'message' => $e->getMessage(),
                 'code' => (string) $e->getCode()
             ]);
-            throw new RuntimeException('Não foi possível concluir a operação no banco de dados.');
+            throw new RuntimeException($e->getMessage(), (int)$e->getCode(), $e);
         }
     }
     

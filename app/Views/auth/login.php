@@ -4,7 +4,10 @@
     <?php if (!empty($errors)): ?>
         <div class="error-messages" role="alert" aria-live="assertive">
             <?php foreach ($errors as $error): ?>
-                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+                <div class="error-message" style="display: flex; align-items: center; text-align: left; gap: 8px; line-height: 1.4;">
+                    <i class="fas fa-exclamation-triangle" style="flex-shrink: 0; color: #ef4444;"></i>
+                    <div><?php echo htmlspecialchars($error); ?></div>
+                </div>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>

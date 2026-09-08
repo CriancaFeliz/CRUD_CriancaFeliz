@@ -1,22 +1,21 @@
 -- =====================================================
--- SETUP COMPLETO - CRIANÇA FELIZ
+-- SCHEMA COMPLETO DO BANCO DE DADOS - CRIANÇA FELIZ
 -- =====================================================
--- Script único para setup 100% funcional do projeto
--- Execute este arquivo uma única vez no phpMyAdmin
--- Versão: 1.0 - Dezembro 2025
+-- Script único para setup e documentação da estrutura
+-- ativa utilizada pela aplicação.
 -- =====================================================
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-/*!40101 SET @OLD _CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
 -- =====================================================
--- PARTE 1: TABELAS
+-- PARTE 1: TABELAS (16 TABELAS ATIVAS)
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS `agenda` (
@@ -78,6 +77,19 @@ CREATE TABLE IF NOT EXISTS `atendido` (
   `id_responsavel` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE IF NOT EXISTS `auth_rate_limits` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `action` varchar(50) NOT NULL,
+  `identifier_hash` char(64) NOT NULL,
+  `attempts` int(11) NOT NULL DEFAULT 0,
+  `window_started_at` datetime NOT NULL,
+  `blocked_until` datetime DEFAULT NULL,
+  `last_attempt_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_auth_rate_limit` (`action`,`identifier_hash`),
+  KEY `idx_auth_rate_limit_cleanup` (`last_attempt_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 CREATE TABLE IF NOT EXISTS `desligamento` (
   `id_desligamento` int(11) NOT NULL,
   `id_atendido` int(11) NOT NULL,
@@ -101,26 +113,12 @@ CREATE TABLE IF NOT EXISTS `despesas` (
   `data_criacao` timestamp DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `dias_atendimento` (
-  `id_dia` int(11) NOT NULL,
-  `data_atendimento` date NOT NULL,
-  `descricao` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 CREATE TABLE IF NOT EXISTS `documento` (
   `iddocumento` int(11) NOT NULL,
   `tipo` varchar(50) DEFAULT NULL,
   `arquivo` varchar(255) DEFAULT NULL,
   `data_upload` datetime DEFAULT NULL,
   `IDatendido` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `encontro` (
-  `id_encontro` int(11) NOT NULL,
-  `Dataencontro` date DEFAULT NULL,
-  `ID_usuario` int(11) DEFAULT NULL,
-  `evolucao` varchar(255) DEFAULT NULL,
-  `id_atendido` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `familia` (
@@ -231,14 +229,17 @@ CREATE TABLE IF NOT EXISTS `oficina` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `presenca` (
-  `id_presenca` int(11) NOT NULL,
-  `id_sessao` int(11) NOT NULL,
-  `id_atendido` int(11) NOT NULL,
-  `status` enum('PRESENTE','FALTA','JUSTIFICADA') NOT NULL,
-  `justificativa` varchar(255) DEFAULT NULL,
-  `registrado_por` int(11) DEFAULT NULL,
-  `registrado_em` datetime NOT NULL DEFAULT current_timestamp()
+CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(100) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `used_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token_hash` (`token_hash`),
+  KEY `email` (`email`),
+  KEY `expires_at` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `responsavel` (
@@ -257,14 +258,6 @@ CREATE TABLE IF NOT EXISTS `responsavel` (
   `cep` varchar(10) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `sessao` (
-  `id_sessao` int(11) NOT NULL,
-  `data_sessao` date NOT NULL,
-  `descricao` varchar(150) DEFAULT NULL,
-  `criado_por` int(11) DEFAULT NULL,
-  `data_criacao` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 CREATE TABLE IF NOT EXISTS `usuario` (
   `idusuario` int(11) NOT NULL,
   `nome` varchar(100) DEFAULT NULL,
@@ -277,34 +270,8 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `email` varchar(100) NOT NULL,
-  `token_hash` char(64) NOT NULL,
-  `expires_at` datetime NOT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `used_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `token_hash` (`token_hash`),
-  KEY `email` (`email`),
-  KEY `expires_at` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `auth_rate_limits` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `action` varchar(50) NOT NULL,
-  `identifier_hash` char(64) NOT NULL,
-  `attempts` int(11) NOT NULL DEFAULT 0,
-  `window_started_at` datetime NOT NULL,
-  `blocked_until` datetime DEFAULT NULL,
-  `last_attempt_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_auth_rate_limit` (`action`,`identifier_hash`),
-  KEY `idx_auth_rate_limit_cleanup` (`last_attempt_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 -- =====================================================
--- PARTE 2: TRIGGERS PARA LOGS
+-- PARTE 2: TRIGGERS PARA AUDITORIA (LOGS)
 -- =====================================================
 
 DROP TRIGGER IF EXISTS `log_ficha_socioeconomico_insert`;
@@ -475,56 +442,10 @@ INSERT INTO `log` (
 );
 
 -- =====================================================
--- PARTE 3: PROCEDURES
+-- PARTE 3: VIEW (ALERTAS DE FREQUÊNCIA)
 -- =====================================================
 
-DELIMITER $$
-
-DROP PROCEDURE IF EXISTS `RegistrarFaltaAutomatica`$$
-
-CREATE PROCEDURE `RegistrarFaltaAutomatica` (IN `p_id_atendido` INT, IN `p_data` DATE)
-BEGIN
-    INSERT INTO `frequencia_dia` (id_atendido, data, status)
-    VALUES (p_id_atendido, p_data, 'F')
-    ON DUPLICATE KEY UPDATE 
-        status = IF(status = 'P', status, 'F');
-END$$
-
-DROP PROCEDURE IF EXISTS `DesligarPorExcessoFaltas`$$
-
-CREATE PROCEDURE `DesligarPorExcessoFaltas` ()
-BEGIN
-    INSERT INTO `desligamento` (id_atendido, motivo, tipo_motivo, data_desligamento, automatico)
-    SELECT 
-        a.idatendido,
-        'Desligamento automático por excesso de faltas',
-        'excesso_faltas',
-        CURDATE(),
-        TRUE
-    FROM 
-        `atendido` a
-    LEFT JOIN 
-        `frequencia_dia` fd ON a.idatendido = fd.id_atendido
-    WHERE 
-        a.status = 'Ativo'
-        AND NOT EXISTS (SELECT 1 FROM `desligamento` d WHERE d.id_atendido = a.idatendido)
-    GROUP BY 
-        a.idatendido
-    HAVING 
-        COUNT(CASE WHEN fd.status = 'F' THEN 1 END) >= 3;
-
-    UPDATE `atendido` a
-    INNER JOIN `desligamento` d ON a.idatendido = d.id_atendido
-    SET a.status = 'Desligado'
-    WHERE d.automatico = TRUE;
-END$$
-
-DELIMITER ;
-
--- =====================================================
--- PARTE 4: VIEW DE ALERTAS DE FALTAS
--- =====================================================
-
+DROP TABLE IF EXISTS `atendidos_com_alerta`;
 DROP VIEW IF EXISTS `atendidos_com_alerta`;
 
 CREATE VIEW `atendidos_com_alerta` AS
@@ -552,7 +473,7 @@ GROUP BY a.idatendido, a.nome, a.cpf
 HAVING COUNT(CASE WHEN fd.status = 'F' THEN 1 END) >= 2;
 
 -- =====================================================
--- PARTE 5: ÍNDICES
+-- PARTE 4: ÍNDICES E CHAVES PRIMÁRIAS
 -- =====================================================
 
 ALTER TABLE `agenda` ADD PRIMARY KEY (`id_notificacao`);
@@ -560,22 +481,18 @@ ALTER TABLE `anotacao_psicologica` ADD PRIMARY KEY (`id_anotacao`), ADD KEY `id_
 ALTER TABLE `atendido` ADD PRIMARY KEY (`idatendido`), ADD KEY `id_responsavel` (`id_responsavel`);
 ALTER TABLE `desligamento` ADD PRIMARY KEY (`id_desligamento`), ADD UNIQUE KEY `unique_desligamento` (`id_atendido`), ADD KEY `desligado_por` (`desligado_por`), ADD KEY `idx_atendido_deslig` (`id_atendido`), ADD KEY `idx_tipo_motivo` (`tipo_motivo`), ADD KEY `idx_data_desligamento` (`data_desligamento`), ADD KEY `idx_automatico` (`automatico`);
 ALTER TABLE `despesas` ADD PRIMARY KEY (`id_despesa`), ADD KEY `id_ficha` (`id_ficha`);
-ALTER TABLE `dias_atendimento` ADD PRIMARY KEY (`id_dia`);
 ALTER TABLE `documento` ADD PRIMARY KEY (`iddocumento`), ADD KEY `IDatendido` (`IDatendido`);
-ALTER TABLE `encontro` ADD PRIMARY KEY (`id_encontro`), ADD KEY `ID_usuario` (`ID_usuario`), ADD KEY `id_atendido` (`id_atendido`);
 ALTER TABLE `familia` ADD PRIMARY KEY (`id_familia`), ADD KEY `id_ficha` (`id_ficha`);
 ALTER TABLE `ficha_socioeconomico` ADD PRIMARY KEY (`idficha`), ADD UNIQUE KEY `id_atendido` (`id_atendido`), ADD INDEX `idx_nome_menor` (`nome_menor`), ADD INDEX `idx_renda_familiar` (`renda_familiar`);
 ALTER TABLE `frequencia_dia` ADD PRIMARY KEY (`id_frequencia_dia`), ADD UNIQUE KEY `unique_frequencia_dia` (`id_atendido`,`data`), ADD KEY `registrado_por` (`registrado_por`), ADD KEY `idx_atendido_dia` (`id_atendido`), ADD KEY `idx_data_dia` (`data`), ADD KEY `idx_status_dia` (`status`), ADD KEY `idx_data_status_dia` (`data`,`status`);
 ALTER TABLE `frequencia_oficina` ADD PRIMARY KEY (`id_frequencia`), ADD UNIQUE KEY `unique_frequencia` (`id_atendido`,`id_oficina`,`data`), ADD KEY `registrado_por` (`registrado_por`), ADD KEY `idx_atendido` (`id_atendido`), ADD KEY `idx_oficina` (`id_oficina`), ADD KEY `idx_data` (`data`), ADD KEY `idx_status` (`status`), ADD KEY `idx_data_status` (`data`,`status`);
 ALTER TABLE `log` ADD PRIMARY KEY (`id_log`), ADD KEY `id_usuario` (`id_usuario`), ADD INDEX `idx_dados_completos` (`dados_completos`(100));
 ALTER TABLE `oficina` ADD PRIMARY KEY (`id_oficina`), ADD KEY `idx_ativo` (`ativo`), ADD KEY `idx_dia_semana` (`dia_semana`);
-ALTER TABLE `presenca` ADD PRIMARY KEY (`id_presenca`), ADD UNIQUE KEY `uk_presenca_sessao_atendido` (`id_sessao`,`id_atendido`), ADD KEY `idx_presenca_atendido_status` (`id_atendido`,`status`), ADD KEY `idx_presenca_sessao_status` (`id_sessao`,`status`), ADD KEY `idx_presenca_registrado_por` (`registrado_por`);
 ALTER TABLE `responsavel` ADD PRIMARY KEY (`idresponsavel`);
-ALTER TABLE `sessao` ADD PRIMARY KEY (`id_sessao`), ADD UNIQUE KEY `uk_sessao_data` (`data_sessao`), ADD KEY `idx_sessao_criado_por` (`criado_por`);
 ALTER TABLE `usuario` ADD PRIMARY KEY (`idusuario`);
 
 -- =====================================================
--- PARTE 6: AUTO_INCREMENT
+-- PARTE 5: AUTO_INCREMENT
 -- =====================================================
 
 ALTER TABLE `agenda` MODIFY `id_notificacao` int(11) NOT NULL AUTO_INCREMENT;
@@ -583,22 +500,18 @@ ALTER TABLE `anotacao_psicologica` MODIFY `id_anotacao` int(11) NOT NULL AUTO_IN
 ALTER TABLE `atendido` MODIFY `idatendido` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `desligamento` MODIFY `id_desligamento` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `despesas` MODIFY `id_despesa` int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE `dias_atendimento` MODIFY `id_dia` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `documento` MODIFY `iddocumento` int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE `encontro` MODIFY `id_encontro` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `familia` MODIFY `id_familia` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `ficha_socioeconomico` MODIFY `idficha` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `frequencia_dia` MODIFY `id_frequencia_dia` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `frequencia_oficina` MODIFY `id_frequencia` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `log` MODIFY `id_log` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `oficina` MODIFY `id_oficina` int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE `presenca` MODIFY `id_presenca` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `responsavel` MODIFY `idresponsavel` int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE `sessao` MODIFY `id_sessao` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `usuario` MODIFY `idusuario` int(11) NOT NULL AUTO_INCREMENT;
 
 -- =====================================================
--- PARTE 7: FOREIGN KEYS
+-- PARTE 6: FOREIGN KEYS
 -- =====================================================
 
 ALTER TABLE `atendido` ADD CONSTRAINT `atendido_ibfk_1` FOREIGN KEY (`id_responsavel`) REFERENCES `responsavel` (`idresponsavel`) ON DELETE SET NULL ON UPDATE CASCADE;
@@ -606,22 +519,15 @@ ALTER TABLE `anotacao_psicologica` ADD CONSTRAINT `anotacao_psicologica_ibfk_1` 
 ALTER TABLE `desligamento` ADD CONSTRAINT `desligamento_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `desligamento_ibfk_2` FOREIGN KEY (`desligado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE `despesas` ADD CONSTRAINT `despesas_ibfk_1` FOREIGN KEY (`id_ficha`) REFERENCES `ficha_socioeconomico` (`idficha`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `documento` ADD CONSTRAINT `documento_ibfk_1` FOREIGN KEY (`IDatendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `encontro` ADD CONSTRAINT `encontro_ibfk_1` FOREIGN KEY (`ID_usuario`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE, ADD CONSTRAINT `encontro_ibfk_2` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `familia` ADD CONSTRAINT `familia_ibfk_1` FOREIGN KEY (`id_ficha`) REFERENCES `ficha_socioeconomico` (`idficha`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `ficha_socioeconomico` ADD CONSTRAINT `ficha_socioeconomico_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `frequencia_dia` ADD CONSTRAINT `frequencia_dia_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `frequencia_dia_ibfk_2` FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE `frequencia_oficina` ADD CONSTRAINT `frequencia_oficina_ibfk_1` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `frequencia_oficina_ibfk_2` FOREIGN KEY (`id_oficina`) REFERENCES `oficina` (`id_oficina`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `frequencia_oficina_ibfk_3` FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE `log` ADD CONSTRAINT `log_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE `presenca` ADD CONSTRAINT `fk_presenca_atendido` FOREIGN KEY (`id_atendido`) REFERENCES `atendido` (`idatendido`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `fk_presenca_sessao` FOREIGN KEY (`id_sessao`) REFERENCES `sessao` (`id_sessao`) ON DELETE CASCADE ON UPDATE CASCADE, ADD CONSTRAINT `fk_presenca_usuario` FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE `sessao` ADD CONSTRAINT `fk_sessao_usuario` FOREIGN KEY (`criado_por`) REFERENCES `usuario` (`idusuario`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- =====================================================
--- PARTE 8: CONFIGURAÇÃO INICIAL
+-- PARTE 7: CONFIGURAÇÃO INICIAL (SEEDS BÁSICOS)
 -- =====================================================
-
--- O primeiro administrador deve ser criado pelo utilitário de linha de comando
--- tools/maintenance/create_admin.php. O setup não distribui senha conhecida e
--- não inclui dados de crianças ou responsáveis.
 
 INSERT IGNORE INTO `oficina` (`id_oficina`, `nome`, `descricao`, `dia_semana`, `horario_inicio`, `horario_fim`, `ativo`) VALUES
 (1, 'Reforço Escolar', 'Aulas de reforço para crianças', 'Terça', '14:00:00', '16:00:00', 1),
@@ -631,24 +537,8 @@ INSERT IGNORE INTO `oficina` (`id_oficina`, `nome`, `descricao`, `dia_semana`, `
 (5, 'Dança', 'Oficina de dança', 'Sexta', '14:00:00', '16:00:00', 1),
 (6, 'Teatro', 'Oficina de teatro', 'Sábado', '09:00:00', '11:00:00', 1);
 
--- =====================================================
--- FIM DO SETUP COMPLETO
--- =====================================================
-
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
--- =====================================================
--- SCRIPT FINALIZADO COM SUCESSO!
--- =====================================================
--- Este script contém:
--- ✅ Banco de dados base completo
--- ✅ Todas as tabelas necessárias
--- ✅ Triggers para logs da ficha socioeconômica
--- ✅ Índices para performance
--- ✅ Foreign keys para integridade
--- ✅ Oficinas iniciais sem dados pessoais
--- =====================================================

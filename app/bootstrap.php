@@ -64,6 +64,8 @@ function loadEnvironmentFile($path) {
     }
 }
 
+// Carrega .env do diretório raiz acima de public_html ou dentro do próprio public_html
+loadEnvironmentFile(dirname(BASE_PATH) . '/.env');
 loadEnvironmentFile(BASE_PATH . '/.env');
 
 // Configurar fuso horário padrão da aplicação (America/Sao_Paulo)

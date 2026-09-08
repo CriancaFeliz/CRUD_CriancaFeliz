@@ -171,9 +171,9 @@
             echo "<div class='step'>";
             echo "<h3>Passo $currentStep/$totalSteps: Carregando script SQL...</h3>";
             
-            $sqlFile = dirname(__DIR__, 2) . '/database/SETUP_COMPLETO_FINAL.sql';
+            $sqlFile = dirname(__DIR__, 2) . '/database/schema_completo.sql';
             if (!file_exists($sqlFile)) {
-                throw new Exception("Arquivo SETUP_COMPLETO_FINAL.sql nÃ£o encontrado!");
+                throw new Exception("Arquivo schema_completo.sql não encontrado!");
             }
             
             $sql = file_get_contents($sqlFile);

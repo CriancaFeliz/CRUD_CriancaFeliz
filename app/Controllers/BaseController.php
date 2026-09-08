@@ -248,16 +248,35 @@ class BaseController {
     }
     
     /**
-     * Trata exceções
+     * Trata exceções de forma descritiva e compreensível
      */
-    protected function handleException(Exception $e) {
+    protected function handleException(Throwable $e) {
         $errorId = reportException($e, static::class);
-        $message = appDebugEnabled()
-            ? $e->getMessage()
-            : 'Não foi possível concluir a operação. Código: ' . $errorId;
+        $msg = $e->getMessage();
+
+        // 1. Diagnóstico de erros de Banco de Dados / MySQL / PDO
+        if ($e instanceof PDOException || strpos($msg, 'SQLSTATE') !== false || strpos($msg, 'mysql') !== false || strpos($msg, 'Table') !== false) {
+            $tableName = '';
+            if (preg_match("/Table ['`]([^'`]+)['`]/i", $msg, $matches)) {
+                $tableName = " '" . $matches[1] . "'";
+            }
+            if (strpos($msg, "doesn't exist") !== false || strpos($msg, '1146') !== false) {
+                $message = "Erro no Banco de Dados: A tabela{$tableName} não foi encontrada. Certifique-se de que todas as tabelas foram criadas e renomeadas para minúsculo no phpMyAdmin.";
+            } elseif (strpos($msg, 'Unknown column') !== false || strpos($msg, '1054') !== false) {
+                $message = "Erro no Banco de Dados: Coluna não encontrada na tabela. Detalhes: " . $msg;
+            } elseif (strpos($msg, 'Access denied') !== false || strpos($msg, '1045') !== false) {
+                $message = "Erro de Conexão: Usuário ou senha do banco inválidos no arquivo .env.";
+            } else {
+                $message = "Erro no Banco de Dados: " . $msg;
+            }
+        } elseif (!empty($msg) && !str_starts_with($msg, 'Não foi possível')) {
+            $message = $msg;
+        } else {
+            $message = 'Não foi possível concluir a operação (' . $msg . '). Código do log: ' . $errorId;
+        }
         
         if ($this->isAjaxRequest()) {
-            $this->json(['error' => $message], 500);
+            $this->json(['error' => $message, 'error_id' => $errorId], 500);
         } else {
             $this->redirectWithError($this->safeReferrer('index.php'), $message);
         }

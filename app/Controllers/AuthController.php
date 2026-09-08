@@ -389,20 +389,67 @@ class AuthController extends BaseController {
     }
 
     private function safeLoginError(Throwable $exception) {
-        $safeMessages = [
-            'Token CSRF inválido',
-            'Email é obrigatório',
-            'Email inválido',
-            'Senha é obrigatória',
-            'Email ou senha incorretos',
-            'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.'
-        ];
+        $msg = $exception->getMessage();
 
-        if (in_array($exception->getMessage(), $safeMessages, true)) {
-            return $exception->getMessage();
+        // 1. Mensagens diretas de validação
+        if ($msg === 'Email é obrigatório') {
+            return 'Por favor, informe seu e-mail para acessar.';
+        }
+        if ($msg === 'Email inválido') {
+            return 'O formato do e-mail informado é inválido. Exemplo: usuario@dominio.com';
+        }
+        if ($msg === 'Senha é obrigatória') {
+            return 'Por favor, digite sua senha de acesso.';
+        }
+        if ($msg === 'Email ou senha incorretos' || strpos($msg, 'incorretos') !== false) {
+            return 'E-mail ou senha incorretos. Verifique os dados digitados e tente novamente.';
+        }
+        if (strpos($msg, 'inativo') !== false || strpos($msg, 'bloqueado') !== false) {
+            return 'Este usuário está inativo ou bloqueado. Entre em contato com a administração.';
+        }
+        if (strpos($msg, 'Muitas tentativas') !== false) {
+            return 'Muitas tentativas consecutivas de login. Por segurança, aguarde alguns minutos antes de tentar novamente.';
+        }
+        if (strpos($msg, 'CSRF') !== false) {
+            return 'A sessão do formulário expirou. Por favor, recarregue a página e tente novamente.';
         }
 
+        // 2. Erros de Banco de Dados / Conexão (PDO / MySQL / Drivers)
+        if ($exception instanceof PDOException || strpos($msg, 'SQLSTATE') !== false || strpos($msg, 'mysql') !== false || strpos($msg, 'Banco de dados') !== false) {
+            // Acesso negado (usuário ou senha do banco errados no .env)
+            if (strpos($msg, 'Access denied') !== false || strpos($msg, '1045') !== false) {
+                return 'Erro no Banco de Dados: Usuário ou senha do banco inválidos. Verifique as credenciais no arquivo .env (DB_USER e DB_PASS).';
+            }
+            // Banco de dados não existe
+            if (strpos($msg, 'Unknown database') !== false || strpos($msg, '1049') !== false) {
+                return 'Erro no Banco de Dados: O banco de dados informado não existe. Verifique a variável DB_NAME no arquivo .env.';
+            }
+            // Tabela de usuários não encontrada
+            if (strpos($msg, "doesn't exist") !== false || strpos($msg, '1146') !== false) {
+                $tableName = '';
+                if (preg_match("/Table ['`]([^'`]+)['`]/i", $msg, $matches)) {
+                    $tableName = " '" . $matches[1] . "'";
+                }
+                return 'Erro no Banco de Dados: A tabela' . $tableName . ' não foi encontrada. Certifique-se de importar o arquivo database/schema_completo.sql no phpMyAdmin (Verifique maiúsculas/minúsculas caso o servidor seja Linux).';
+            }
+            // Falha de host / porta / conexão recusada
+            if (strpos($msg, 'Connection refused') !== false || strpos($msg, '2002') !== false || strpos($msg, 'getaddrinfo') !== false) {
+                return 'Erro de Conexão: Não foi possível conectar ao servidor MySQL. Verifique o DB_HOST e DB_PORT no arquivo .env (em hospedagens compartilhadas use localhost).';
+            }
+            // Extensão PDO MySQL ausente
+            if (strpos($msg, 'pdo_mysql') !== false) {
+                return 'A extensão PHP pdo_mysql não está habilitada no servidor. Ative-a no painel da hospedagem.';
+            }
+
+            return 'Erro no Banco de Dados: ' . (appDebugEnabled() ? $msg : 'Falha ao conectar com o banco. Verifique as variáveis no arquivo .env.');
+        }
+
+        // 3. Demais exceções com detalhes claros
         $errorId = reportException($exception, 'login');
-        return 'Não foi possível entrar agora. Tente novamente. Código: ' . $errorId;
+        if (appDebugEnabled() || getenv('APP_ENV') === 'development') {
+            return 'Erro no login: ' . $msg;
+        }
+
+        return 'Erro ao tentar autenticar: ' . $msg;
     }
 }
